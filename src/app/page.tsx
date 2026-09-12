@@ -1,0 +1,234 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, Card } from '@/components/UI';
+
+// ============================================================
+// LANDING PAGE
+// ============================================================
+
+export default function Home() {
+  const router = useRouter();
+  const [mode, setMode] = useState<'home' | 'create' | 'join'>('home');
+  const [playerName, setPlayerName] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleCreateRoom = async () => {
+    if (!playerName.trim()) {
+      setError('Nama harus diisi');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/create-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerName: playerName.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal membuat room');
+      }
+
+      // Store player info in sessionStorage
+      sessionStorage.setItem('player', JSON.stringify(data.player));
+      sessionStorage.setItem('room', JSON.stringify(data.room));
+
+      // Navigate to room
+      router.push(`/room/${data.room.code}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinRoom = async () => {
+    if (!playerName.trim() || !roomCode.trim()) {
+      setError('Nama dan kode room harus diisi');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/join-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomCode: roomCode.trim().toUpperCase(),
+          playerName: playerName.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal join room');
+      }
+
+      // Store player info in sessionStorage
+      sessionStorage.setItem('player', JSON.stringify(data.player));
+      sessionStorage.setItem('room', JSON.stringify(data.room));
+
+      // Navigate to room
+      router.push(`/room/${data.room.code}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold text-white mb-2">MONOPOLI</h1>
+          <h2 className="text-3xl font-bold text-yellow-400">WNI</h2>
+          <p className="text-green-200 mt-2">Versi Indonesia yang kekinian</p>
+        </div>
+
+        {/* Main Card */}
+        <Card className="bg-white/95 backdrop-blur">
+          {mode === 'home' && (
+            <div className="space-y-4">
+              <Button
+                fullWidth
+                size="lg"
+                onClick={() => setMode('create')}
+              >
+                BUAT ROOM
+              </Button>
+              <Button
+                fullWidth
+                size="lg"
+                variant="secondary"
+                onClick={() => setMode('join')}
+              >
+                JOIN ROOM
+              </Button>
+            </div>
+          )}
+
+          {mode === 'create' && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-center mb-4">Buat Room Baru</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Pemain
+                </label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Masukkan nama kamu"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={20}
+                />
+              </div>
+
+              {error && (
+                <p className="text-red-500 text-sm text-center">{error}</p>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  onClick={() => {
+                    setMode('home');
+                    setError('');
+                  }}
+                >
+                  KEMBALI
+                </Button>
+                <Button
+                  fullWidth
+                  loading={loading}
+                  onClick={handleCreateRoom}
+                >
+                  BUAT
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'join' && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-center mb-4">Join Room</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Pemain
+                </label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Masukkan nama kamu"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={20}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kode Room
+                </label>
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  placeholder="Masukkan kode room"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase tracking-widest font-mono"
+                  maxLength={6}
+                />
+              </div>
+
+              {error && (
+                <p className="text-red-500 text-sm text-center">{error}</p>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  onClick={() => {
+                    setMode('home');
+                    setError('');
+                  }}
+                >
+                  KEMBALI
+                </Button>
+                <Button
+                  fullWidth
+                  loading={loading}
+                  onClick={handleJoinRoom}
+                >
+                  JOIN
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Features */}
+        <div className="mt-8 text-center text-green-200 text-sm">
+          <p>2-8 Pemain | Real-time Multiplayer | 200+ Kartu</p>
+        </div>
+      </div>
+    </div>
+  );
+}
