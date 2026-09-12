@@ -197,3 +197,7 @@ export function drawRandomCard(): Card {
   const cards = getCardsByCategory(category);
   return cards[Math.floor(Math.random() * cards.length)];
 }
+
+export function getCardById(cardId: string): Card | undefined {
+  return ALL_TAKDIR_CARDS.find(card => card.id === cardId);
+}

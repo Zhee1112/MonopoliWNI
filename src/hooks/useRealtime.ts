@@ -13,6 +13,30 @@ export function useRealtimeRoom(roomCode: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!roomCode) return;
+
+    // Initial fetch
+    const fetchRoom = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('code', roomCode)
+          .single();
+
+        if (data && !error) {
+          setRoom(mapRoomFromDB(data as Record<string, unknown>));
+        }
+      } catch (e) {
+        console.error('Failed to fetch room:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoom();
+
+    // Subscribe to realtime changes
     const channel = supabase
       .channel(`room:${roomCode}`)
       .on(
@@ -42,6 +66,28 @@ export function useRealtimePlayers(roomId: string) {
   const [players, setPlayers] = useState<Player[]>([]);
 
   useEffect(() => {
+    if (!roomId) return;
+
+    // Initial fetch
+    const fetchPlayers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('room_id', roomId)
+          .order('created_at', { ascending: true });
+
+        if (data && !error) {
+          setPlayers(data.map((p) => mapPlayerFromDB(p as Record<string, unknown>)));
+        }
+      } catch (e) {
+        console.error('Failed to fetch players:', e);
+      }
+    };
+
+    fetchPlayers();
+
+    // Subscribe to realtime changes
     const channel = supabase
       .channel(`players:${roomId}`)
       .on(
@@ -54,7 +100,11 @@ export function useRealtimePlayers(roomId: string) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setPlayers((prev) => [...prev, mapPlayerFromDB(payload.new as Record<string, unknown>)]);
+            setPlayers((prev) => {
+              const newPlayer = mapPlayerFromDB(payload.new as Record<string, unknown>);
+              if (prev.some(p => p.id === newPlayer.id)) return prev;
+              return [...prev, newPlayer];
+            });
           } else if (payload.eventType === 'UPDATE') {
             setPlayers((prev) =>
               prev.map((p) => (p.id === payload.new.id ? mapPlayerFromDB(payload.new as Record<string, unknown>) : p))

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Board from '@/components/Board/Board';
 import PlayerPanel from '@/components/Player/PlayerPanel';
@@ -9,16 +9,16 @@ import EventCardModal from '@/components/Modal/EventCardModal';
 import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
-import { drawRandomCard } from '@/lib/game/takdir-cards';
+import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
 import { Player, Room, BoardCell } from '@/lib/types';
 
 // ============================================================
 // GAME ROOM PAGE
 // ============================================================
 
-export default function GameRoom({ params }: { params: { code: string } }) {
+export default function GameRoom({ params }: { params: Promise<{ code: string }> }) {
   const router = useRouter();
-  const roomCode = params.code;
+  const { code: roomCode } = use(params);
 
   // State
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
@@ -340,8 +340,8 @@ export default function GameRoom({ params }: { params: { code: string } }) {
       {activeCard && (
         <EventCardModal
           isOpen={true}
-          card={drawRandomCard()}
-          drawnBy={players.find((p) => p.id === activeCard.drawnBy)?.name || 'Unknown'}
+          card={getCardById(activeCard.cardId) || drawRandomCard()}
+          drawnBy={activeCard.playerName || players.find((p) => p.id === activeCard.drawnBy)?.name || 'Unknown'}
           reactions={activeCard.reactions}
           onReact={handleReaction}
           onDismiss={handleDismissCard}
