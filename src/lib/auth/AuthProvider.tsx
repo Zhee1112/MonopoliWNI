@@ -64,40 +64,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const initialized = useRef(false);
+  const authChecked = useRef(false);
 
   useEffect(() => {
-    // Handle OAuth redirect - process URL hash tokens
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    if (accessToken) {
-      // Clear the hash to avoid reprocessing
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      if (currentSession?.user) {
+      if (currentSession) {
+        setSession(currentSession);
+        setUser(currentSession.user);
         fetchOrCreateProfile(currentSession.user);
-      } else {
-        setLoading(false);
       }
-      initialized.current = true;
+      // Don't set loading=false here - wait for onAuthStateChange INITIAL_SESSION
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        if (event === 'INITIAL_SESSION') return;
+        if (event === 'INITIAL_SESSION') {
+          if (newSession) {
+            setSession(newSession);
+            setUser(newSession.user);
+            await fetchOrCreateProfile(newSession.user);
+          } else {
+            setLoading(false);
+          }
+          authChecked.current = true;
+          return;
+        }
 
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-
-        if (newSession?.user) {
+        if (event === 'SIGNED_IN' && newSession) {
+          setSession(newSession);
+          setUser(newSession.user);
           await fetchOrCreateProfile(newSession.user);
-        } else {
+          authChecked.current = true;
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
           setProfile(null);
           setLoading(false);
+          authChecked.current = true;
+          return;
+        }
+
+        if (event === 'TOKEN_REFRESHED' && newSession) {
+          setSession(newSession);
+          setUser(newSession.user);
         }
       }
     );
@@ -191,11 +204,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
-        skipBrowserRedirect: false,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) console.error('OAuth error:', error);

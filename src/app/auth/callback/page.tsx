@@ -1,57 +1,57 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
 export default function AuthCallbackPage() {
+  const router = useRouter();
   const [status, setStatus] = useState('Memproses login...');
 
   useEffect(() => {
-    let redirected = false;
+    let done = false;
 
     function goHome() {
-      if (redirected) return;
-      redirected = true;
+      if (done) return;
+      done = true;
       setStatus('Login berhasil! Mengalihkan...');
-      window.location.href = '/';
+      window.location.replace('/');
     }
 
-    function goLogin() {
-      if (redirected) return;
-      redirected = true;
-      setStatus('Sesi tidak ditemukan. Kembali ke login...');
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1500);
+    function goLogin(msg: string) {
+      if (done) return;
+      done = true;
+      setStatus(msg);
+      setTimeout(() => window.location.replace('/login'), 2000);
     }
 
-    // Listen for auth state change (most reliable)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session) goHome();
+      (event, sess) => {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && sess) {
+          goHome();
+        }
       }
     );
 
-    // Wait 2s for Supabase to process URL hash, then check session
-    const checkTimer = setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          goHome();
-        } else {
-          goLogin();
-        }
-      }).catch(() => goLogin());
-    }, 2000);
-
-    // Hard timeout
-    const hardTimer = setTimeout(() => goLogin(), 15000);
+    // Fallback: poll for session
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        clearInterval(interval);
+        goHome();
+      } else if (attempts >= 20) {
+        clearInterval(interval);
+        goLogin('Timeout: sesi tidak ditemukan');
+      }
+    }, 500);
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(checkTimer);
-      clearTimeout(hardTimer);
+      clearInterval(interval);
     };
-  }, []);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center">
