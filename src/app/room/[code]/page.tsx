@@ -41,15 +41,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const player = JSON.parse(storedPlayer);
       const roomData = JSON.parse(storedRoom);
 
-      if (roomData.code === roomCode) {
-        setCurrentPlayer(player);
-      } else {
-        router.push('/');
-      }
+      setCurrentPlayer(player);
     } else {
-      router.push('/');
+      router.push('/login');
     }
-  }, [roomCode, router]);
+  }, [router]);
 
   // Check if it's current player's turn
   const isMyTurn = room && currentPlayer && room.turnOrder[room.currentTurn] === currentPlayer.id;

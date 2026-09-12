@@ -70,7 +70,7 @@ export default function Home() {
       sessionStorage.setItem('player', JSON.stringify(data.player));
       sessionStorage.setItem('room', JSON.stringify(data.room));
 
-      router.push(`/room/${data.room.code}`);
+      window.location.href = `/room/${data.room.code}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
     } finally {
@@ -107,7 +107,7 @@ export default function Home() {
       sessionStorage.setItem('player', JSON.stringify(data.player));
       sessionStorage.setItem('room', JSON.stringify(data.room));
 
-      router.push(`/room/${data.room.code}`);
+      window.location.href = `/room/${data.room.code}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
     } finally {
