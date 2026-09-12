@@ -18,12 +18,27 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
+  // Show loading while auth is resolving (prevents redirect loop after OAuth)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Loading...</div>
+          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
+  // If not logged in after auth resolved, redirect to login
+  if (!user || !profile) {
+    router.push('/login');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center">
+        <div className="text-white text-xl">Mengalihkan ke login...</div>
+      </div>
+    );
+  }
 
   const handleCreateRoom = async () => {
     const name = playerName.trim() || profile?.displayName || 'Player';
@@ -91,14 +106,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  if (authLoading || !user || !profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center p-4">
