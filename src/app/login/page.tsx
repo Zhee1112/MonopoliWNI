@@ -2,27 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { useEffect } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading, signInWithGoogle } = useAuth();
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Loading...</div>
+          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+        </div>
       </div>
     );
   }
 
-  if (user) return null;
+  if (user) {
+    router.replace('/');
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center p-4">
