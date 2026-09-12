@@ -9,19 +9,34 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState('Memproses login...');
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
           setStatus('Login berhasil! Mengalihkan...');
-          router.replace('/');
-        } else {
-          setStatus('Sesi tidak ditemukan, coba login ulang...');
-          setTimeout(() => router.replace('/login'), 1500);
+          setTimeout(() => router.replace('/'), 500);
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          setStatus('Login berhasil! Mengalihkan...');
+          setTimeout(() => router.replace('/'), 500);
         }
-      });
-    }, 1000);
+      }
+    );
 
-    return () => clearTimeout(timer);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setStatus('Login berhasil! Mengalihkan...');
+        setTimeout(() => router.replace('/'), 500);
+      }
+    });
+
+    const timer = setTimeout(() => {
+      setStatus('Sesi tidak ditemukan, coba login ulang...');
+      setTimeout(() => router.replace('/login'), 1500);
+    }, 8000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
   }, [router]);
 
   return (
