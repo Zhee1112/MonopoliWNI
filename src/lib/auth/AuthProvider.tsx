@@ -94,27 +94,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function fetchOrCreateProfile(userData: User) {
-    const { data: existing } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', userData.id)
-      .single();
+    try {
+      const { data: existing, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userData.id)
+        .single();
 
-    if (existing) {
-      const { level, rank } = calculateLevel(existing.xp || 0);
-      setProfile({
-        id: existing.id,
-        userId: existing.user_id,
-        displayName: existing.display_name || userData.user_metadata?.full_name || 'Player',
-        avatarUrl: existing.avatar_url || userData.user_metadata?.avatar_url || null,
-        xp: existing.xp || 0,
-        level,
-        rank,
-        totalGames: existing.total_games || 0,
-        totalWins: existing.total_wins || 0,
-        createdAt: existing.created_at,
-      });
-    } else {
+      if (existing && !fetchError) {
+        const { level, rank } = calculateLevel(existing.xp || 0);
+        setProfile({
+          id: existing.id,
+          userId: existing.user_id,
+          displayName: existing.display_name || userData.user_metadata?.full_name || 'Player',
+          avatarUrl: existing.avatar_url || userData.user_metadata?.avatar_url || null,
+          xp: existing.xp || 0,
+          level,
+          rank,
+          totalGames: existing.total_games || 0,
+          totalWins: existing.total_wins || 0,
+          createdAt: existing.created_at,
+        });
+        setLoading(false);
+        return;
+      }
+
       const newProfile = {
         user_id: userData.id,
         display_name: userData.user_metadata?.full_name || 'Player',
@@ -124,13 +128,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         total_wins: 0,
       };
 
-      const { data: created } = await supabase
+      const { data: created, error: insertError } = await supabase
         .from('user_profiles')
         .insert(newProfile)
         .select()
         .single();
 
-      if (created) {
+      if (created && !insertError) {
         setProfile({
           id: created.id,
           userId: created.user_id,
@@ -143,7 +147,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           totalWins: 0,
           createdAt: created.created_at,
         });
+      } else {
+        setProfile({
+          id: 'temp',
+          userId: userData.id,
+          displayName: userData.user_metadata?.full_name || 'Player',
+          avatarUrl: userData.user_metadata?.avatar_url || null,
+          xp: 0,
+          level: 1,
+          rank: '🟢 Magang',
+          totalGames: 0,
+          totalWins: 0,
+          createdAt: new Date().toISOString(),
+        });
       }
+    } catch (e) {
+      setProfile({
+        id: 'temp',
+        userId: userData.id,
+        displayName: userData.user_metadata?.full_name || 'Player',
+        avatarUrl: userData.user_metadata?.avatar_url || null,
+        xp: 0,
+        level: 1,
+        rank: '🟢 Magang',
+        totalGames: 0,
+        totalWins: 0,
+        createdAt: new Date().toISOString(),
+      });
     }
     setLoading(false);
   }
@@ -152,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
   }
