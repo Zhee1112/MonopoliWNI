@@ -360,7 +360,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             <button onClick={() => router.push('/')} className="text-[#d1c5af] hover:text-[#ffd56d] text-sm font-semibold transition-colors flex items-center gap-1">
               <span>&#8592;</span> Keluar
             </button>
-            <h1 className="text-sm font-bold text-[#ffd56d] tracking-tight font-display">LOBBY</h1>
+            <h1 className="text-sm font-bold text-[#ffd56d] tracking-tighter">LOBBY</h1>
             <div className="w-16" />
           </div>
         </div>
@@ -524,7 +524,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setRoleModalOpen(false); setSelectedRoleId(null); }}>
             <div className="w-full max-w-lg max-h-[80vh] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5)] rounded-2xl flex flex-col" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }} onClick={(e) => e.stopPropagation()}>
               <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #203a29' }}>
-                <h3 className="font-bold text-[#cbead1] text-sm font-display">Pilih Role</h3>
+                <h3 className="font-bold text-[#cbead1] text-sm">Pilih Role</h3>
                 <button onClick={() => { setRoleModalOpen(false); setSelectedRoleId(null); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors" style={{ backgroundColor: '#152f1f', color: '#d1c5af' }}>✕</button>
               </div>
               <div className="p-4 space-y-2 overflow-y-auto max-h-[60vh]">
@@ -589,7 +589,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-[#ffd56d] text-lg sm:text-xl tracking-tight font-display">MONOPOLI WNI</span>
+              <span className="font-bold text-[#ffd56d] text-lg sm:text-xl tracking-tighter">MONOPOLI WNI</span>
               <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ backgroundColor: '#203a29', color: '#4edea3' }}>V2.4</span>
             </div>
             <span className="text-xs text-[#d1c5af] block tracking-wide font-medium">Arena Meja Nusantara</span>
