@@ -9,11 +9,13 @@ import EventCardModal from '@/components/Modal/EventCardModal';
 import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
 import GameModal from '@/components/Modal/GameModal';
 import InfoModal from '@/components/Modal/InfoModal';
+import LoanModal from '@/components/Modal/LoanModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
+import { Loan } from '@/lib/game/loan-system';
 import { Player, Room, BoardCell } from '@/lib/types';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
@@ -37,6 +39,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [gameModalOpen, setGameModalOpen] = useState(false);
   const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat' | 'settings'>('players');
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
+  const [showLoanModal, setShowLoanModal] = useState(false);
+  const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -291,6 +295,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const handleDismissCard = useCallback(() => { broadcastDismiss(); }, [broadcastDismiss]);
 
   const handleCellClick = useCallback((cell: BoardCell) => { setSelectedCell(cell); }, []);
+
+  // ---- LOAN HANDLER ----
+  const handleBorrow = useCallback((loan: Loan, amount: number) => {
+    if (!currentPlayer) return;
+    setActiveLoans((prev) => [...prev, loan]);
+    setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: prev.cleanMoney + amount } : null);
+  }, [currentPlayer]);
 
   // ---- BOT AUTO-PLAY ENGINE ----
   const botPlayLock = useRef(false);
@@ -741,6 +752,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             >
               <span className="text-lg">&#x2699;&#xFE0F;</span>
             </button>
+            <button
+              onClick={() => setShowLoanModal(true)}
+              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
+              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#ffd56d' }}
+              title="Pinjaman"
+            >
+              <span className="text-lg">&#x1F3E6;</span>
+              <span className="hidden md:inline text-xs font-bold">Pinjam</span>
+            </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-[#d1c5af]">
@@ -826,6 +846,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           showButtons={activeCard.drawnBy !== currentPlayer.id}
         />
       )}
+      <LoanModal
+        isOpen={showLoanModal}
+        onClose={() => setShowLoanModal(false)}
+        onBorrow={handleBorrow}
+        playerId={currentPlayer.id}
+        currentTurn={room.currentTurn || 0}
+        cleanMoney={currentPlayer.cleanMoney || 0}
+        properties={players.find((p) => p.id === currentPlayer.id)?.properties?.map((p) => ({ id: p, name: p })) || []}
+        existingLoans={activeLoans}
+      />
     </div>
   );
 }
