@@ -796,18 +796,20 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       </aside>
 
       {/* BOTTOM TICKER WARTA MEJA */}
-      <footer className="w-full py-2 px-4 text-xs shadow-inner hidden md:block fixed bottom-14 left-0 z-30" style={{ backgroundColor: '#001206', borderTop: '1px solid #203a29' }}>
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+      <footer className="w-full py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.5)] hidden md:block fixed bottom-14 left-0 z-30" style={{ backgroundColor: '#001206' }}>
+        <div className="w-full px-5 flex flex-col md:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="px-2 py-0.5 rounded font-bold text-[10px] tracking-wider uppercase shrink-0" style={{ backgroundColor: '#092515', color: '#ffd56d' }}>WARTA MEJA</span>
+            <span className="px-2 py-0.5 rounded font-bold text-[11px] tracking-wider uppercase shrink-0" style={{ backgroundColor: '#152f1f', color: '#ffd56d', fontFamily: "'Syne', sans-serif" }}>WARTA MEJA</span>
             <p className="text-[#d1c5af] truncate text-xs">
-              <span className="text-[#4edea3] font-semibold">{players[1]?.name || 'Pemain 2'}</span> membeli <span className="text-[#ffd56d] font-medium">Menteng VIP</span> seharga <span className="font-mono text-[#cbead1]">Rp 750.000</span> &bull; Bank menyalurkan dividen Kas Keliling
+              <span className="text-[#4edea3] font-bold">{players[1]?.name || 'Pemain 2'}</span> membeli <span className="text-[#ffd56d] font-medium">Menteng VIP</span> seharga <span className="font-mono text-[#cbead1]">Rp 3.500.000</span> &bull; Bank menyalurkan dividen Kas Keliling
             </p>
           </div>
-          <div className="flex items-center gap-4 text-[#d1c5af] shrink-0 text-xs font-mono">
-            <span className="flex items-center gap-1 text-[#4edea3]"><span className="w-2 h-2 rounded-full bg-[#4edea3]" /> 18ms</span>
+          <div className="flex items-center gap-5 text-[#d1c5af] shrink-0 text-xs">
+            <span className="flex items-center gap-1">
+              <span className="text-[#4edea3] text-sm">&#x1F4F6;</span> Stabil (18ms)
+            </span>
             <span>Babak {(room.currentTurn || 0) + 1} / 20</span>
-            <span>Pool Kas: <strong className="text-[#ffd56d]">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
+            <span>Pool Dana Kas: <strong className="text-[#ffd56d] font-mono">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
           </div>
         </div>
       </footer>
