@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
         room_id: room.id,
         name: playerName,
         token_color: tokenColors[count || 0],
+        role: null,
+        selected_role: null,
       })
       .select()
       .single();

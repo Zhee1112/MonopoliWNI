@@ -9,10 +9,10 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="text-white text-xl mb-4">Loading...</div>
-          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+          <div className="text-on-surface text-xl mb-4">Loading...</div>
+          <div className="w-8 h-8 border-4 border-outline-variant border-t-primary rounded-full animate-spin mx-auto" />
         </div>
       </div>
     );
@@ -24,22 +24,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo */}
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* Ambient glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-md w-full relative z-10">
+        {/* Logo & Branding */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-white mb-2">MONOPOLI</h1>
-          <h2 className="text-3xl font-bold text-yellow-400">WNI</h2>
-          <p className="text-green-200 mt-2">Versi Indonesia yang kekinian</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-outline-variant mb-4">
+            <span className="text-[10px] font-bold tracking-widest uppercase text-primary">EDISI RESMI</span>
+            <span className="w-1 h-1 rounded-full bg-secondary" />
+            <span className="text-[10px] font-bold tracking-widest uppercase text-secondary">WARGA +62</span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tight">
+            MONOPOLI{' '}
+            <span className="bg-gradient-to-r from-primary via-primary-fixed to-primary-container bg-clip-text text-transparent">
+              WNI
+            </span>
+          </h1>
+          <p className="text-primary text-sm font-semibold mt-2 tracking-wide">
+            Versi Indonesia yang kekinian & penuh intrik
+          </p>
+          <p className="text-on-surface-variant text-xs mt-1">
+            Kocok dadu, kuasai kavling ibukota, hindari razia pajak Satpol PP
+          </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/95 backdrop-blur rounded-2xl p-8 shadow-2xl">
-          <h3 className="text-xl font-bold text-center text-gray-800 mb-6">Masuk ke Permainan</h3>
+        <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+          <h3 className="text-lg font-bold text-on-surface text-center mb-6">Masuk ke Permainan</h3>
 
           <button
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-md"
+            className="w-full flex items-center justify-center gap-3 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-on-surface font-semibold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-md"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -51,14 +69,14 @@ export default function LoginPage() {
           </button>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-400 text-xs">
+            <p className="text-outline text-xs">
               Dengan login, kamu setuju dengan syarat & ketentuan
             </p>
           </div>
         </div>
 
         {/* Features */}
-        <div className="mt-8 text-center text-green-200 text-sm space-y-1">
+        <div className="mt-8 text-center text-on-surface-variant text-xs space-y-1">
           <p>2-8 Pemain | Real-time Multiplayer | 200+ Kartu</p>
           <p>XP & Level System | Meme Culture Indonesia</p>
         </div>

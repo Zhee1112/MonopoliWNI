@@ -140,6 +140,7 @@ export interface Player {
   totalMoney?: number;
   properties: string[];
   role: string;
+  selectedRole: string | null;
   roleLevel: number;
   luck: number;
   permanentLuckMods: LuckModifier[];
@@ -148,6 +149,7 @@ export interface Player {
   statusEffects: StatusEffect[];
   isBankrupt: boolean;
   isConnected: boolean;
+  isReady: boolean;
   tokenColor: string;
   token_color?: string;
   dirtyHistory: DirtySource[];
@@ -185,6 +187,7 @@ export function mapPlayerFromDB(dbPlayer: Record<string, unknown>): Player {
     dirtyMoney: dbPlayer.dirty_money as number,
     properties: (dbPlayer.properties as string[]) || [],
     role: (dbPlayer.role as string) || 'magang',
+    selectedRole: (dbPlayer.selected_role as string) || null,
     roleLevel: (dbPlayer.role_level as number) || 1,
     luck: (dbPlayer.luck as number) || 50,
     permanentLuckMods: (dbPlayer.permanent_luck_modifiers as LuckModifier[]) || [],
@@ -193,6 +196,7 @@ export function mapPlayerFromDB(dbPlayer: Record<string, unknown>): Player {
     statusEffects: (dbPlayer.status_effects as StatusEffect[]) || [],
     isBankrupt: (dbPlayer.is_bankrupt as boolean) || false,
     isConnected: (dbPlayer.is_connected as boolean) || true,
+    isReady: (dbPlayer.is_ready as boolean) || false,
     tokenColor: (dbPlayer.token_color as string) || '#3b82f6',
     dirtyHistory: (dbPlayer.dirty_history as DirtySource[]) || [],
     memeRoleBuff: (dbPlayer.meme_role_buff as string) || null,
