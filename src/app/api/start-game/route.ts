@@ -10,7 +10,7 @@ import { mapRoomFromDB, mapPlayerFromDB } from '@/lib/types';
 export async function POST(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { roomId, hostId } = await request.json();
+    const { roomId, hostId, gameMode } = await request.json();
 
     if (!roomId || !hostId) {
       return NextResponse.json({ error: 'roomId and hostId are required' }, { status: 400 });
@@ -97,6 +97,8 @@ export async function POST(request: NextRequest) {
         status: 'playing',
         current_turn: 0,
         turn_order: players.map((p) => p.id),
+        game_mode: gameMode || 'bundir',
+        total_rounds: gameMode === 'sultan' ? 20 : 999,
       })
       .eq('id', roomId);
 

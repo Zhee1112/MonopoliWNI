@@ -17,7 +17,7 @@ import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Loan } from '@/lib/game/loan-system';
-import { Player, Room, BoardCell } from '@/lib/types';
+import { Player, Room, BoardCell, GameMode, GAME_MODES } from '@/lib/types';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
 
@@ -61,6 +61,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     reward?: string;
     expReward?: number;
   } | undefined>(undefined);
+  const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('bundir');
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -173,7 +174,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const response = await fetch('/api/start-game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId: room.id, hostId: currentPlayer.id }),
+        body: JSON.stringify({ roomId: room.id, hostId: currentPlayer.id, gameMode: selectedGameMode }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -498,6 +499,83 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               </div>
             </div>
 
+            {/* Game Mode Selection (Host Only) */}
+            {isHost && (
+              <div className="rounded-2xl p-4" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
+                <h3 className="text-sm font-bold text-[#cbead1] mb-3">Pilih Mode Permainan</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {(Object.keys(GAME_MODES) as GameMode[]).map((modeId) => {
+                    const mode = GAME_MODES[modeId];
+                    const isSelected = selectedGameMode === modeId;
+                    return (
+                      <button
+                        key={modeId}
+                        onClick={() => setSelectedGameMode(modeId)}
+                        className="text-left rounded-xl p-3 transition-all"
+                        style={isSelected
+                          ? { backgroundColor: 'rgba(255,213,109,0.1)', border: `2px solid ${mode.color}` }
+                          : { backgroundColor: '#092515', border: '1px solid #203a29' }
+                        }
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="material-symbols-outlined text-lg" style={{ color: mode.color }}>
+                            {mode.icon}
+                          </span>
+                          {isSelected && <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.15)', color: '#ffd56d' }}>DIPILIH</span>}
+                        </div>
+                        <p className="text-xs font-bold mb-0.5" style={{ color: isSelected ? mode.color : '#cbead1', fontFamily: "'Syne', sans-serif" }}>{mode.title}</p>
+                        <p className="text-[10px] text-[#9a907c] italic mb-1.5">{mode.subtitle}</p>
+                        <p className="text-[10px] text-[#d1c5af] leading-snug">{mode.description}</p>
+                        <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(32,58,41,0.5)' }}>
+                          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: mode.color }}>{mode.winCondition}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Map Selection (Host Only) */}
+            {isHost && (
+              <div className="rounded-2xl p-4" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
+                <h3 className="text-sm font-bold text-[#cbead1] mb-3">Pilih Peta</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <div
+                    className="rounded-xl p-3 transition-all"
+                    style={{ backgroundColor: 'rgba(255,213,109,0.1)', border: '2px solid #ffd56d' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#152f1f] flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[#ffd56d] text-xl">location_city</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-[#ffd56d]" style={{ fontFamily: "'Syne', sans-serif" }}>JAKARTA MEGAPOLIS</p>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.15)', color: '#ffd56d' }}>DIPILIH</span>
+                        </div>
+                        <p className="text-[10px] text-[#9a907c]">40 Petak &bull; 8 Zona &bull; Monas sampai PIK</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="rounded-xl p-3 opacity-50 cursor-not-allowed"
+                    style={{ backgroundColor: '#092515', border: '1px solid #203a29' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#152f1f] flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[#9a907c] text-xl">lock</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-[#9a907c]" style={{ fontFamily: "'Syne', sans-serif" }}>BALI PARADISE</p>
+                        <p className="text-[10px] text-[#9a907c]">Segera hadir &bull; Kuta sampai Ubud</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Bot Controls (Host Only) */}
             {isHost && (
               <div className="flex gap-2">
@@ -773,8 +851,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           activePlayerName={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name}
           activePlayerTokenColor={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.tokenColor}
           potMoney={room.potMoney || 0}
-          round={1}
-          totalRounds={20}
+          round={(room.currentTurn || 0) + 1}
+          totalRounds={room.totalRounds || 20}
           onCellClick={handleCellClick}
         />
       </main>
@@ -874,7 +952,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             <span className="flex items-center gap-1">
               <span className="text-[#4edea3] text-sm">&#x1F4F6;</span> Stabil (18ms)
             </span>
-            <span>Babak {(room.currentTurn || 0) + 1} / 20</span>
+            <span>Babak {(room.currentTurn || 0) + 1} / {room.totalRounds || 20}</span>
             <span>Pool Dana Kas: <strong className="text-[#ffd56d] font-mono">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
           </div>
         </div>

@@ -169,6 +169,36 @@ export interface StatusEffect {
 
 // --- Room Types (camelCase for frontend, maps from snake_case DB) ---
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
+export type GameMode = 'bundir' | 'sultan';
+
+export const GAME_MODES: Record<GameMode, {
+  id: GameMode;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  color: string;
+  winCondition: string;
+}> = {
+  bundir: {
+    id: 'bundir',
+    title: 'BUNDIR: Main atau Gugur',
+    subtitle: 'Siapa yang goyang, dia yang dikubur',
+    description: 'Bangkrut = keluar. Pemain terakhir yang bertahan hidup menang. Hidup cuma sekali, dompet juga.',
+    icon: 'skull',
+    color: '#f87171',
+    winCondition: 'Pemain terakhir yang bertahan',
+  },
+  sultan: {
+    id: 'sultan',
+    title: 'KAYA RAYA: Sultan atau Miskin',
+    subtitle: 'Bro sini gua kasih duit',
+    description: 'Main 20 babak. Pemain paling kaya di akhir babak 20 menang. Kalo miskin, scroll HP aja.',
+    icon: 'diamond',
+    color: '#ffd56d',
+    winCondition: 'Pemain terkaya di akhir babak 20',
+  },
+};
 
 export interface Room {
   id: string;
@@ -178,6 +208,8 @@ export interface Room {
   currentTurn: number;
   turnOrder: string[];
   potMoney: number;
+  gameMode: GameMode;
+  totalRounds: number;
   createdAt: string;
 }
 
@@ -218,6 +250,8 @@ export function mapRoomFromDB(dbRoom: Record<string, unknown>): Room {
     currentTurn: dbRoom.current_turn as number,
     turnOrder: (dbRoom.turn_order as string[]) || [],
     potMoney: (dbRoom.pot_money as number) || 0,
+    gameMode: (dbRoom.game_mode as GameMode) || 'bundir',
+    totalRounds: (dbRoom.total_rounds as number) || 20,
     createdAt: dbRoom.created_at as string,
   };
 }
