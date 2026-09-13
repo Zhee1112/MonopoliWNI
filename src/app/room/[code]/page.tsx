@@ -518,7 +518,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                         }
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="material-symbols-outlined text-lg" style={{ color: mode.color }}>
+                          <span className="text-lg" style={{ color: mode.color }}>
                             {mode.icon}
                           </span>
                           {isSelected && <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.15)', color: '#ffd56d' }}>DIPILIH</span>}
@@ -547,7 +547,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-[#152f1f] flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[#ffd56d] text-xl">location_city</span>
+                        <span className="text-xl">🗺️</span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -564,7 +564,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-[#152f1f] flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[#9a907c] text-xl">lock</span>
+                        <span className="text-xl">🔒</span>
                       </div>
                       <div className="flex-1">
                         <p className="text-xs font-bold text-[#9a907c]" style={{ fontFamily: "'Syne', sans-serif" }}>BALI PARADISE</p>
