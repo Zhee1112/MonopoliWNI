@@ -412,7 +412,7 @@ export default function GameEventModal({
               onClick={onContinue}
               className="px-6 py-2.5 rounded-lg bg-[#ffd56d] text-[#3e2e00] hover:bg-[#eec14a] transition-all transform active:scale-95 text-sm font-bold shadow-[2px_2px_0_0_#000] flex items-center gap-2"
             >
-              Lanjut Langkah ({d1 + d2} Petak)
+              Lanjut Langkah ({d1 + d2} Petak ke {cellName.split(' ').slice(-1)[0] || 'Selanjutnya'})
               <span>&#x2192;</span>
             </button>
           </div>

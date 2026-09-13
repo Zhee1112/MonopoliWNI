@@ -292,15 +292,18 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setGameEventCard({
                 title: card.name,
                 description: card.flavorText,
-                reward: card.effect.value ? `Rp ${Math.abs(card.effect.value).toLocaleString('id-ID')}` : undefined,
-                expReward: undefined,
+                reward: card.effect.value ? `+Rp ${Math.abs(card.effect.value).toLocaleString('id-ID')} Dividen` : undefined,
+                expReward: 50,
               });
             } else if (cell.type === 'tax') {
+              const margin = totalScore - dcTarget;
               setGameEventCard({
-                title: 'Denda Pajak Warga',
-                description: 'Anda tertangkap tidak membayar pajak tepat waktu. Bayar denda atau coba banding.',
-                reward: 'Bebas Denda',
-                expReward: 10,
+                title: 'Jatah Subsidi BBM & Voucher Kopi Warkop',
+                description: passed
+                  ? `Karena argumen Anda valid (+${margin} di atas DC) dan kwitansi pajak diverifikasi, aparat justru mengundang Anda minum kopi dan memberikan voucher subsidi transport.`
+                  : 'Anda tertangkap tidak membayar pajak tepat waktu. Bayar denda atau coba banding.',
+                reward: passed ? 'Bebas Denda Rp 500rb' : 'Bayar Denda',
+                expReward: 50,
               });
             } else {
               setGameEventCard(undefined);
