@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS players (
   dirty_history JSONB DEFAULT '[]',
   meme_role_buff TEXT DEFAULT NULL,
   meme_role_active BOOLEAN DEFAULT FALSE,
+  is_bot BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

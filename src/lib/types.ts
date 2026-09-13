@@ -155,6 +155,7 @@ export interface Player {
   dirtyHistory: DirtySource[];
   memeRoleBuff: string | null;
   memeRoleActive: boolean;
+  isBot: boolean;
 }
 
 export interface StatusEffect {
@@ -201,6 +202,7 @@ export function mapPlayerFromDB(dbPlayer: Record<string, unknown>): Player {
     dirtyHistory: (dbPlayer.dirty_history as DirtySource[]) || [],
     memeRoleBuff: (dbPlayer.meme_role_buff as string) || null,
     memeRoleActive: (dbPlayer.meme_role_active as boolean) || false,
+    isBot: (dbPlayer.is_bot as boolean) || false,
   };
 }
 

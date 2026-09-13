@@ -157,6 +157,42 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     setChatInput('');
   }, [chatInput, currentPlayer]);
 
+  // ---- BOT HANDLERS ----
+
+  const handleAddBot = useCallback(async () => {
+    if (!room || !currentPlayer) return;
+    setError('');
+    try {
+      const response = await fetch('/api/add-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, hostId: currentPlayer.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Gagal menambah bot');
+      }
+    } catch {
+      setError('Gagal menambah bot');
+    }
+  }, [room, currentPlayer]);
+
+  const handleAddBots = useCallback(async (count: number) => {
+    if (!room || !currentPlayer) return;
+    setError('');
+    for (let i = 0; i < count; i++) {
+      try {
+        await fetch('/api/add-bot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: room.id, hostId: currentPlayer.id }),
+        });
+      } catch {
+        break;
+      }
+    }
+  }, [room, currentPlayer]);
+
   // ---- GAME HANDLERS ----
 
   const handleRollDice = useCallback(async () => {
@@ -234,6 +270,64 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleCellClick = useCallback((cell: BoardCell) => { setSelectedCell(cell); }, []);
 
+  // ---- BOT AUTO-PLAY ENGINE ----
+  const botPlayLock = useRef(false);
+
+  useEffect(() => {
+    if (!room || room.status !== 'playing' || !players.length) return;
+
+    const activePlayerId = room.turnOrder[room.currentTurn];
+    const activePlayer = players.find((p) => p.id === activePlayerId);
+
+    if (!activePlayer || !activePlayer.isBot || botPlayLock.current) return;
+
+    const runBotTurn = async () => {
+      botPlayLock.current = true;
+
+      // Step 1: Roll dice (with delay for visual)
+      await new Promise((r) => setTimeout(r, 1200));
+      try {
+        const rollRes = await fetch('/api/roll-dice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: room.id, playerId: activePlayerId }),
+        });
+        const rollData = await rollRes.json();
+        if (!rollRes.ok) { botPlayLock.current = false; return; }
+
+        // Step 2: Check if landed on property
+        const cell = getCellByIndex(rollData.newPosition);
+        if (cell.type === 'property') {
+          const property = getPropertyCells().find((p) => p.index === rollData.newPosition);
+          // Bot decision: buy if has enough money and price < 40% of cleanMoney
+          const botMoney = (activePlayer.cleanMoney || 0) + (rollData.moneyChange || 0);
+          if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
+            await new Promise((r) => setTimeout(r, 800));
+            await fetch('/api/buy-property', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
+            });
+          }
+        }
+
+        // Step 3: End turn (with delay)
+        await new Promise((r) => setTimeout(r, 1000));
+        await fetch('/api/end-turn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: room.id, playerId: activePlayerId }),
+        });
+      } catch (e) {
+        console.error('Bot play error:', e);
+      }
+
+      botPlayLock.current = false;
+    };
+
+    runBotTurn();
+  }, [room?.currentTurn, room?.status, players]);
+
   // ---- LOADING STATE ----
   if (!currentPlayer || !room) {
     return (
@@ -290,6 +384,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                         <p className="text-[10px] text-outline">{role ? role.name : 'Belum pilih role'}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        {player.isBot && <span className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded-full font-bold">BOT</span>}
                         {player.isReady && <span className="text-[9px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-full font-bold">READY</span>}
                         {player.id === currentPlayer.id && <span className="text-[9px] text-outline">(kamu)</span>}
                       </div>
@@ -304,6 +399,26 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 ))}
               </div>
             </div>
+
+            {/* Bot Controls (Host Only) */}
+            {isHost && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddBot}
+                  disabled={players.length >= 8}
+                  className="flex-1 py-2.5 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-xl text-sm font-bold hover:bg-purple-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  + Tambah Bot
+                </button>
+                <button
+                  onClick={() => handleAddBots(3)}
+                  disabled={players.length >= 6}
+                  className="flex-1 py-2.5 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-xl text-sm font-bold hover:bg-purple-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  + Tambah 3 Bot
+                </button>
+              </div>
+            )}
 
             {/* Error */}
             {error && (
