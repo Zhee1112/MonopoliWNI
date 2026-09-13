@@ -286,17 +286,16 @@ export default function Board({ players, currentPlayer, activePlayerName, active
           </div>
 
           <div className="my-auto flex flex-col items-center justify-center max-w-xl px-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#152f1f] border border-[#ffd56d]/30 text-[#ffd56d] mb-2 shadow-sm">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#152f1f] border border-[#ffd56d]/30 text-[#ffd56d] mb-3 shadow-sm">
               <span className="text-[10px] font-bold tracking-widest uppercase">&bull; EDISI RESMI &bull; WARGA +62 &bull;</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-tight leading-none text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
-              <span>MONOPOLI</span>
-              <span className="bg-gradient-to-r from-[#ffd56d] via-[#ffdf97] to-[#e5b842] bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(255,213,109,0.4)]">WNI</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-normal leading-tight text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]">
+              MONOPOLI WNI
             </h1>
-            <p className="text-xs sm:text-sm text-[#ffd56d] font-semibold mt-2 tracking-wide">Versi Indonesia yang kekinian &amp; penuh intrik</p>
-            <p className="text-[11px] sm:text-xs text-[#d1c5af] max-w-md mt-1 leading-relaxed">Kocok dadu, kuasai kavling ibukota, hindari razia pajak Satpol PP</p>
+            <p className="text-xs sm:text-sm text-[#ffd56d] font-semibold mt-3 tracking-wide">Versi Indonesia yang kekinian &amp; penuh intrik</p>
+            <p className="text-[11px] sm:text-xs text-[#d1c5af] max-w-md mt-1.5 leading-relaxed">Kocok dadu, kuasai kavling ibukota, hindari razia pajak Satpol PP</p>
 
-            <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-md">
+            <div className="grid grid-cols-2 gap-4 mt-5 w-full max-w-md">
               <div className="bg-[#152f1f] hover:bg-[#203a29] border border-[#ff6b6b]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer">
                 <div className="w-full h-1 bg-[#ff6b6b] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#fca5a5] mb-0.5">
