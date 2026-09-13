@@ -13,7 +13,7 @@ import LoanModal from '@/components/Modal/LoanModal';
 import GameEventModal from '@/components/Modal/GameEventModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
-import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
+import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Loan } from '@/lib/game/loan-system';
@@ -554,7 +554,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                           <p className="text-xs font-bold text-[#ffd56d]" style={{ fontFamily: "'Syne', sans-serif" }}>JAKARTA MEGAPOLIS</p>
                           <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.15)', color: '#ffd56d' }}>DIPILIH</span>
                         </div>
-                        <p className="text-[10px] text-[#9a907c]">40 Petak &bull; 8 Zona &bull; Monas sampai PIK</p>
+                        <p className="text-[10px] text-[#9a907c]">40 Petak &bull; 6 Zona &bull; Monas sampai Bandara</p>
                       </div>
                     </div>
                   </div>
@@ -572,6 +572,24 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Map Legend - Jakarta Zones */}
+            {isHost && (
+              <div className="rounded-2xl p-4" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
+                <h3 className="text-sm font-bold text-[#cbead1] mb-3">Peta Zona Jakarta</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(JAKARTA_ZONES).map(([zoneName, zone]) => (
+                    <div key={zoneName} className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: '#092515' }}>
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: zone.color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-[#cbead1] truncate">{zoneName}</p>
+                        <p className="text-[9px] text-[#9a907c] truncate">{zone.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

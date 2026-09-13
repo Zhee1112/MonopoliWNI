@@ -169,7 +169,7 @@ export interface StatusEffect {
 
 // --- Room Types (camelCase for frontend, maps from snake_case DB) ---
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
-export type GameMode = 'bundir' | 'sultan';
+export type GameMode = 'bundir' | 'sultan' | 'kilat';
 
 export const GAME_MODES: Record<GameMode, {
   id: GameMode;
@@ -179,6 +179,7 @@ export const GAME_MODES: Record<GameMode, {
   icon: string;
   color: string;
   winCondition: string;
+  totalRounds: number;
 }> = {
   bundir: {
     id: 'bundir',
@@ -188,6 +189,7 @@ export const GAME_MODES: Record<GameMode, {
     icon: 'skull',
     color: '#f87171',
     winCondition: 'Pemain terakhir yang bertahan',
+    totalRounds: 999,
   },
   sultan: {
     id: 'sultan',
@@ -197,6 +199,17 @@ export const GAME_MODES: Record<GameMode, {
     icon: 'diamond',
     color: '#ffd56d',
     winCondition: 'Pemain terkaya di akhir babak 20',
+    totalRounds: 20,
+  },
+  kilat: {
+    id: 'kilat',
+    title: 'KILAT: Ngebut atau Keabisan',
+    subtitle: 'Speedrun monopoli, goyang ngebut!',
+    description: 'Cuma 10 babak! Uang awal 2x lipat, sewa naik 50%. Yang lambat, gulung tikar.',
+    icon: 'bolt',
+    color: '#38bdf8',
+    winCondition: 'Pemain terkaya di akhir babak 10',
+    totalRounds: 10,
   },
 };
 

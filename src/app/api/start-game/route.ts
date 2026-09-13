@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
-import { mapRoomFromDB, mapPlayerFromDB } from '@/lib/types';
+import { mapRoomFromDB, mapPlayerFromDB, GAME_MODES, GameMode } from '@/lib/types';
 
 // ============================================================
 // START GAME API - Host only, validates all players have roles
@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(roleUpdates.filter(Boolean));
 
+    const modeConfig = GAME_MODES[(gameMode as GameMode) || 'bundir'];
+
     // Update room status to playing
     await supabaseAdmin
       .from('rooms')
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
         current_turn: 0,
         turn_order: players.map((p) => p.id),
         game_mode: gameMode || 'bundir',
-        total_rounds: gameMode === 'sultan' ? 20 : 999,
+        total_rounds: modeConfig.totalRounds,
       })
       .eq('id', roomId);
 
