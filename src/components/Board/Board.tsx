@@ -316,7 +316,7 @@ export default function Board({ players, currentPlayer, activePlayerName, active
                 <div className="w-full h-1 bg-[#ff6b6b] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#fca5a5] mb-0.5">
                   <span className="text-lg">&#x1F0CF;</span>
-                  <span className="font-bold text-xs">KARTU WNI</span>
+                  <span className="font-bold text-xs">TAKDIR WNI</span>
                 </div>
                 <span className="text-[10px] text-[#d1c5af] block">102 Kartu</span>
               </div>
@@ -324,7 +324,7 @@ export default function Board({ players, currentPlayer, activePlayerName, active
                 <div className="w-full h-1 bg-[#4edea3] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#4edea3] mb-0.5">
                   <span className="text-lg">&#x1F4E6;</span>
-                  <span className="font-bold text-xs">DANA BANSOS</span>
+                  <span className="font-bold text-xs">KEGIATAN WNI</span>
                 </div>
                 <span className="text-[10px] text-[#d1c5af] block">100 Kartu</span>
               </div>

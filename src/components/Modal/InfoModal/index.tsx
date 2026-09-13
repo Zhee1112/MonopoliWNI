@@ -149,14 +149,14 @@ export default function InfoModal({ onClose }: InfoModalProps) {
           </div>
           <div className="flex items-center gap-2">
             <button className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-xs text-[#888] hover:border-[#4edea3] hover:text-[#4edea3]">
-              <span className="material-symbols-outlined text-sm">download</span>
+              <span className="text-sm">📥</span>
               Download PDF
             </button>
             <button
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] text-[#888] hover:border-[#ff4757] hover:text-[#ff4757]"
             >
-              <span className="material-symbols-outlined text-sm">close</span>
+              <span className="text-sm">✕</span>
             </button>
           </div>
         </div>

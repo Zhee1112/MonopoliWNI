@@ -33,9 +33,9 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 180000, rent: 35000, description: 'Kos eksklusif Gambir, langganan PNS',
     color: '#052011', groupColor: '#8B4513', emoji: '🏠',
   },
-  // Cell 4 - Kartu WNI (Takdir)
+  // Cell 4 - Takdir WNI (Takdir)
   {
-    index: 4, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    index: 4, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
     price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
@@ -51,10 +51,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 300000, rent: 60000, description: 'Stasiun Senen, transit KRL commuter',
     color: '#052011', groupColor: '#4edea3', emoji: '🚆',
   },
-  // Cell 7 - Dana Bansos (Kegiatan)
+  // Cell 7 - Kegiatan WNI (Kegiatan)
   {
-    index: 7, name: 'Dana Bansos', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
-    price: null, rent: null, description: 'Ambil kartu Dana Bansos',
+    index: 7, name: 'Kegiatan WNI', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
+    price: null, rent: null, description: 'Ambil kartu Kegiatan WNI',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
   // Cell 8 - Indomaret Pusat (Cyan)
@@ -115,10 +115,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: null, rent: null, description: 'Macet parah Tomang, skip 1 putaran',
     color: '#052011', groupColor: '#ff6b6b', emoji: '🚦',
   },
-  // Cell 17 - Dana Bansos (Kegiatan)
+  // Cell 17 - Kegiatan WNI (Kegiatan)
   {
-    index: 17, name: 'Dana Bansos', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
-    price: null, rent: null, description: 'Ambil kartu Dana Bansos',
+    index: 17, name: 'Kegiatan WNI', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
+    price: null, rent: null, description: 'Ambil kartu Kegiatan WNI',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
   // Cell 18 - Mall Taman Anggrek (Orange)
@@ -147,9 +147,9 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 620000, rent: 125000, description: 'Kopi viral Cijantung, nongkrong anak muda',
     color: '#052011', groupColor: '#ef4444', emoji: '☕',
   },
-  // Cell 22 - Kartu WNI (Takdir)
+  // Cell 22 - Takdir WNI (Takdir)
   {
-    index: 22, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    index: 22, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
     price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
@@ -221,9 +221,9 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 780000, rent: 155000, description: 'Pelabuhan Tanjung Priok, gerbang perdagangan',
     color: '#052011', groupColor: '#22c55e', emoji: '⚓',
   },
-  // Cell 34 - Kartu WNI (Takdir)
+  // Cell 34 - Takdir WNI (Takdir)
   {
-    index: 34, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    index: 34, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
     price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
@@ -235,10 +235,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 900000, rent: 180000, description: 'BSD City, kota mandiri terbesar',
     color: '#052011', groupColor: '#6366f1', emoji: '🏘️',
   },
-  // Cell 36 - Dana Bansos (Kegiatan)
+  // Cell 36 - Kegiatan WNI (Kegiatan)
   {
-    index: 36, name: 'Dana Bansos', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
-    price: null, rent: null, description: 'Ambil kartu Dana Bansos',
+    index: 36, name: 'Kegiatan WNI', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
+    price: null, rent: null, description: 'Ambil kartu Kegiatan WNI',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
   // Cell 37 - Monas (Ungu - Premium)
@@ -247,9 +247,9 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 1200000, rent: 240000, description: 'Monas, ikon Jakarta yang legendaris',
     color: '#052011', groupColor: '#6366f1', emoji: '🏛️',
   },
-  // Cell 38 - Kartu WNI (Takdir)
+  // Cell 38 - Takdir WNI (Takdir)
   {
-    index: 38, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    index: 38, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
     price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },

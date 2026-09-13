@@ -35,6 +35,7 @@ export default function LoanModal({
 }: LoanModalProps) {
   const [selectedLender, setSelectedLender] = useState<'bank' | 'pinjol'>('bank');
   const [loanAmount, setLoanAmount] = useState<number>(0);
+  const [selectedCollateral, setSelectedCollateral] = useState<string>('');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
@@ -46,6 +47,12 @@ export default function LoanModal({
 
   const handleBorrow = () => {
     setError('');
+
+    if (selectedLender === 'bank' && !selectedCollateral) {
+      setError('Pilih properti jaminan untuk Bank BUMN!');
+      return;
+    }
+
     const result: LoanResult = createLoan(
       selectedLender,
       loanAmount,
@@ -53,7 +60,8 @@ export default function LoanModal({
       currentTurn,
       properties,
       existingLoans,
-      cleanMoney
+      cleanMoney,
+      selectedCollateral || undefined
     );
 
     if (!result.success) {
@@ -76,9 +84,9 @@ export default function LoanModal({
         {/* Header */}
         <div className="bg-[#092515] px-5 py-4 flex items-center justify-between border-b border-[#203a29]">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">&#x1F3E6;</span>
+            <span className="text-2xl">🏦</span>
             <div>
-              <h1 className="text-lg font-bold text-[#cbead1]" style={{ fontFamily: "'Syne', sans-serif" }}>Pinjaman</h1>
+              <h1 className="text-lg font-bold text-[#cbead1]">Pinjaman</h1>
               <p className="text-xs text-[#d1c5af]">Bank BUMN &amp; Pinjol Ilegal</p>
             </div>
           </div>
@@ -86,7 +94,7 @@ export default function LoanModal({
             onClick={onClose}
             className="w-9 h-9 rounded-lg bg-[#152f1f] text-[#d1c5af] hover:text-[#ffd56d] hover:bg-[#203a29] transition-colors flex items-center justify-center"
           >
-            &#x2715;
+            ✕
           </button>
         </div>
 
@@ -96,7 +104,7 @@ export default function LoanModal({
           <div className="grid grid-cols-2 gap-3 mb-5">
             {/* Bank BUMN */}
             <button
-              onClick={() => { setSelectedLender('bank'); setLoanAmount(0); setError(''); }}
+              onClick={() => { setSelectedLender('bank'); setLoanAmount(0); setSelectedCollateral(''); setError(''); }}
               className={`p-4 rounded-xl text-left transition-all ${
                 selectedLender === 'bank'
                   ? 'bg-[#4edea3]/10 border-2 border-[#4edea3] shadow-[0_0_15px_rgba(78,222,163,0.15)]'
@@ -104,19 +112,19 @@ export default function LoanModal({
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">&#x1F3E6;</span>
-                <span className="font-bold text-[#cbead1]" style={{ fontFamily: "'Syne', sans-serif" }}>Bank BUMN</span>
+                <span className="text-2xl">🏦</span>
+                <span className="font-bold text-[#cbead1]">Bank BUMN</span>
               </div>
               <div className="space-y-1 text-xs text-[#d1c5af]">
-                <p>&#x2705; Bunga rendah (10%)</p>
-                <p>&#x26A0;&#xFE0F; Perlu jaminan properti</p>
-                <p>&#x23F1;&#xFE0F; Batas 10 giliran</p>
+                <p>✅ Bunga rendah (10%)</p>
+                <p>⚠️ Perlu jaminan properti</p>
+                <p>⏱️ Batas 10 giliran</p>
               </div>
             </button>
 
             {/* Pinjol Ilegal */}
             <button
-              onClick={() => { setSelectedLender('pinjol'); setLoanAmount(0); setError(''); }}
+              onClick={() => { setSelectedLender('pinjol'); setLoanAmount(0); setSelectedCollateral(''); setError(''); }}
               className={`p-4 rounded-xl text-left transition-all ${
                 selectedLender === 'pinjol'
                   ? 'bg-[#f87171]/10 border-2 border-[#f87171] shadow-[0_0_15px_rgba(248,113,113,0.15)]'
@@ -124,16 +132,65 @@ export default function LoanModal({
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">&#x1F4F1;</span>
-                <span className="font-bold text-[#cbead1]" style={{ fontFamily: "'Syne', sans-serif" }}>Pinjol Ilegal</span>
+                <span className="text-2xl">📱</span>
+                <span className="font-bold text-[#cbead1]">Pinjol Ilegal</span>
               </div>
               <div className="space-y-1 text-xs text-[#d1c5af]">
-                <p>&#x2705; Tanpa jaminan</p>
-                <p>&#x26A0;&#xFE0F; Bunga tinggi (25%)</p>
-                <p>&#x26A0;&#xFE0F; 15% risiko aset disita</p>
+                <p>✅ Tanpa jaminan</p>
+                <p>⚠️ Bunga tinggi (25%)</p>
+                <p>⚠️ 15% risiko aset disita</p>
               </div>
             </button>
           </div>
+
+          {/* Property Collateral Selector (Bank only) */}
+          {selectedLender === 'bank' && (
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-[#93c5a7] uppercase tracking-wider mb-2">
+                🏠 Pilih Properti Jaminan
+              </label>
+              {properties.length === 0 ? (
+                <div className="rounded-lg bg-[#93000a]/20 border border-[#93000a]/40 p-3">
+                  <p className="text-xs text-[#f87171] font-semibold">❌ Tidak ada properti! Bank BUMN membutuhkan jaminan properti.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {properties.map((prop) => (
+                    <div
+                      key={prop.id}
+                      onClick={() => { setSelectedCollateral(prop.id); setError(''); }}
+                      className={`p-3 rounded-lg flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                        selectedCollateral === prop.id
+                          ? 'bg-[#4edea3]/10 border-2 border-[#4edea3] shadow-[0_0_10px_rgba(78,222,163,0.1)]'
+                          : 'bg-[#092215] border border-[#203a29] hover:border-[#4edea3]/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedCollateral === prop.id
+                            ? 'border-[#4edea3] bg-[#4edea3]'
+                            : 'border-[#203a29]'
+                        }`}>
+                          {selectedCollateral === prop.id && (
+                            <div className="w-2 h-2 rounded-full bg-[#003824]" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-[#cbead1]">{prop.name}</span>
+                          {prop.price && (
+                            <span className="text-[10px] text-[#93c5a7]">Nilai: Rp {prop.price.toLocaleString('id-ID')}</span>
+                          )}
+                        </div>
+                      </div>
+                      {selectedCollateral === prop.id && (
+                        <span className="px-2 py-0.5 rounded bg-[#4edea3] text-[#003824] text-[10px] font-bold">JAMINAN</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Loan Amount Input */}
           <div className="mb-5">
@@ -198,6 +255,12 @@ export default function LoanModal({
                   <span className="text-sm text-[#cbead1]">Bunga ({interestRate * 100}%)</span>
                   <span className="text-sm font-bold text-[#f87171] font-mono">+Rp {interestAmount.toLocaleString('id-ID')}</span>
                 </div>
+                {selectedLender === 'bank' && selectedCollateral && (
+                  <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
+                    <span className="text-sm text-[#cbead1]">Jaminan</span>
+                    <span className="text-sm font-bold text-[#4edea3]">🏠 {properties.find(p => p.id === selectedCollateral)?.name}</span>
+                  </div>
+                )}
                 <div className="h-0.5 w-full bg-[#203a29] my-1" />
                 <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#4edea3]/10">
                   <span className="text-sm font-bold text-[#cbead1]">Total Hutang</span>
@@ -230,8 +293,11 @@ export default function LoanModal({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span>{loan.lender === 'bank' ? '&#x1F3E6;' : '&#x1F4F1;'}</span>
+                        <span>{loan.lender === 'bank' ? '🏦' : '📱'}</span>
                         <span className="text-xs font-bold text-[#cbead1]">{loan.lender === 'bank' ? 'Bank BUMN' : 'Pinjol'}</span>
+                        {loan.collateralPropertyId && (
+                          <span className="text-[10px] text-[#93c5a7]">• Jaminan: {loan.collateralPropertyId}</span>
+                        )}
                       </div>
                       <span className="text-xs font-bold text-[#ffd56d] font-mono">Rp {loan.totalOwed.toLocaleString('id-ID')}</span>
                     </div>
@@ -256,9 +322,9 @@ export default function LoanModal({
             </button>
             <button
               onClick={handleBorrow}
-              disabled={loanAmount <= 0 || loanAmount > maxLoan}
+              disabled={loanAmount <= 0 || loanAmount > maxLoan || (selectedLender === 'bank' && !selectedCollateral)}
               className={`px-6 py-2 rounded-lg font-bold text-xs transition-all ${
-                loanAmount > 0 && loanAmount <= maxLoan
+                loanAmount > 0 && loanAmount <= maxLoan && (selectedLender === 'pinjol' || selectedCollateral)
                   ? selectedLender === 'bank'
                     ? 'bg-[#4edea3] text-[#002b18] hover:bg-[#6ffbbe] active:scale-95 shadow-[2px_2px_0_0_#000]'
                     : 'bg-[#f87171] text-white hover:bg-[#ef4444] active:scale-95 shadow-[2px_2px_0_0_#000]'

@@ -147,3 +147,22 @@ export function drawRandomKegiatan(): KegiatanCard {
   const cards = getKegiatanByCategory(randomCategory);
   return cards[Math.floor(Math.random() * cards.length)];
 }
+
+export function drawRandomKegiatanExcluding(excludeIds: string[]): KegiatanCard {
+  const categories = ['usaha', 'kerja_sampingan', 'investasi', 'sosial', 'tantangan'];
+  const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+  let cards = getKegiatanByCategory(randomCategory).filter(c => !excludeIds.includes(c.id));
+
+  if (cards.length === 0) {
+    cards = ALL_KEGIATAN_CARDS.filter(c => !excludeIds.includes(c.id));
+  }
+  if (cards.length === 0) {
+    cards = getKegiatanByCategory(randomCategory);
+  }
+
+  return cards[Math.floor(Math.random() * cards.length)];
+}
+
+export function getKegiatanById(cardId: string): KegiatanCard | undefined {
+  return ALL_KEGIATAN_CARDS.find(card => card.id === cardId);
+}

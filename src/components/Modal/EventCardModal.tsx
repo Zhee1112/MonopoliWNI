@@ -81,7 +81,7 @@ export default function EventCardModal({
                 className="px-2 py-0.5 rounded text-[10px] font-bold"
                 style={{ backgroundColor: accentColor, color: '#07190F' }}
               >
-                {isKegiatan ? 'DANA BANSOS' : 'KARTU WNI'}
+                {isKegiatan ? 'KEGIATAN WNI' : 'TAKDIR WNI'}
               </span>
               <span className="text-xs font-semibold text-[#07190F]/70">{TIER_LABELS[tier]}</span>
             </div>

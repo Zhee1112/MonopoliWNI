@@ -198,6 +198,29 @@ export function drawRandomCard(): Card {
   return cards[Math.floor(Math.random() * cards.length)];
 }
 
+export function drawRandomCardExcluding(excludeIds: string[]): Card {
+  const roll = Math.random() * 100;
+  let category: string;
+
+  if (roll < 35) category = 'event_normal';
+  else if (roll < 55) category = 'event_meme';
+  else if (roll < 80) category = 'interaksi';
+  else if (roll < 88) category = 'koruptor';
+  else if (roll < 93) category = 'audit';
+  else category = 'legendary';
+
+  let cards = getCardsByCategory(category).filter(c => !excludeIds.includes(c.id));
+
+  if (cards.length === 0) {
+    cards = ALL_TAKDIR_CARDS.filter(c => !excludeIds.includes(c.id));
+  }
+  if (cards.length === 0) {
+    cards = getCardsByCategory(category);
+  }
+
+  return cards[Math.floor(Math.random() * cards.length)];
+}
+
 export function getCardById(cardId: string): Card | undefined {
   return ALL_TAKDIR_CARDS.find(card => card.id === cardId);
 }

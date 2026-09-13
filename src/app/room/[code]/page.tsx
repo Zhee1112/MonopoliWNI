@@ -14,10 +14,11 @@ import GameEventModal from '@/components/Modal/GameEventModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
-import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
+import { drawRandomCard, getCardById, drawRandomCardExcluding } from '@/lib/game/takdir-cards';
+import { drawRandomKegiatan, drawRandomKegiatanExcluding, getKegiatanById } from '@/lib/game/kegiatan-cards';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Loan } from '@/lib/game/loan-system';
-import { Player, Room, BoardCell, GameMode, GAME_MODES } from '@/lib/types';
+import { Player, Room, BoardCell, GameMode, GAME_MODES, Card, KegiatanCard } from '@/lib/types';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
 
@@ -55,12 +56,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     passed: boolean;
     margin: number;
   } | undefined>(undefined);
-  const [gameEventCard, setGameEventCard] = useState<{
-    title: string;
-    description: string;
-    reward?: string;
-    expReward?: number;
-  } | undefined>(undefined);
+  const [drawnTakdirCard, setDrawnTakdirCard] = useState<Card | undefined>(undefined);
+  const [drawnKegiatanCard, setDrawnKegiatanCard] = useState<KegiatanCard | undefined>(undefined);
+  const [drawnCardIds, setDrawnCardIds] = useState<string[]>([]);
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('bundir');
   const [gameOver, setGameOver] = useState(false);
   const [winnerName, setWinnerName] = useState<string | null>(null);
@@ -290,26 +288,19 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             });
             
             // Set event card for draw types
-            if (cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
-              const card = drawRandomCard();
-              setGameEventCard({
-                title: card.name,
-                description: card.flavorText,
-                reward: card.effect.value ? `+Rp ${Math.abs(card.effect.value).toLocaleString('id-ID')} Dividen` : undefined,
-                expReward: 50,
-              });
-            } else if (cell.type === 'tax') {
-              const margin = totalScore - dcTarget;
-              setGameEventCard({
-                title: 'Jatah Subsidi BBM & Voucher Kopi Warkop',
-                description: passed
-                  ? `Karena argumen Anda valid (+${margin} di atas DC) dan kwitansi pajak diverifikasi, aparat justru mengundang Anda minum kopi dan memberikan voucher subsidi transport.`
-                  : 'Anda tertangkap tidak membayar pajak tepat waktu. Bayar denda atau coba banding.',
-                reward: passed ? 'Bebas Denda Rp 500rb' : 'Bayar Denda',
-                expReward: 50,
-              });
+            if (cell.type === 'draw_takdir') {
+              const card = drawRandomCardExcluding(drawnCardIds);
+              setDrawnTakdirCard(card);
+              setDrawnKegiatanCard(undefined);
+              setDrawnCardIds((prev) => [...prev, card.id]);
+            } else if (cell.type === 'draw_kegiatan') {
+              const card = drawRandomKegiatanExcluding(drawnCardIds);
+              setDrawnKegiatanCard(card);
+              setDrawnTakdirCard(undefined);
+              setDrawnCardIds((prev) => [...prev, card.id]);
             } else {
-              setGameEventCard(undefined);
+              setDrawnTakdirCard(undefined);
+              setDrawnKegiatanCard(undefined);
             }
             
             setShowGameEventModal(true);
@@ -1072,11 +1063,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           onClose={() => setShowGameEventModal(false)}
           onContinue={() => {
             setShowGameEventModal(false);
-            // Broadcast card if needed
-            if (gameEventCell.type === 'draw_takdir' || gameEventCell.type === 'draw_kegiatan') {
-              const card = drawRandomCard();
-              broadcastCard({ cardId: card.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
+            // Broadcast the SAME card that was drawn (no second draw!)
+            if (gameEventCell.type === 'draw_takdir' && drawnTakdirCard) {
+              broadcastCard({ cardId: drawnTakdirCard.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
+            } else if (gameEventCell.type === 'draw_kegiatan' && drawnKegiatanCard) {
+              broadcastCard({ cardId: drawnKegiatanCard.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
             }
+            // Clear drawn card state
+            setDrawnTakdirCard(undefined);
+            setDrawnKegiatanCard(undefined);
           }}
           cell={gameEventCell}
           diceResult={gameEventDice}
@@ -1084,7 +1079,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           playerLevel={currentPlayer.roleLevel || 1}
           playerRank={currentPlayer.selectedRole || 'Magang'}
           rollResult={gameEventRollResult}
-          eventCard={gameEventCard}
+          takdirCard={drawnTakdirCard}
+          kegiatanCard={drawnKegiatanCard}
           turnNumber={(room.currentTurn || 0) + 1}
         />
       )}

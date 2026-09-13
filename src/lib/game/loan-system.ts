@@ -130,7 +130,8 @@ export function createLoan(
   currentTurn: number,
   properties: Array<{ id: string; price?: number }> = [],
   existingLoans: Loan[] = [],
-  cleanMoney: number = 0
+  cleanMoney: number = 0,
+  collateralPropertyId?: string
 ): LoanResult {
   const config = lender === 'bank' ? BANK_LOAN_CONFIG : PINJOL_LOAN_CONFIG;
 
@@ -168,7 +169,7 @@ export function createLoan(
     interestRate,
     interestAmount,
     totalOwed,
-    collateralPropertyId: lender === 'bank' ? properties[0]?.id : undefined,
+    collateralPropertyId: lender === 'bank' ? (collateralPropertyId || properties[0]?.id) : undefined,
     turnBorrowed: currentTurn,
     turnsRemaining: config.maxTurnsToRepay,
     isOverdue: false,
