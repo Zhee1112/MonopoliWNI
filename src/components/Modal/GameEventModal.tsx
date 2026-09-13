@@ -150,24 +150,24 @@ export default function GameEventModal({
       {/* Main Modal */}
       <div className="relative z-20 w-full max-w-5xl mx-4 bg-[#0a1a11] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,213,109,0.25)] flex flex-col overflow-hidden max-h-[90vh]">
         {/* Header */}
-        <div className="bg-[#092515] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="bg-[#092515] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-lg bg-[#152f1f] flex items-center justify-center text-[#ffd56d] shadow-[inset_0_1px_1px_rgba(255,213,109,0.4)]">
-              <span className="text-2xl">&#x1F3B2;</span>
+              <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>casino</span>
             </div>
-            <div>
+            <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Uji Stat &amp; Manuver Meja</span>
                 <span className="px-2 py-0.5 rounded bg-[#00a572]/30 text-[#4edea3] text-[11px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>FASE AKSI</span>
               </div>
               <h1 className="text-lg font-bold text-[#cbead1] tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{cellName}</h1>
-              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? 'Bayar Denda' : isDraw ? 'Ambil Kartu' : 'Event Khusus'}</p>
+              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? 'Lolos Penalti Tilang Warga (Ambang Batas DC 10)' : isDraw ? 'Ambil Kartu' : 'Event Khusus'}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#001206]">
               <div className="w-6 h-6 rounded-full bg-[#e5b842] flex items-center justify-center">
-                <span className="text-[#614900] text-xs font-bold">&#x1F9D1;</span>
+                <span className="material-symbols-outlined text-[#614900] text-[14px]">badge</span>
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-xs font-semibold text-[#cbead1]">{playerName}</span>
@@ -178,21 +178,21 @@ export default function GameEventModal({
               onClick={onClose}
               className="w-9 h-9 rounded-lg bg-[#152f1f] text-[#d1c5af] hover:text-[#ffd56d] hover:bg-[#203a29] transition-colors flex items-center justify-center"
             >
-              &#x2715;
+              <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-[#0a1a11]">
           {/* LEFT: Dice + Evidence */}
-          <div className="lg:col-span-5 p-5 flex flex-col gap-5 bg-[#0a1a11]/60">
+          <div className="lg:col-span-5 p-6 flex flex-col gap-6 bg-[#092515]/60">
             {/* Dice Display */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider">Hasil Lemparan Dadu</span>
-                <span className="px-2.5 py-0.5 rounded bg-[#4edea3]/20 text-[#4edea3] text-xs font-semibold flex items-center gap-1">
-                  &#x2705; Sukses Bergulir
+                <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Hasil Lemparan Dadu</span>
+                <span className="px-2.5 py-0.5 rounded bg-[#00a572]/20 text-[#4edea3] text-xs font-semibold flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">check_circle</span> Sukses Bergulir
                 </span>
               </div>
               <div className="relative w-full h-44 rounded-xl bg-[#001206] flex items-center justify-center gap-6 overflow-hidden p-4 shadow-[inset_0_4px_12px_rgba(0,0,0,0.8)]">
@@ -201,7 +201,7 @@ export default function GameEventModal({
                   <Dice3D value={d1} rotation="rotate(-6deg)" />
                   <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded bg-[#ffd56d] text-[#3e2e00] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>D1: {d1}</span>
                 </div>
-                <div className="text-[#ffd56d] text-xl font-bold select-none">+</div>
+                <div className="text-[#ffd56d] text-lg font-bold select-none" style={{ fontFamily: "'Syne', sans-serif" }}>+</div>
                 <div className="relative">
                   <Dice3D value={d2} rotation="rotate(12deg)" />
                   <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded bg-[#ffd56d] text-[#3e2e00] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>D2: {d2}</span>
@@ -210,7 +210,7 @@ export default function GameEventModal({
               <div className="px-4 py-2.5 rounded-lg bg-[#152f1f] flex items-center justify-between">
                 <span className="text-xs text-[#d1c5af]">Langkah Alami:</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#ffd56d]">{d1} + {d2} = {d1 + d2} Langkah</span>
+                  <span className="text-sm font-bold text-[#ffd56d]" style={{ fontFamily: "'Syne', sans-serif" }}>{d1} + {d2} = {d1 + d2} Langkah</span>
                   <span className="text-[#9a907c] text-xs">&bull; {d1 === d2 ? 'GANDA!' : 'Non-Ganda'}</span>
                 </div>
               </div>
@@ -219,7 +219,7 @@ export default function GameEventModal({
             {/* Evidence Selector */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider">Sisipkan Bukti Warga (Slot 1/1)</span>
+                <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Sisipkan Bukti Warga (Slot 1/1)</span>
                 <span className="text-xs text-[#4edea3]">Terapkan Buff</span>
               </div>
               {EVIDENCE_OPTIONS.map((evidence) => (
@@ -240,14 +240,16 @@ export default function GameEventModal({
                         ? 'bg-[#4edea3] text-[#003824]'
                         : 'bg-[#001206] text-[#9a907c]'
                     }`}>
-                      {selectedEvidence === evidence.id ? '&#x2713;' : ''}
+                      {selectedEvidence === evidence.id ? (
+                        <span className="material-symbols-outlined text-[18px]">check</span>
+                      ) : null}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold text-[#cbead1]">{evidence.name}</span>
                       <span className="text-xs text-[#4edea3]">{evidence.effect}</span>
                     </div>
                   </div>
-                  {!evidence.unlocked && <span className="text-[#9a907c]">&#x1F512;</span>}
+                  {!evidence.unlocked && <span className="material-symbols-outlined text-[#9a907c] text-[18px]">lock</span>}
                   {selectedEvidence === evidence.id && <span className="px-2 py-0.5 rounded bg-[#001206] text-[#ffd56d] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>AKTIF</span>}
                 </div>
               ))}
@@ -255,18 +257,18 @@ export default function GameEventModal({
           </div>
 
           {/* RIGHT: RPG Calculation + Event Card */}
-          <div className="lg:col-span-7 p-5 flex flex-col gap-5">
+          <div className="lg:col-span-7 p-6 flex flex-col gap-6">
             {/* RPG Ledger */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider">Kalkulasi Roll RPG (D&amp;D Format)</span>
+                <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Kalkulasi Roll RPG (D&amp;D Format)</span>
                 <span className="text-[11px] text-[#9a907c] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>ATURAN BABAK #{turnNumber}</span>
               </div>
-              <div className="rounded-xl bg-[#152f1f] p-4 flex flex-col gap-2">
+              <div className="rounded-xl bg-[#152f1f] p-4 flex flex-col gap-2.5">
                 {/* Base Dice */}
                 <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#ffd56d]">&#x1F3B2;</span>
+                    <span className="material-symbols-outlined text-[#ffd56d] text-[18px]">casino</span>
                     <span className="text-sm text-[#cbead1]">Nilai Dadu Dasar (D1 + D2)</span>
                   </div>
                   <span className="text-sm font-bold text-[#ffd56d] font-mono">+{baseDice}</span>
@@ -275,10 +277,10 @@ export default function GameEventModal({
                 {/* Stat Bonus */}
                 <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#4edea3]">&#x1F9E0;</span>
+                    <span className="material-symbols-outlined text-[#4edea3] text-[18px]">psychology</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-[#cbead1]">Stat Negosiasi Warga (Lv {playerLevel})</span>
-                      <div className="w-16 h-2 rounded bg-[#0a1a11] overflow-hidden hidden sm:block">
+                      <div className="w-16 h-2 rounded bg-[#152f1f] overflow-hidden hidden sm:block">
                         <div className="h-full bg-[#4edea3] rounded" style={{ width: `${Math.min(100, (statBonus / 5) * 100)}%` }} />
                       </div>
                     </div>
@@ -289,7 +291,7 @@ export default function GameEventModal({
                 {/* Luck Bonus */}
                 <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#ffd56d]">&#x2B50;</span>
+                    <span className="material-symbols-outlined text-[#ffd56d] text-[18px]">stars</span>
                     <span className="text-sm text-[#cbead1]">Modifikator Hoki Netizen (Rasio 45%)</span>
                   </div>
                   <span className="text-sm font-bold text-[#ffd56d] font-mono">+{luckBonus}</span>
@@ -299,7 +301,7 @@ export default function GameEventModal({
                 {selectedEvidence && (
                   <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
                     <div className="flex items-center gap-2">
-                      <span className="text-[#4edea3]">&#x1F4CB;</span>
+                      <span className="material-symbols-outlined text-[#4edea3] text-[18px]">receipt_long</span>
                       <span className="text-sm text-[#cbead1]">Bukti Dilampirkan: Kwitansi Sah</span>
                     </div>
                     <span className="text-sm font-bold text-[#4edea3] font-mono">+{evidenceBonus}</span>
@@ -312,17 +314,17 @@ export default function GameEventModal({
                 {/* Score Grid */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div className="p-3 rounded-lg bg-[#092515] flex flex-col items-center justify-center text-center">
-                    <span className="text-[11px] text-[#d1c5af] uppercase font-semibold tracking-wider">TOTAL SKOR ROLL</span>
+                    <span className="text-[11px] text-[#d1c5af] uppercase font-semibold tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>TOTAL SKOR ROLL</span>
                     <div className="flex items-baseline justify-center gap-1.5 my-1">
-                      <span className="text-3xl font-extrabold text-[#ffd56d]">{totalScore}</span>
+                      <span className="text-[28px] leading-tight font-extrabold text-[#ffd56d] tracking-normal">{totalScore}</span>
                       <span className="text-xs text-[#4edea3] font-bold">POIN</span>
                     </div>
                     <span className="text-xs text-[#d1c5af]">Formula: {baseDice} + {statBonus} + {luckBonus} + {evidenceBonus}</span>
                   </div>
                   <div className="p-3 rounded-lg bg-[#092515] flex flex-col items-center justify-center text-center">
-                    <span className="text-[11px] text-[#d1c5af] uppercase font-semibold tracking-wider">AMBANG TARGET (DC)</span>
+                    <span className="text-[11px] text-[#d1c5af] uppercase font-semibold tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>AMBANG TARGET (DC)</span>
                     <div className="flex items-baseline justify-center gap-1.5 my-1">
-                      <span className="text-3xl font-extrabold text-[#cbead1]">{dcTarget}</span>
+                      <span className="text-[28px] leading-tight font-extrabold text-[#cbead1] tracking-normal">{dcTarget}</span>
                       <span className="text-xs text-[#9a907c] font-bold">DC</span>
                     </div>
                     <span className={`text-xs font-bold ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`}>
@@ -336,15 +338,15 @@ export default function GameEventModal({
                   passed ? 'bg-[#00a572]/20' : 'bg-[#93000a]/30'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <span className={`text-lg ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`}>
-                      {passed ? '&#x2705;' : '&#x274C;'}
+                    <span className={`material-symbols-outlined text-[22px] ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`}>
+                      {passed ? 'verified' : 'cancel'}
                     </span>
                     <span className={`text-sm font-bold ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`} style={{ fontFamily: "'Syne', sans-serif" }}>
-                      UJI {isTax ? 'DENDA' : 'TIPiring'}: {passed ? 'LOLOS SEPENUHNYA!' : 'GAGAL!'}
+                      UJI {isTax ? 'DENDA' : 'TIPIRING'}: {passed ? 'LOLOS SEPENUHNYA!' : 'GAGAL!'}
                     </span>
                   </div>
                   <span className="text-xs text-[#cbead1] bg-[#152f1f] px-2 py-0.5 rounded">
-                    {passed ? 'Bebas Denda' : `Bayar Denda`}
+                    {passed ? 'Bebas Denda Rp 500rb' : `Bayar Denda`}
                   </span>
                 </div>
               </div>
@@ -354,36 +356,39 @@ export default function GameEventModal({
             {eventCard && (
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider">Kartu Kejutan Terbuka</span>
+                  <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Kartu Kejutan Terbuka</span>
                   <span className="text-[11px] text-[#4edea3] font-mono">SERI #042</span>
                 </div>
                 <div className="rounded-xl bg-[#FBF8EE] text-[#07190F] p-4 shadow-[4px_4px_0_0_#001206] flex flex-col gap-2.5 relative overflow-hidden">
+                  {/* Card Header */}
                   <div className="flex items-center justify-between pb-2 border-b border-[#07190F]/20">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-[#E5B842] text-[#07190F] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>KARTU WNI</span>
+                      <span className="px-2 py-0.5 rounded bg-[#E5B842] text-[#07190F] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>TAKDIR NETIZEN</span>
                       <span className="text-xs font-semibold text-[#07190F]/70">Kelas Menengah Ngehe</span>
                     </div>
-                    <span className="text-[#07190F]/50">&#x1F0CF;</span>
+                    <span className="material-symbols-outlined text-[#07190F]/70 text-[20px]">local_gas_station</span>
                   </div>
+                  {/* Card Body */}
                   <div className="flex gap-3 items-start">
                     <div className="w-12 h-12 rounded-lg bg-[#07190F]/10 flex items-center justify-center shrink-0">
-                      <span className="text-2xl">&#x1F4B0;</span>
+                      <span className="material-symbols-outlined text-[#07190F] text-[26px]">approval_delegation</span>
                     </div>
                     <div className="flex-1">
                       <h2 className="text-sm font-bold text-[#07190F] mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>{eventCard.title}</h2>
                       <p className="text-xs text-[#07190F]/80 leading-snug">{eventCard.description}</p>
                     </div>
                   </div>
+                  {/* Card Rewards */}
                   <div className="flex items-center justify-between pt-2 border-t border-[#07190F]/20">
                     <div className="flex items-center gap-3">
                       {eventCard.reward && (
                         <span className="text-xs font-bold text-[#00603b] flex items-center gap-1">
-                          &#x1F4B5; {eventCard.reward}
+                          <span className="material-symbols-outlined text-[16px]">payments</span> {eventCard.reward}
                         </span>
                       )}
                       {eventCard.expReward && (
                         <span className="text-xs font-bold text-[#b45309] flex items-center gap-1">
-                          &#x1F3C6; +{eventCard.expReward} EXP
+                          <span className="material-symbols-outlined text-[16px]">military_tech</span> +{eventCard.expReward} EXP
                         </span>
                       )}
                     </div>
@@ -396,24 +401,25 @@ export default function GameEventModal({
         </div>
 
         {/* Bottom Action Bar */}
-        <div className="bg-[#092515] px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#203a29]">
+        <div className="bg-[#092515] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#203a29]">
           <div className="flex items-center gap-2 text-[#d1c5af] text-xs">
-            <span className="text-[#4edea3] animate-spin">&#x21BB;</span>
+            <span className="material-symbols-outlined text-[#4edea3] text-[18px] animate-spin">sync</span>
             <span>Eksekusi bidak otomatis dalam <strong className="text-[#ffd56d] font-mono font-bold">14 detik</strong></span>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 rounded-lg bg-[#152f1f] text-[#cbead1] hover:bg-[#203a29] transition-colors text-sm font-semibold flex items-center gap-1.5 border border-[#203a29]"
+              className="px-4 py-2.5 rounded-lg bg-[#152f1f] text-[#cbead1] hover:bg-[#203a29] transition-colors text-sm font-semibold flex items-center gap-1.5"
             >
-              &#x1F4DC; Audit Log Meja
+              <span className="material-symbols-outlined text-[18px]">history_edu</span>
+              Audit Log Meja
             </button>
             <button
               onClick={onContinue}
-              className="px-6 py-2.5 rounded-lg bg-[#ffd56d] text-[#3e2e00] hover:bg-[#eec14a] transition-all transform active:scale-95 text-sm font-bold shadow-[2px_2px_0_0_#000] flex items-center gap-2"
+              className="px-6 py-2.5 rounded-lg bg-[#ffd56d] text-[#3e2e00] hover:bg-[#e5b842] transition-all transform active:scale-95 text-sm font-bold shadow-[2px_2px_0_0_#000] flex items-center gap-2"
             >
               Lanjut Langkah ({d1 + d2} Petak ke {cellName.split(' ').slice(-1)[0] || 'Selanjutnya'})
-              <span>&#x2192;</span>
+              <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
             </button>
           </div>
         </div>
