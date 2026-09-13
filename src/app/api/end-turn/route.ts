@@ -1,11 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { mapPlayerFromDB, mapRoomFromDB } from '@/lib/types';
+import { mapPlayerFromDB, mapRoomFromDB, GameMode } from '@/lib/types';
 import { getNormalRoleById } from '@/lib/game/role-data';
+import { getPropertyCells, getCellByIndex } from '@/lib/game/board-data';
 
 // ============================================================
-// END TURN API
+// END TURN API - With Game Mode Win Conditions
 // ============================================================
+
+async function calculatePlayerAssets(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, player: { cleanMoney: number; dirtyMoney: number; properties: string[] }): Promise<number> {
+  let totalAssets = player.cleanMoney + player.dirtyMoney;
+  // Add property values
+  for (const propId of player.properties) {
+    const { data: prop } = await supabaseAdmin
+      .from('properties')
+      .select('board_index')
+      .eq('id', propId)
+      .single();
+    if (prop) {
+      const cell = getPropertyCells().find((c) => c.index === prop.board_index);
+      if (cell?.price) totalAssets += cell.price;
+    }
+  }
+  return totalAssets;
+}
+
+async function checkGameOver(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  roomId: string,
+  room: ReturnType<typeof mapRoomFromDB>,
+): Promise<{ gameOver: boolean; winnerId?: string; winnerName?: string }> {
+  const gameMode = room.gameMode as GameMode;
+
+  if (gameMode === 'bundir') {
+    // Bundir: last player standing wins
+    const { data: activePlayers } = await supabaseAdmin
+      .from('players')
+      .select('*')
+      .eq('room_id', roomId)
+      .eq('is_bankrupt', false);
+
+    if (activePlayers && activePlayers.length === 1) {
+      return { gameOver: true, winnerId: activePlayers[0].id, winnerName: activePlayers[0].name };
+    }
+    // If all players bankrupt somehow, no winner
+    if (activePlayers && activePlayers.length === 0) {
+      return { gameOver: true };
+    }
+  }
+
+  if (gameMode === 'sultan' || gameMode === 'kilat') {
+    // Sultan/Kilat: check if all rounds completed
+    if (room.currentTurn >= room.turnOrder.length - 1) {
+      // Last player just finished their turn - check if we've completed totalRounds
+      // We count completed rounds as floor(currentTurn / totalPlayers)
+      const completedTurns = room.currentTurn + 1;
+      const totalPlayers = room.turnOrder.length;
+      const completedRounds = Math.floor(completedTurns / totalPlayers);
+
+      if (completedRounds >= room.totalRounds) {
+        // Find richest player
+        const { data: allPlayers } = await supabaseAdmin
+          .from('players')
+          .select('*')
+          .eq('room_id', roomId);
+
+        if (allPlayers && allPlayers.length > 0) {
+          let richestPlayer = allPlayers[0];
+          let richestAssets = 0;
+
+          for (const p of allPlayers) {
+            const assets = await calculatePlayerAssets(supabaseAdmin, {
+              cleanMoney: p.clean_money,
+              dirtyMoney: p.dirty_money,
+              properties: p.properties || [],
+            });
+            if (assets > richestAssets) {
+              richestAssets = assets;
+              richestPlayer = p;
+            }
+          }
+
+          return { gameOver: true, winnerId: richestPlayer.id, winnerName: richestPlayer.name };
+        }
+      }
+    }
+  }
+
+  return { gameOver: false };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,12 +175,43 @@ export async function POST(request: NextRequest) {
       detail: { income, nextPlayerId: room.turnOrder[nextTurn], nextTurn },
     });
 
+    // Check game over conditions
+    const updatedRoom = { ...room, currentTurn: nextTurn };
+    const gameOverResult = await checkGameOver(supabaseAdmin, roomId, updatedRoom);
+
+    if (gameOverResult.gameOver) {
+      // Mark game as finished
+      await supabaseAdmin
+        .from('rooms')
+        .update({
+          status: 'finished',
+          winner_id: gameOverResult.winnerId || null,
+        })
+        .eq('id', roomId);
+
+      return NextResponse.json({
+        success: true,
+        income,
+        nextPlayerId: room.turnOrder[nextTurn],
+        nextTurn,
+        newBalance: player.cleanMoney + income,
+        gameOver: true,
+        winnerId: gameOverResult.winnerId,
+        winnerName: gameOverResult.winnerName,
+        gameMode: room.gameMode,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       income,
       nextPlayerId: room.turnOrder[nextTurn],
       nextTurn,
       newBalance: player.cleanMoney + income,
+      gameOver: false,
+      gameMode: room.gameMode,
+      currentRound: Math.floor(nextTurn / room.turnOrder.length) + 1,
+      totalRounds: room.totalRounds,
     });
   } catch (error) {
     console.error('End turn error:', error);

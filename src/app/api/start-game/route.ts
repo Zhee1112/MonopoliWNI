@@ -72,7 +72,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak boleh ada role yang sama' }, { status: 400 });
     }
 
+    const modeConfig = GAME_MODES[(gameMode as GameMode) || 'bundir'];
+    const isKilat = (gameMode as GameMode) === 'kilat';
+
     // Assign roles with stats + set initial cleanMoney
+    // Kilat mode: 2x starting money
+    const moneyMultiplier = isKilat ? 10 : 5;
     const roleUpdates = players.map((player) => {
       const roleDef = NORMAL_ROLES.find((r) => r.id === player.selectedRole);
       if (!roleDef) return null;
@@ -81,19 +86,19 @@ export async function POST(request: NextRequest) {
         .from('players')
         .update({
           role: player.selectedRole,
-          clean_money: roleDef.baseIncome * 5, // 5x starting capital
+          clean_money: roleDef.baseIncome * moneyMultiplier,
           stats: roleDef.stats,
           luck: roleDef.baseLuck,
+          position: 0,
+          is_bankrupt: false,
         })
         .eq('id', player.id);
     });
 
     await Promise.all(roleUpdates.filter(Boolean));
 
-    const modeConfig = GAME_MODES[(gameMode as GameMode) || 'bundir'];
-
     // Update room status to playing
-    await supabaseAdmin
+    const { error: updateRoomError } = await supabaseAdmin
       .from('rooms')
       .update({
         status: 'playing',
@@ -101,12 +106,21 @@ export async function POST(request: NextRequest) {
         turn_order: players.map((p) => p.id),
         game_mode: gameMode || 'bundir',
         total_rounds: modeConfig.totalRounds,
+        pot_money: 0,
+        winner_id: null,
       })
       .eq('id', roomId);
+
+    if (updateRoomError) {
+      console.error('Failed to update room:', updateRoomError);
+      return NextResponse.json({ error: 'Gagal update room' }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Game dimulai!',
+      gameMode: gameMode || 'bundir',
+      totalRounds: modeConfig.totalRounds,
     });
   } catch (error) {
     console.error('Start game error:', error);

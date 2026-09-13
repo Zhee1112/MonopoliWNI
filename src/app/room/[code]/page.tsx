@@ -62,6 +62,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     expReward?: number;
   } | undefined>(undefined);
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('bundir');
+  const [gameOver, setGameOver] = useState(false);
+  const [winnerName, setWinnerName] = useState<string | null>(null);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -351,6 +353,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       if (!response.ok) throw new Error(data.error);
       setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: data.newBalance } : null);
       setLastRoll(null);
+      if (data.gameOver) {
+        setGameOver(true);
+        setWinnerName(data.winnerName || 'Tidak ada');
+      }
     } catch (err) { console.error('End turn error:', err); }
   }, [currentPlayer, room]);
 
@@ -767,6 +773,46 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
         {/* Info Modal */}
         {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+      </div>
+    );
+  }
+
+  // ---- GAME OVER STATE ----
+  if (room.status === 'finished' || gameOver) {
+    return (
+      <div className="min-h-screen bg-[#001809] flex items-center justify-center p-4">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(255,213,109,0.08) 0%, transparent 70%)' }} />
+          <div className="absolute bottom-1/4 right-1/3 w-80 h-80 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(78,222,163,0.08) 0%, transparent 70%)' }} />
+        </div>
+        <div className="relative z-10 w-full max-w-md rounded-2xl p-8 text-center" style={{ backgroundColor: '#052011', border: '2px solid #ffd56d', boxShadow: '0 20px 60px rgba(255,213,109,0.15)' }}>
+          <div className="text-6xl mb-4">&#x1F3C6;</div>
+          <h1 className="text-2xl font-extrabold text-[#ffd56d] mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>GAME OVER!</h1>
+          <p className="text-sm text-[#d1c5af] mb-6">Permainan telah selesai</p>
+          <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: '#092515', border: '1px solid #203a29' }}>
+            <p className="text-[10px] text-[#9a907c] uppercase tracking-wider mb-1">Pemenang</p>
+            <p className="text-xl font-extrabold text-[#4edea3]">{winnerName}</p>
+            <p className="text-xs text-[#d1c5af] mt-1">
+              {room.gameMode === 'bundir' ? 'Terakhir bertahan!' : 'Pemain paling kaya!'}
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/')}
+              className="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#d1c5af' }}
+            >
+              Kembali ke Lobby
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+              style={{ backgroundColor: '#ffd56d', color: '#3e2e00' }}
+            >
+              Main Lagi
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

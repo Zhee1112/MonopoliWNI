@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { mapPlayerFromDB, mapRoomFromDB } from '@/lib/types';
+import { mapPlayerFromDB, mapRoomFromDB, GameMode } from '@/lib/types';
 import { performAction } from '@/lib/game/game-logic';
 import { getPropertyCells, calculateRent, getGroupCells } from '@/lib/game/board-data';
 
@@ -168,15 +168,29 @@ export async function PUT(request: NextRequest) {
 
     const owner = mapPlayerFromDB(dbOwner as Record<string, unknown>);
 
+    // Get room for game mode
+    const { data: dbRoom, error: roomError } = await supabaseAdmin
+      .from('rooms')
+      .select('*')
+      .eq('id', roomId)
+      .single();
+
+    if (roomError || !dbRoom) {
+      return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+    }
+
     // Get cell data
     const cell = getPropertyCells().find((c) => c.index === dbProperty.board_index);
     if (!cell) {
       return NextResponse.json({ error: 'Invalid property' }, { status: 400 });
     }
 
-    // Calculate rent
-    const groupCells = getGroupCells(cell.group || '');
-    const rent = calculateRent(cell.rent || 0, dbProperty.house_level, false);
+    // Calculate rent (kilat mode: 50% higher)
+    const room = mapRoomFromDB(dbRoom as Record<string, unknown>);
+    const isKilat = room.gameMode === 'kilat';
+    const rentMultiplier = isKilat ? 1.5 : 1;
+    const baseRent = calculateRent(cell.rent || 0, dbProperty.house_level, false);
+    const rent = Math.round(baseRent * rentMultiplier);
 
     if (payer.cleanMoney < rent) {
       return NextResponse.json({ error: 'Not enough money to pay rent' }, { status: 400 });

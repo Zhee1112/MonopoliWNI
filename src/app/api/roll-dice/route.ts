@@ -105,6 +105,9 @@ export async function POST(request: NextRequest) {
       luckFluctuation,
       newLuck,
       moneyChange,
+      gameMode: room.gameMode,
+      currentRound: Math.floor(room.currentTurn / room.turnOrder.length) + 1,
+      totalRounds: room.totalRounds,
     });
   } catch (error) {
     console.error('Roll dice error:', error);
