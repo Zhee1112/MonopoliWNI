@@ -10,6 +10,7 @@ import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
 import GameModal from '@/components/Modal/GameModal';
 import InfoModal from '@/components/Modal/InfoModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
+import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
@@ -46,6 +47,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const { room, setRoom } = useRealtimeRoom(roomCode);
   const { players, setPlayers } = useRealtimePlayers(room?.id || '');
   const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard();
+  const { animatePion, getPionPosition } = usePionAnimation();
 
   // Load player from sessionStorage
   useEffect(() => {
@@ -223,21 +225,29 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
-        setCurrentPlayer((prev) =>
-          prev ? { ...prev, position: data.newPosition, luck: data.newLuck, cleanMoney: prev.cleanMoney + data.moneyChange } : null
-        );
-        setHasRolledThisTurn(true);
-        const cell = getCellByIndex(data.newPosition);
-        if (cell.type === 'property') {
-          const property = getPropertyCells().find((p) => p.index === data.newPosition);
-          if (property) { setSelectedCell(property); setShowBuyModal(true); }
-        } else if (cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
-          const card = drawRandomCard();
-          broadcastCard({ cardId: card.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
-        }
+        
+        // Animate pion step by step
+        const oldPosition = currentPlayer.position;
+        const newPosition = data.newPosition;
+        
+        animatePion(currentPlayer.id, oldPosition, newPosition, () => {
+          // After animation completes, update state
+          setCurrentPlayer((prev) =>
+            prev ? { ...prev, position: newPosition, luck: data.newLuck, cleanMoney: prev.cleanMoney + data.moneyChange } : null
+          );
+          setHasRolledThisTurn(true);
+          const cell = getCellByIndex(newPosition);
+          if (cell.type === 'property') {
+            const property = getPropertyCells().find((p) => p.index === newPosition);
+            if (property) { setSelectedCell(property); setShowBuyModal(true); }
+          } else if (cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
+            const card = drawRandomCard();
+            broadcastCard({ cardId: card.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
+          }
+        });
       } catch (err) { console.error('Roll dice error:', err); }
     },
-    [currentPlayer, room, broadcastCard]
+    [currentPlayer, room, broadcastCard, animatePion]
   );
 
   const handleBuyProperty = useCallback(async () => {
@@ -383,30 +393,29 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 <h3 className="text-sm font-bold text-[#cbead1]">Pemain ({players.length}/8)</h3>
                 {isHost && <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.1)', color: '#ffd56d' }}>HOST</span>}
               </div>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {players.map((player, idx) => {
                   const role = getRoleInfo(player.selectedRole);
                   return (
-                    <div key={player.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors`} style={{ backgroundColor: player.id === currentPlayer.id ? 'rgba(255,213,109,0.1)' : '#092515', border: player.id === currentPlayer.id ? '1px solid rgba(255,213,109,0.2)' : '1px solid rgba(32,58,41,0.5)' }}>
+                    <div key={player.id} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-colors`} style={{ backgroundColor: player.id === currentPlayer.id ? 'rgba(255,213,109,0.1)' : '#092515', border: player.id === currentPlayer.id ? '1px solid rgba(255,213,109,0.2)' : '1px solid rgba(32,58,41,0.5)' }}>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: TOKEN_COLORS[idx] || '#94a3b8' }}>
                         {player.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#cbead1] truncate">{player.name}</p>
-                        <p className="text-[10px] text-[#9a907c]">{role ? role.name : 'Belum pilih role'}</p>
+                        <p className="text-xs font-semibold text-[#cbead1] truncate">{player.name}</p>
+                        <p className="text-[9px] text-[#9a907c] truncate">{role ? role.name : 'Belum pilih role'}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {player.isBot && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(168,85,247,0.1)', color: '#a855f7' }}>BOT</span>}
-                        {player.isReady && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(78,222,163,0.1)', color: '#4edea3' }}>READY</span>}
-                        {player.id === currentPlayer.id && <span className="text-[9px] text-[#9a907c]">(kamu)</span>}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {player.isBot && <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(168,85,247,0.1)', color: '#a855f7' }}>BOT</span>}
+                        {player.isReady && <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(78,222,163,0.1)', color: '#4edea3' }}>✓</span>}
                       </div>
                     </div>
                   );
                 })}
                 {Array.from({ length: 8 - players.length }).map((_, i) => (
-                  <div key={`empty-${i}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl opacity-50" style={{ backgroundColor: '#052011', border: '1px dashed rgba(32,58,41,0.3)' }}>
+                  <div key={`empty-${i}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl opacity-50" style={{ backgroundColor: '#052011', border: '1px dashed rgba(32,58,41,0.3)' }}>
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152f1f', color: '#9a907c' }}>+</div>
-                    <p className="text-sm text-[#9a907c]">Menunggu pemain...</p>
+                    <p className="text-[10px] text-[#9a907c]">Menunggu...</p>
                   </div>
                 ))}
               </div>
@@ -640,7 +649,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       {/* MAIN BOARD ARENA */}
       <main className="w-full pt-20 pb-20 px-2 sm:px-4 lg:px-6 flex items-center justify-center flex-1">
         <Board
-          players={players.map((p) => ({ id: p.id, position: p.position, tokenColor: p.tokenColor || '#3b82f6', name: p.name }))}
+          players={players.map((p) => ({ 
+            id: p.id, 
+            position: getPionPosition(p.id, p.position), 
+            tokenColor: p.tokenColor || '#3b82f6', 
+            name: p.name 
+          }))}
           currentPlayer={currentPlayer}
           activePlayerName={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name}
           activePlayerTokenColor={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.tokenColor}

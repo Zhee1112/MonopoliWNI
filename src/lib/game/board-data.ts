@@ -12,11 +12,11 @@ export const BOARD_CELLS: BoardCell[] = [
     price: null, rent: null, description: 'Lewat start, dapat gaji UMR',
     color: '#152f1f', groupColor: '#ffd56d', emoji: '⭐',
   },
-  // Cell 1 - Pos Ronda / Siskamling
+  // Cell 1 - Indomaret Sebelah (Brown)
   {
-    index: 1, name: 'Pos Ronda', subtitle: 'Aman', type: 'event', group: null,
-    price: null, rent: null, description: 'Pos ronda warga, aman sentosa',
-    color: '#052011', groupColor: '#4edea3', emoji: '☕',
+    index: 1, name: 'Indomaret Sebelah', subtitle: 'Konter Pulsa', type: 'property', group: 'coklat',
+    price: 80000, rent: 15000, description: 'Indomaret tetangga, beli apapun ada',
+    color: '#052011', groupColor: '#8B4513', emoji: '🏪',
   },
   // Cell 2 - Iuran RW (Tax)
   {
@@ -24,23 +24,23 @@ export const BOARD_CELLS: BoardCell[] = [
     price: null, rent: null, description: 'Bayar iuran warga -Rp 50.000',
     color: '#052011', groupColor: '#ff6b6b', emoji: '🧹',
   },
-  // Cell 3 - Kontrakan 3 Petak (Brown)
+  // Cell 3 - Warteg Shakur (Brown)
   {
-    index: 3, name: 'Kontrakan', subtitle: '3 Petak', type: 'property', group: 'coklat',
-    price: 100000, rent: 20000, description: 'Kontrakan 3 petak murah meriah',
-    color: '#052011', groupColor: '#8B4513', emoji: '🏠',
+    index: 3, name: 'Warteg Shakur', subtitle: 'Nasi Padang KW', type: 'property', group: 'coklat',
+    price: 100000, rent: 20000, description: 'Warteg legendaris, lauk 10 macam',
+    color: '#052011', groupColor: '#8B4513', emoji: '🍜',
   },
   // Cell 4 - Dana Bansos
   {
-    index: 4, name: 'Beras 10kg', subtitle: 'Ambil', type: 'draw_kegiatan', group: null,
+    index: 4, name: 'Bansos', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
     price: null, rent: null, description: 'Ambil kartu Dana Bansos',
-    color: '#052011', groupColor: '#4edea3', emoji: '🍚',
+    color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
-  // Cell 5 - Warkop 24 Jam (Brown)
+  // Cell 5 - Kontrakan 3 Petak (Brown)
   {
-    index: 5, name: 'Warkop 24 Jam', subtitle: 'Indomie Telur', type: 'property', group: 'coklat',
-    price: 120000, rent: 30000, description: 'Warkop buka 24 jam, Indomie telur hits',
-    color: '#052011', groupColor: '#8B4513', emoji: '☕',
+    index: 5, name: 'Kontrakan', subtitle: '3 Petak', type: 'property', group: 'coklat',
+    price: 120000, rent: 30000, description: 'Kontrakan 3 petak murah meriah',
+    color: '#052011', groupColor: '#8B4513', emoji: '🏠',
   },
   // Cell 6 - Stasiun Manggarai (Transport)
   {
@@ -48,17 +48,17 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 200000, rent: 40000, description: 'Stasiun transit KRL pusat',
     color: '#052011', groupColor: '#4edea3', emoji: '🚆',
   },
-  // Cell 7 - Takdir Netizen
+  // Cell 7 - Kartu WNI
   {
-    index: 7, name: 'Netizen Nyinyir', subtitle: 'Takdir', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir Netizen',
+    index: 7, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
-  // Cell 8 - Angkringan (Cyan)
+  // Cell 8 - Gopek (Cyan)
   {
-    index: 8, name: 'Angkringan', subtitle: 'Nasi Kucing', type: 'property', group: 'cyan',
-    price: 140000, rent: 35000, description: 'Angkringan nasi kucing legendaris',
-    color: '#052011', groupColor: '#0ea5e9', emoji: '🍜',
+    index: 8, name: 'Gopek', subtitle: 'Gorengan Murah', type: 'property', group: 'cyan',
+    price: 140000, rent: 35000, description: 'Gorengan gorengan gorengan',
+    color: '#052011', groupColor: '#0ea5e9', emoji: '🍟',
   },
   // Cell 9 - Warnet Jadul (Cyan)
   {
@@ -96,10 +96,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 220000, rent: 45000, description: 'Es teh jumbo Rp 5.000 sepuasnya',
     color: '#052011', groupColor: '#eab308', emoji: '🧋',
   },
-  // Cell 15 - Minimarket (Yellow)
+  // Cell 15 - Alfamart Ketat (Yellow)
   {
-    index: 15, name: 'Minimarket', subtitle: '24 Jam', type: 'property', group: 'kuning',
-    price: 250000, rent: 50000, description: 'Minimarket buka 24 jam',
+    index: 15, name: 'Alfamart Ketat', subtitle: 'Saingan Berat', type: 'property', group: 'kuning',
+    price: 250000, rent: 50000, description: 'Alfamart vs Indomaret, perang harga',
     color: '#052011', groupColor: '#eab308', emoji: '🏪',
   },
   // Cell 16 - Lampu Merah (Skip Turn)
@@ -110,7 +110,7 @@ export const BOARD_CELLS: BoardCell[] = [
   },
   // Cell 17 - Dana Bansos
   {
-    index: 17, name: 'Bansos', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
+    index: 17, name: 'Kasos Warga', subtitle: 'Bansos', type: 'draw_kegiatan', group: null,
     price: null, rent: null, description: 'Ambil kartu Dana Bansos',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
@@ -120,10 +120,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 360000, rent: 70000, description: 'Kos eksklusif Tebet, full furnitur',
     color: '#052011', groupColor: '#f97316', emoji: '🏢',
   },
-  // Cell 19 - SPBU Shell (Orange)
+  // Cell 19 - SPBU Pertamina (Orange)
   {
-    index: 19, name: 'SPBU Shell', subtitle: 'Premium', type: 'property', group: 'orange',
-    price: 400000, rent: 80000, description: 'SPBU Shell premium, Pertamaxplus',
+    index: 19, name: 'SPBU Pertamina', subtitle: 'Premium', type: 'property', group: 'orange',
+    price: 400000, rent: 80000, description: 'SPBU Pertamina, Pertamaxplus',
     color: '#052011', groupColor: '#f97316', emoji: '⛽',
   },
   // Cell 20 - BEBAS PARKIR (Top-Left Corner)
@@ -138,10 +138,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: 480000, rent: 95000, description: 'Cafe cozy Senopati, nongkrong anak gaul',
     color: '#052011', groupColor: '#ef4444', emoji: '☕',
   },
-  // Cell 22 - Takdir Netizen
+  // Cell 22 - Kartu WNI
   {
-    index: 22, name: 'Netizen Nyinyir', subtitle: 'Takdir', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir Netizen',
+    index: 22, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
   // Cell 23 - Mall Senayan (Red)
@@ -180,13 +180,13 @@ export const BOARD_CELLS: BoardCell[] = [
     price: null, rent: null, description: 'FOMO kripto, volatile! Bisa naik atau turun',
     color: '#052011', groupColor: '#4edea3', emoji: '🪙',
   },
-  // Cell 29 - PIK Ruko (Yellow)
+  // Cell 29 - GBK Senayan (Yellow)
   {
-    index: 29, name: 'PIK Ruko', subtitle: 'Pusat Bisnis', type: 'property', group: 'kuning',
-    price: 620000, rent: 125000, description: 'Ruko PIK, pusat bisnis anak Jaksel',
-    color: '#052011', groupColor: '#eab308', emoji: '🏪',
+    index: 29, name: 'GBK Senayan', subtitle: 'Stadion Utama', type: 'property', group: 'kuning',
+    price: 620000, rent: 125000, description: 'GBK Senayan, stadion utama Indonesia',
+    color: '#052011', groupColor: '#eab308', emoji: '🏟️',
   },
-  // Cell 30 - RAZIA OTT KPK (Corner - Penjara)
+  // Cell 30 - MASUK SEL (Corner - Penjara)
   {
     index: 30, name: 'MASUK SEL', subtitle: 'Razia OTT KPK', type: 'corner', group: null,
     price: null, rent: null, description: 'Kena razia OTT KPK, langsung bui',
@@ -210,10 +210,10 @@ export const BOARD_CELLS: BoardCell[] = [
     price: null, rent: null, description: 'Pinjol ilegal nagih, bayar -Rp 300.000',
     color: '#052011', groupColor: '#ff6b6b', emoji: '💸',
   },
-  // Cell 34 - Takdir Viral
+  // Cell 34 - Kartu WNI
   {
-    index: 34, name: 'Takdir Viral', subtitle: 'Klarifikasi', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir Viral',
+    index: 34, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
   // Cell 35 - BSD City (Green)
@@ -228,23 +228,23 @@ export const BOARD_CELLS: BoardCell[] = [
     price: null, rent: null, description: 'Ambil kartu Dana Bansos',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
-  // Cell 37 - Istana Garuda (Indigo/Premium)
+  // Cell 37 - Monas VIP (Indigo/Premium)
   {
-    index: 37, name: 'Istana Garuda', subtitle: 'Ibu Kota', type: 'property', group: 'ungu',
-    price: 1000000, rent: 200000, description: 'Istana Garuda IKN, proyek mega masal',
+    index: 37, name: 'Monas VIP', subtitle: 'Ikon Jakarta', type: 'property', group: 'ungu',
+    price: 1000000, rent: 200000, description: 'Monas VIP, ikon Jakarta yang legend',
     color: '#052011', groupColor: '#6366f1', emoji: '🏛️',
   },
-  // Cell 38 - Takdir Netizen
+  // Cell 38 - Kartu WNI
   {
-    index: 38, name: 'Takdir Netizen', subtitle: 'Nyinyir', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir Netizen',
+    index: 38, name: 'Kartu WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
+    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
-  // Cell 39 - IKN Kavling (Indigo/Premium)
+  // Cell 39 - Istana Garuda (Indigo/Premium)
   {
-    index: 39, name: 'IKN Kavling', subtitle: 'Ibu Kota Baru', type: 'property', group: 'ungu',
-    price: 900000, rent: 180000, description: 'Kavling IKN ibu kota baru',
-    color: '#052011', groupColor: '#6366f1', emoji: '🏗️',
+    index: 39, name: 'Istana Garuda', subtitle: 'Ibu Kota', type: 'property', group: 'ungu',
+    price: 900000, rent: 180000, description: 'Istana Garuda IKN, proyek mega masal',
+    color: '#052011', groupColor: '#6366f1', emoji: '🏛️',
   },
 ];
 

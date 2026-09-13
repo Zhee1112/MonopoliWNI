@@ -1,0 +1,97 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+interface AnimatedPion {
+  playerId: string;
+  currentPosition: number;
+  targetPosition: number;
+  path: number[];
+  isAnimating: boolean;
+}
+
+export function usePionAnimation() {
+  const [animatedPions, setAnimatedPions] = useState<Map<string, AnimatedPion>>(new Map());
+  const animationRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const generatePath = useCallback((from: number, to: number): number[] => {
+    const path: number[] = [];
+    let current = from;
+    while (current !== to) {
+      current = (current + 1) % 40;
+      path.push(current);
+    }
+    return path;
+  }, []);
+
+  const animatePion = useCallback((playerId: string, from: number, to: number, onComplete?: () => void) => {
+    const path = generatePath(from, to);
+
+    const newPion: AnimatedPion = {
+      playerId,
+      currentPosition: from,
+      targetPosition: to,
+      path,
+      isAnimating: true,
+    };
+
+    setAnimatedPions(prev => {
+      const next = new Map(prev);
+      next.set(playerId, newPion);
+      return next;
+    });
+
+    let step = 0;
+    const interval = setInterval(() => {
+      if (step < path.length) {
+        setAnimatedPions(prev => {
+          const next = new Map(prev);
+          const pion = next.get(playerId);
+          if (pion) {
+            next.set(playerId, {
+              ...pion,
+              currentPosition: path[step],
+            });
+          }
+          return next;
+        });
+        step++;
+      } else {
+        clearInterval(interval);
+        setAnimatedPions(prev => {
+          const next = new Map(prev);
+          const pion = next.get(playerId);
+          if (pion) {
+            next.set(playerId, {
+              ...pion,
+              isAnimating: false,
+            });
+          }
+          return next;
+        });
+        onComplete?.();
+      }
+    }, 200);
+
+    animationRef.current.set(playerId, interval);
+  }, [generatePath]);
+
+  const getPionPosition = useCallback((playerId: string, defaultPosition: number) => {
+    const pion = animatedPions.get(playerId);
+    if (pion && pion.isAnimating) {
+      return pion.currentPosition;
+    }
+    return defaultPosition;
+  }, [animatedPions]);
+
+  useEffect(() => {
+    return () => {
+      animationRef.current.forEach(interval => clearInterval(interval));
+    };
+  }, []);
+
+  return {
+    animatePion,
+    getPionPosition,
+  };
+}
