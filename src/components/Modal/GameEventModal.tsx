@@ -192,7 +192,7 @@ export default function GameEventModal({
                 <span className="px-2 py-0.5 rounded bg-[#00a572]/30 text-[#4edea3] text-[11px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>FASE AKSI</span>
               </div>
               <h1 className="text-lg font-bold text-[#cbead1] tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{cellName}</h1>
-              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? `PPN 12% dari total harta${ppnAmount > 0 ? ` (Rp ${ppnAmount.toLocaleString('id-ID')})` : ''}` : isDraw ? 'Ambil Kartu' : 'Event Khusus'}</p>
+              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? `PPN 12% dari total harta${ppnAmount > 0 ? ` (Rp ${ppnAmount.toLocaleString('id-ID')})` : ''}` : isDraw ? 'Ambil Kartu' : cell.description || 'Event Khusus'}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -313,8 +313,28 @@ export default function GameEventModal({
                       <span className="text-sm text-[#cbead1]">Stat Negosiasi Warga (Lv {playerLevel})</span>
                       <div className="w-16 h-2 rounded bg-[#152f1f] overflow-hidden hidden sm:block">
                         <div className="h-full bg-[#4edea3] rounded" style={{ width: `${Math.min(100, (statBonus / 5) * 100)}%` }} />
-                      </div>
+            {/* Event/Corner Cell Effect Card */}
+            {!takdirCard && !kegiatanCard && (cell.type === 'event' || cell.type === 'corner') && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Efek Petak</span>
+                  <span className="text-[11px] text-[#4edea3] font-mono">{cell.emoji}</span>
+                </div>
+                <div className="rounded-xl bg-[#152f1f] p-4 flex flex-col gap-2.5 relative overflow-hidden border border-[#203a29]">
+                  <div className="flex gap-3 items-start">
+                    <div className="w-12 h-12 rounded-lg bg-[#001206] flex items-center justify-center shrink-0">
+                      <span className="text-[26px]">{cell.emoji}</span>
                     </div>
+                    <div className="flex-1">
+                      <h2 className="text-sm font-bold text-[#cbead1] mb-1">{cell.name}</h2>
+                      <p className="text-xs text-[#d1c5af] leading-snug">{cell.description}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
                   </div>
                   <span className="text-sm font-bold text-[#4edea3] font-mono">+{statBonus}</span>
                 </div>

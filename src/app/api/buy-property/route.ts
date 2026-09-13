@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       .from('players')
       .update({
         clean_money: player.cleanMoney - price,
-        properties: [...(player.properties || []), dbProperty.id],
+        properties: [...(player.properties || []), cell.name],
       })
       .eq('id', playerId);
 

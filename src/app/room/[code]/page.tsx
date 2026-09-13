@@ -319,6 +319,102 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             }
             
             setShowGameEventModal(true);
+          } else if (cell.type === 'event') {
+            // Event cells — apply effect immediately
+            let moneyChange = 0;
+            let skipTurns = 0;
+            let eventDescription = '';
+
+            if (newPosition === 13) {
+              // Tagihan PLN — bayar listrik
+              moneyChange = -200000;
+              eventDescription = 'Tagihan PLN naik 30%! Kamu harus bayar Rp 200.000';
+            } else if (newPosition === 16) {
+              // Macet Tomang — skip 1 putaran
+              skipTurns = 1;
+              eventDescription = 'Macet parah di Tomang! Kamu terjebak dan skip 1 putaran.';
+            } else if (newPosition === 28) {
+              // FOMO Kripto — random win/lose
+              const roll = Math.random();
+              const baseAmount = 100000 + Math.floor(Math.random() * 500000);
+              if (roll < 0.5) {
+                moneyChange = baseAmount * 2;
+                eventDescription = `FOMO Kripto moonshot! Investasi naik 200%! +Rp ${(baseAmount * 2).toLocaleString('id-ID')}`;
+              } else {
+                moneyChange = -Math.floor(baseAmount * 0.9);
+                eventDescription = `FOMO Kripto rugpull! Investasi turun 90%! -Rp ${Math.floor(baseAmount * 0.9).toLocaleString('id-ID')}`;
+              }
+            }
+
+            const newMoney = Math.max(0, (currentPlayer.cleanMoney || 0) + moneyChange);
+            const newEffects = [...(currentPlayer.statusEffects || [])];
+            if (skipTurns > 0) {
+              newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
+            }
+            setCurrentPlayer((prev) => prev ? {
+              ...prev,
+              cleanMoney: newMoney,
+              statusEffects: newEffects,
+            } : null);
+
+            // Show GameEventModal with event info
+            setGameEventCell(cell);
+            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+            setGameEventRollResult({
+              baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
+              totalScore: 0, dcTarget: 0, passed: true, margin: 0,
+            });
+            setDrawnTakdirCard(undefined);
+            setDrawnKegiatanCard(undefined);
+            setPpnAmount(0);
+            setShowGameEventModal(true);
+          } else if (cell.type === 'corner') {
+            // Corner cells — apply effect
+            let eventDescription = '';
+            let skipTurns = 0;
+            let moneyChange = 0;
+
+            if (newPosition === 0) {
+              // GAJI UMR — handled by roll-dice API (passedStart bonus)
+              eventDescription = 'Lewat Start! Gaji UMR Jakarta cair.';
+            } else if (newPosition === 10) {
+              // TAHANAN KPK — skip 2 turns
+              skipTurns = 2;
+              eventDescription = 'Kena OTT KPK! Kamu ditahan selama 2 putaran.';
+            } else if (newPosition === 20) {
+              // BEBAS PARKIR — istirahat, dapat bonus
+              moneyChange = 100000;
+              eventDescription = 'Bebas Parkir! Istirahat sejenak, dapat Rp 100.000 dari parkir liar.';
+            } else if (newPosition === 30) {
+              // MASUK SEL — skip 3 turns
+              skipTurns = 3;
+              eventDescription = 'Masuk Sel! OTT KPK, langsung bui 3 putaran.';
+            }
+
+            if (skipTurns > 0 || moneyChange !== 0) {
+              const newMoney = Math.max(0, (currentPlayer.cleanMoney || 0) + moneyChange);
+              const newEffects = [...(currentPlayer.statusEffects || [])];
+              if (skipTurns > 0) {
+                newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
+              }
+              setCurrentPlayer((prev) => prev ? {
+                ...prev,
+                cleanMoney: newMoney,
+                statusEffects: newEffects,
+              } : null);
+            }
+
+            // Show GameEventModal with corner info
+            setGameEventCell(cell);
+            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+            setGameEventRollResult({
+              baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
+              totalScore: 0, dcTarget: 0, passed: true, margin: 0,
+            });
+            setDrawnTakdirCard(undefined);
+            setDrawnKegiatanCard(undefined);
+            setPpnAmount(0);
+            setShowGameEventModal(true);
           } else if (cell.type === 'property') {
             const property = getPropertyCells().find((p) => p.index === newPosition);
             if (property) { setSelectedCell(property); setShowBuyModal(true); }
@@ -1069,7 +1165,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         playerId={currentPlayer.id}
         currentTurn={room.currentTurn || 0}
         cleanMoney={currentPlayer.cleanMoney || 0}
-        properties={players.find((p) => p.id === currentPlayer.id)?.properties?.map((p) => ({ id: p, name: p })) || []}
+        properties={(currentPlayer.properties || []).map((propName) => {
+          const cell = getPropertyCells().find(c => c.name === propName);
+          return cell ? { id: String(cell.index), name: cell.name, price: cell.price } : null;
+        }).filter(Boolean) as Array<{ id: string; name: string; price?: number }>}
         existingLoans={activeLoans}
       />
       {gameEventCell && (

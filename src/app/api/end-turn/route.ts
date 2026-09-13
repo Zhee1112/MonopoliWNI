@@ -10,17 +10,9 @@ import { getPropertyCells, getCellByIndex } from '@/lib/game/board-data';
 
 async function calculatePlayerAssets(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, player: { cleanMoney: number; dirtyMoney: number; properties: string[] }): Promise<number> {
   let totalAssets = player.cleanMoney + player.dirtyMoney;
-  // Add property values
-  for (const propId of player.properties) {
-    const { data: prop } = await supabaseAdmin
-      .from('properties')
-      .select('board_index')
-      .eq('id', propId)
-      .single();
-    if (prop) {
-      const cell = getPropertyCells().find((c) => c.index === prop.board_index);
-      if (cell?.price) totalAssets += cell.price;
-    }
+  for (const propName of player.properties) {
+    const cell = getPropertyCells().find((c) => c.name === propName);
+    if (cell?.price) totalAssets += cell.price;
   }
   return totalAssets;
 }
@@ -131,6 +123,41 @@ export async function POST(request: NextRequest) {
 
     if (room.turnOrder[room.currentTurn] !== playerId) {
       return NextResponse.json({ error: 'Not your turn' }, { status: 400 });
+    }
+
+    // Check if player has skip_turn status
+    const statusEffects = (player.statusEffects as Array<{ type: string; duration: number; effect: string }>) || [];
+    const skipEffect = statusEffects.find(e => e.type === 'skip_turn' && e.duration > 0);
+
+    if (skipEffect) {
+      // Decrement skip duration and skip this turn
+      const updatedEffects = statusEffects.map(e =>
+        e.type === 'skip_turn' ? { ...e, duration: e.duration - 1 } : e
+      ).filter(e => e.duration > 0);
+
+      await supabaseAdmin
+        .from('players')
+        .update({ status_effects: updatedEffects })
+        .eq('id', playerId);
+
+      // Still advance turn
+      const nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
+      await supabaseAdmin
+        .from('rooms')
+        .update({ current_turn: nextTurn })
+        .eq('id', roomId);
+
+      return NextResponse.json({
+        success: true,
+        income: 0,
+        skipped: true,
+        skipReason: skipEffect.effect,
+        nextPlayerId: room.turnOrder[nextTurn],
+        nextTurn,
+        newBalance: player.cleanMoney,
+        gameOver: false,
+        gameMode: room.gameMode,
+      });
     }
 
     // Calculate income based on role
