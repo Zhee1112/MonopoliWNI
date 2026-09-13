@@ -33,6 +33,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showRegulations, setShowRegulations] = useState(false);
   const [gameModalOpen, setGameModalOpen] = useState(false);
   const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat' | 'settings'>('players');
+  const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -67,6 +68,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       }
     }
   }, [players, currentPlayer]);
+
+  // Reset dice roll tracking when turn changes
+  useEffect(() => {
+    setHasRolledThisTurn(false);
+  }, [room?.currentTurn]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -218,6 +224,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         setCurrentPlayer((prev) =>
           prev ? { ...prev, position: data.newPosition, luck: data.newLuck, cleanMoney: prev.cleanMoney + data.moneyChange } : null
         );
+        setHasRolledThisTurn(true);
         const cell = getCellByIndex(data.newPosition);
         if (cell.type === 'property') {
           const property = getPropertyCells().find((p) => p.index === data.newPosition);
@@ -572,7 +579,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         {/* Left branding */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-surface-container-high border border-primary/30 flex items-center justify-center shadow-inner">
-            <span className="material-symbols-outlined text-primary text-2xl">casino</span>
+            <span className="text-primary text-2xl">🎲</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -590,7 +597,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         {/* Center Turn status */}
         <div className="flex items-center gap-3 px-3 sm:px-4 py-1.5 rounded-xl bg-surface-container-high border border-outline-variant shadow-md">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-xl animate-pulse">hourglass_top</span>
+            <span className="text-secondary text-xl animate-pulse">⏳</span>
             <div className="text-left leading-tight hidden md:block">
               <span className="text-xs font-bold text-primary block">
                 Giliran {players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}
@@ -616,6 +623,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       <main className="w-full pt-20 pb-20 px-2 sm:px-4 lg:px-6 flex items-center justify-center flex-1">
         <Board
           players={players.map((p) => ({ id: p.id, position: p.position, tokenColor: p.tokenColor || '#3b82f6', name: p.name }))}
+          currentPlayer={currentPlayer}
+          activePlayerName={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name}
+          activePlayerTokenColor={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.tokenColor}
+          potMoney={room.potMoney || 0}
+          round={1}
+          totalRounds={20}
           onCellClick={handleCellClick}
         />
       </main>
@@ -630,7 +643,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-primary flex items-center gap-1.5 transition-all"
               title="Daftar Pemain"
             >
-              <span className="material-symbols-outlined text-lg">person</span>
+              <span className="text-lg">👥</span>
               <span className="hidden md:inline text-xs font-bold">Pemain</span>
             </button>
             <button
@@ -638,7 +651,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-secondary flex items-center gap-1.5 transition-all"
               title="Status & Kavling"
             >
-              <span className="material-symbols-outlined text-lg">analytics</span>
+              <span className="text-lg">📊</span>
               <span className="hidden md:inline text-xs font-bold">Status</span>
             </button>
             <button
@@ -646,7 +659,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-sky-400 flex items-center gap-1.5 transition-all relative"
               title="Obrolan Meja"
             >
-              <span className="material-symbols-outlined text-lg">chat</span>
+              <span className="text-lg">💬</span>
               <span className="hidden md:inline text-xs font-bold">Chat</span>
             </button>
             <button
@@ -654,7 +667,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               className="h-9 w-9 sm:w-auto sm:px-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-on-surface-variant flex items-center justify-center gap-1 transition-all"
               title="Pengaturan"
             >
-              <span className="material-symbols-outlined text-lg">tune</span>
+              <span className="text-lg">⚙️</span>
             </button>
           </div>
 
@@ -666,7 +679,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
           {/* Right Action Area: Kocok Dadu & Selesai Giliran */}
           <div className="flex items-center gap-2">
-            {isMyTurn && (
+            {isMyTurn && !hasRolledThisTurn && (
               <button
                 onClick={handleRollDice}
                 className="h-9 px-4 sm:px-5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_16px_rgba(37,99,235,0.5)] transition-all active:scale-95"
@@ -675,12 +688,17 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 <span className="tracking-wide">KOCOK DADU</span>
               </button>
             )}
+            {isMyTurn && hasRolledThisTurn && (
+              <span className="h-9 px-4 sm:px-5 rounded-lg bg-blue-600/50 text-white/60 font-bold text-xs sm:text-sm flex items-center gap-2 cursor-not-allowed">
+                <span className="text-sm">🎲</span>
+                <span className="tracking-wide">SUDAH ROLL</span>
+              </span>
+            )}
             <button
               onClick={handleEndTurn}
-              className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-low hover:bg-surface-container border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors"
+              className="h-9 px-3 sm:px-4 rounded-lg bg-surface-container-low hover:bg-surface-container border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-semibold transition-colors"
             >
-              <span className="material-symbols-outlined text-base">skip_next</span>
-              <span className="hidden sm:inline">SELESAI</span>
+              Selesai
             </button>
           </div>
         </div>

@@ -25,10 +25,10 @@ interface GameModalProps {
 }
 
 const TAB_CONFIG = [
-  { key: 'players' as TabKey, label: 'Pemain', icon: 'person' },
-  { key: 'status' as TabKey, label: 'Status & Aset', icon: 'analytics' },
-  { key: 'chat' as TabKey, label: 'Chat Meja', icon: 'chat' },
-  { key: 'settings' as TabKey, label: 'Opsi', icon: 'tune' },
+  { key: 'players' as TabKey, label: 'Pemain', icon: '👥' },
+  { key: 'status' as TabKey, label: 'Status & Aset', icon: '📊' },
+  { key: 'chat' as TabKey, label: 'Chat Meja', icon: '💬' },
+  { key: 'settings' as TabKey, label: 'Opsi', icon: '⚙️' },
 ];
 
 export default function GameModal({
@@ -63,7 +63,7 @@ export default function GameModal({
         <div className="bg-surface-container px-4 py-3 border-b border-outline-variant flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shadow-sm">
-              <span className="material-symbols-outlined text-lg">{TAB_CONFIG.find((t) => t.key === activeTab)?.icon || 'groups'}</span>
+              <span className="text-lg">{TAB_CONFIG.find((t) => t.key === activeTab)?.icon || '👥'}</span>
             </div>
             <div>
               <h2 className="text-sm font-bold text-primary leading-tight">
@@ -76,7 +76,7 @@ export default function GameModal({
             </div>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-white flex items-center justify-center transition-colors">
-            <span className="material-symbols-outlined text-lg">close</span>
+            <span className="text-lg">✕</span>
           </button>
         </div>
 
@@ -92,7 +92,7 @@ export default function GameModal({
                   : 'bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              <span className="material-symbols-outlined text-sm">{tab.icon}</span>
+              <span className="text-sm">{tab.icon}</span>
               <span>{tab.label} {tab.key === 'players' && `(${players.length})`}</span>
               {tab.key === 'chat' && <span className="w-2 h-2 rounded-full bg-rose-500" />}
             </button>
@@ -148,7 +148,7 @@ export default function GameModal({
                   onClick={() => navigator.clipboard?.writeText(roomCode)}
                   className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-xs rounded-md text-primary flex items-center gap-1 border border-outline-variant"
                 >
-                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                  <span className="text-sm">📋</span>
                   <span>Salin</span>
                 </button>
               </div>
@@ -211,18 +211,18 @@ export default function GameModal({
                   <span className="text-xs font-bold text-on-surface block">Efek Suara Kocok Dadu</span>
                   <span className="text-[10px] text-on-surface-variant">Sfx koin &amp; bunyi klakson angkot</span>
                 </div>
-                <span className="material-symbols-outlined text-secondary text-xl">volume_up</span>
+                <span className="text-secondary text-xl">🔊</span>
               </div>
               <div className="flex items-center justify-between p-2.5 bg-surface-container-low rounded-xl border border-outline-variant">
                 <div>
                   <span className="text-xs font-bold text-on-surface block">Musik Latar Angklung Jazz</span>
                   <span className="text-[10px] text-on-surface-variant">Suasana kafe santai Nusantara</span>
                 </div>
-                <span className="material-symbols-outlined text-primary text-xl">music_note</span>
+                <span className="text-primary text-xl">🎵</span>
               </div>
               <div className="pt-2">
                 <button onClick={onLeaveRoom} className="w-full py-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-700/50 text-rose-300 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm">logout</span>
+                  <span className="text-sm">🚪</span>
                   <span>Tinggalkan Meja Monopoli</span>
                 </button>
               </div>
