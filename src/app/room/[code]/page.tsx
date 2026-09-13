@@ -59,6 +59,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [drawnTakdirCard, setDrawnTakdirCard] = useState<Card | undefined>(undefined);
   const [drawnKegiatanCard, setDrawnKegiatanCard] = useState<KegiatanCard | undefined>(undefined);
   const [drawnCardIds, setDrawnCardIds] = useState<string[]>([]);
+  const [ppnAmount, setPpnAmount] = useState<number>(0);
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('bundir');
   const [gameOver, setGameOver] = useState(false);
   const [winnerName, setWinnerName] = useState<string | null>(null);
@@ -293,14 +294,28 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setDrawnTakdirCard(card);
               setDrawnKegiatanCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
+              setPpnAmount(0);
             } else if (cell.type === 'draw_kegiatan') {
               const card = drawRandomKegiatanExcluding(drawnCardIds);
               setDrawnKegiatanCard(card);
               setDrawnTakdirCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
+              setPpnAmount(0);
+            } else if (cell.type === 'tax') {
+              const propPrices = getPropertyCells();
+              const ownedPropTotal = (currentPlayer.properties || []).reduce((sum, propName) => {
+                const prop = propPrices.find(p => p.name === propName);
+                return sum + (prop?.price || 0);
+              }, 0);
+              const totalHarta = (currentPlayer.cleanMoney || 0) + ownedPropTotal;
+              const ppn = Math.floor(totalHarta * 0.12);
+              setPpnAmount(ppn);
+              setDrawnTakdirCard(undefined);
+              setDrawnKegiatanCard(undefined);
             } else {
               setDrawnTakdirCard(undefined);
               setDrawnKegiatanCard(undefined);
+              setPpnAmount(0);
             }
             
             setShowGameEventModal(true);
@@ -1063,6 +1078,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           onClose={() => setShowGameEventModal(false)}
           onContinue={() => {
             setShowGameEventModal(false);
+            // Deduct PPN if tax and failed the roll
+            if (gameEventCell.type === 'tax' && ppnAmount > 0 && gameEventRollResult && !gameEventRollResult.passed) {
+              setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: Math.max(0, prev.cleanMoney - ppnAmount) } : null);
+            }
             // Broadcast the SAME card that was drawn (no second draw!)
             if (gameEventCell.type === 'draw_takdir' && drawnTakdirCard) {
               broadcastCard({ cardId: drawnTakdirCard.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
@@ -1072,6 +1091,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             // Clear drawn card state
             setDrawnTakdirCard(undefined);
             setDrawnKegiatanCard(undefined);
+            setPpnAmount(0);
           }}
           cell={gameEventCell}
           diceResult={gameEventDice}
@@ -1081,6 +1101,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           rollResult={gameEventRollResult}
           takdirCard={drawnTakdirCard}
           kegiatanCard={drawnKegiatanCard}
+          ppnAmount={gameEventCell.type === 'tax' ? ppnAmount : 0}
           turnNumber={(room.currentTurn || 0) + 1}
         />
       )}

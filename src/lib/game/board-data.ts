@@ -212,7 +212,7 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 32 - Pajak PPN 12% (Tax)
   {
     index: 32, name: 'PPN 12%', subtitle: 'Pajak', type: 'tax', group: null,
-    price: null, rent: null, description: 'Bayar PPN 12% -Rp 250.000',
+    price: null, rent: null, description: 'Bayar PPN 12% dari total harta',
     color: '#052011', groupColor: '#ff6b6b', emoji: '📋',
   },
   // Cell 33 - Pantai Priok (Green)

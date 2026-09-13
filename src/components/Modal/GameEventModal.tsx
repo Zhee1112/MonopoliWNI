@@ -24,6 +24,7 @@ interface GameEventModalProps {
   };
   takdirCard?: Card;
   kegiatanCard?: KegiatanCard;
+  ppnAmount?: number;
   turnNumber?: number;
 }
 
@@ -134,6 +135,7 @@ export default function GameEventModal({
   rollResult,
   takdirCard,
   kegiatanCard,
+  ppnAmount = 0,
   turnNumber = 1,
 }: GameEventModalProps) {
   const [selectedEvidence, setSelectedEvidence] = useState<string | null>(null);
@@ -190,7 +192,7 @@ export default function GameEventModal({
                 <span className="px-2 py-0.5 rounded bg-[#00a572]/30 text-[#4edea3] text-[11px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>FASE AKSI</span>
               </div>
               <h1 className="text-lg font-bold text-[#cbead1] tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{cellName}</h1>
-              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? 'Lolos Penalti Tilang Warga (Ambang Batas DC 10)' : isDraw ? 'Ambil Kartu' : 'Event Khusus'}</p>
+              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? `PPN 12% dari total harta${ppnAmount > 0 ? ` (Rp ${ppnAmount.toLocaleString('id-ID')})` : ''}` : isDraw ? 'Ambil Kartu' : 'Event Khusus'}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -371,11 +373,11 @@ export default function GameEventModal({
                       {passed ? '✅' : '❌'}
                     </span>
                     <span className={`text-sm font-bold ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`} style={{ fontFamily: "'Syne', sans-serif" }}>
-                      UJI {isTax ? 'DENDA' : 'TIPIRING'}: {passed ? 'LOLOS SEPENUHNYA!' : 'GAGAL!'}
+                      UJI {isTax ? 'PPN 12%' : 'TIPIRING'}: {passed ? 'LOLOS SEPENUHNYA!' : 'GAGAL!'}
                     </span>
                   </div>
                   <span className="text-xs text-[#cbead1] bg-[#152f1f] px-2 py-0.5 rounded">
-                    {passed ? 'Bebas Denda Rp 500rb' : `Bayar Denda`}
+                    {passed ? `Bebas PPN Rp ${ppnAmount.toLocaleString('id-ID')}` : `Bayar PPN Rp ${ppnAmount.toLocaleString('id-ID')}`}
                   </span>
                 </div>
               </div>
