@@ -289,7 +289,7 @@ export default function Board({ players, currentPlayer, activePlayerName, active
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#152f1f] border border-[#ffd56d]/30 text-[#ffd56d] mb-2 shadow-sm">
               <span className="text-[10px] font-bold tracking-widest uppercase">&bull; EDISI RESMI &bull; WARGA +62 &bull;</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-tight leading-none text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-sans font-bold tracking-tighter leading-none text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
               <span>MONOPOLI</span>
               <span className="bg-gradient-to-r from-[#ffd56d] via-[#ffdf97] to-[#e5b842] bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(255,213,109,0.4)]">WNI</span>
             </h1>
