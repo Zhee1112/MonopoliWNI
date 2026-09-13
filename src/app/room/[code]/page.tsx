@@ -39,7 +39,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showRegulations, setShowRegulations] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [gameModalOpen, setGameModalOpen] = useState(false);
-  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat' | 'settings'>('players');
+  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat'>('players');
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
@@ -65,7 +65,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [winnerName, setWinnerName] = useState<string | null>(null);
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ sender: string; text: string; time?: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +192,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleSendChat = useCallback(() => {
     if (!chatInput.trim() || !currentPlayer) return;
-    setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text: chatInput.trim() }]);
+    setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text: chatInput.trim(), time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }]);
     setChatInput('');
   }, [chatInput, currentPlayer]);
 
@@ -943,21 +943,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 px-3 sm:px-4 py-2 rounded-xl shadow-md" style={{ backgroundColor: '#152f1f', border: '1px solid #203a29' }}>
-          <div className="flex items-center gap-2">
-            <span className="text-secondary text-lg animate-pulse">&#x23F3;</span>
-            <div className="text-left leading-tight hidden md:block">
-              <span className="text-xs font-bold text-[#ffd56d] block">
-                Giliran {isMyTurn ? '(Anda)' : players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}
-              </span>
-              <span className="text-[10px] text-[#d1c5af]">Sisa Waktu Lempar Dadu</span>
-            </div>
-          </div>
-          <div className="px-2.5 py-1 rounded-lg font-mono font-bold text-[#ffd56d] text-base" style={{ backgroundColor: '#001206' }}>
-            38s
-          </div>
-        </div>
-
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Navigation Tabs (Desktop) */}
           <nav className="hidden xl:flex items-center gap-1">
@@ -983,13 +968,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               onClick={() => { setGameModalOpen(true); setGameModalTab('chat'); }}
               className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
             >
-              Log Chat
-            </button>
-            <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
-              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
-            >
-              Suara
+              Chat
             </button>
             <button
               onClick={() => router.push('/')}
@@ -1053,14 +1032,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             >
               <span className="text-lg">&#x1F4AC;</span>
               <span className="hidden md:inline text-xs font-bold">Chat</span>
-            </button>
-            <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
-              className="h-9 w-9 sm:w-auto sm:px-2.5 rounded-lg flex items-center justify-center gap-1 transition-all"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#d1c5af' }}
-              title="Pengaturan"
-            >
-              <span className="text-lg">&#x2699;&#xFE0F;</span>
             </button>
             <button
               onClick={() => setShowLoanModal(true)}
@@ -1133,7 +1104,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         currentPlayer={currentPlayer}
         roomCode={roomCode}
         chatMessages={chatMessages}
-        onSendChat={(text) => setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text }])}
+        onSendChat={(text) => setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text, time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }])}
       />
 
       {/* OTHER MODALS */}
