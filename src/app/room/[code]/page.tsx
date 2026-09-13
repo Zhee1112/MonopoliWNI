@@ -7,6 +7,7 @@ import PlayerPanel from '@/components/Player/PlayerPanel';
 import DiceRollModal from '@/components/Modal/DiceRollModal';
 import EventCardModal from '@/components/Modal/EventCardModal';
 import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
+import GameModal from '@/components/Modal/GameModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
@@ -30,6 +31,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
   const [showRegulations, setShowRegulations] = useState(false);
+  const [gameModalOpen, setGameModalOpen] = useState(false);
+  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat' | 'settings'>('players');
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -559,80 +562,160 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   // ---- GAME STATE ----
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col justify-between select-none">
+      {/* Ambient glows */}
       <div className="absolute top-20 left-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="fixed top-0 left-0 w-full z-40 bg-surface-container-low/90 backdrop-blur-xl border-b border-outline-variant/50">
-        <div className="h-16 px-4 sm:px-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-sm font-bold text-primary tracking-tight">MONOPOLI WNI</h1>
-            <p className="text-[10px] text-outline">{roomCode}</p>
+      {/* TOP APP HEADER */}
+      <header className="fixed top-0 left-0 w-full z-40 bg-surface-container-low/95 backdrop-blur-md border-b border-outline-variant/80 h-16 sm:h-20 flex items-center px-4 lg:px-8 justify-between shadow-lg">
+        {/* Left branding */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-surface-container-high border border-primary/30 flex items-center justify-center shadow-inner">
+            <span className="material-symbols-outlined text-primary text-2xl">casino</span>
           </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-on-surface">
-              Giliran: {players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}
-            </p>
-            <p className="text-[10px] text-outline">Putaran {room.currentTurn + 1}/{room.turnOrder.length}</p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-primary text-lg sm:text-xl tracking-tight">MONOPOLI WNI</span>
+              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-outline-variant text-secondary">V2.4</span>
+            </div>
+            <span className="text-xs text-on-surface-variant block tracking-wide font-medium">Arena Meja Nusantara</span>
+          </div>
+          <div className="hidden lg:flex items-center gap-1.5 ml-4 px-2.5 py-1 rounded-md bg-background-lowest border border-outline-variant">
+            <span className="text-[10px] text-outline font-semibold">KAMAR:</span>
+            <span className="text-xs font-mono font-bold text-secondary">#{roomCode}</span>
           </div>
         </div>
-      </div>
 
-      <div className="pt-20 pb-4 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-4">
-
-          {/* Left Panel - Players */}
-          <div className="lg:w-64 space-y-2">
-            {players.map((player) => (
-              <PlayerPanel
-                key={player.id}
-                player={player}
-                isActive={room.turnOrder[room.currentTurn] === player.id}
-                onRollDice={room.turnOrder[room.currentTurn] === player.id ? handleRollDice : undefined}
-                onEndTurn={room.turnOrder[room.currentTurn] === player.id ? handleEndTurn : undefined}
-              />
-            ))}
-          </div>
-
-          {/* Center - Board */}
-          <div className="flex-1">
-            <Board
-              players={players.map((p) => ({ id: p.id, position: p.position, tokenColor: p.tokenColor || '#3b82f6', name: p.name }))}
-              onCellClick={handleCellClick}
-            />
-            {isMyTurn && (
-              <div className="mt-4 flex justify-center gap-4">
-                <button
-                  onClick={handleRollDice}
-                  className="px-8 py-4 bg-gradient-to-r from-primary-container via-primary to-primary-container text-on-primary font-bold text-lg rounded-xl hover:scale-105 active:scale-95 shadow-[0_4px_16px_rgba(255,213,109,0.3)] transition-all"
-                >
-                  LEMPAR DADU
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Right Panel - Info */}
-          <div className="lg:w-64">
-            <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-4">
-              <h3 className="font-bold text-on-surface text-sm mb-2">Status Game</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-on-surface-variant">Pot:</span>
-                  <span className="font-bold text-primary">Rp{(room.potMoney || 0).toLocaleString('id-ID')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-on-surface-variant">Pemain:</span>
-                  <span className="font-bold text-on-surface">{players.length}</span>
-                </div>
-              </div>
+        {/* Center Turn status */}
+        <div className="flex items-center gap-3 px-3 sm:px-4 py-1.5 rounded-xl bg-surface-container-high border border-outline-variant shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-secondary text-xl animate-pulse">hourglass_top</span>
+            <div className="text-left leading-tight hidden md:block">
+              <span className="text-xs font-bold text-primary block">
+                Giliran {players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}
+                {isMyTurn && ' (Anda)'}
+              </span>
+              <span className="text-[10px] text-on-surface-variant">Sisa Waktu Lempar Dadu</span>
             </div>
           </div>
+          <div className="px-2.5 py-0.5 rounded-md bg-background-lowest border border-primary/20 font-mono font-bold text-primary text-base">
+            38s
+          </div>
         </div>
-      </div>
 
-      {/* Modals */}
+        {/* Right Header Navigation */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="w-9 h-9 rounded-full text-on-primary font-bold flex items-center justify-center text-sm shadow-md ring-2 ring-primary/30" style={{ backgroundColor: currentPlayer.tokenColor }}>
+            {currentPlayer.name.charAt(0).toUpperCase()}
+          </div>
+        </div>
+      </header>
+
+      {/* MAIN BOARD ARENA */}
+      <main className="w-full pt-20 pb-20 px-2 sm:px-4 lg:px-6 flex items-center justify-center flex-1">
+        <Board
+          players={players.map((p) => ({ id: p.id, position: p.position, tokenColor: p.tokenColor || '#3b82f6', name: p.name }))}
+          onCellClick={handleCellClick}
+        />
+      </main>
+
+      {/* FLOATING BOTTOM TOOLBAR */}
+      <aside className="fixed bottom-0 left-0 right-0 h-14 z-40 bg-surface-container-low/95 backdrop-blur-md border-t border-outline-variant px-3 sm:px-6 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]">
+        <div className="h-full max-w-[1400px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          {/* Left Quick Modals Triggers */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('players'); }}
+              className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-primary flex items-center gap-1.5 transition-all"
+              title="Daftar Pemain"
+            >
+              <span className="material-symbols-outlined text-lg">person</span>
+              <span className="hidden md:inline text-xs font-bold">Pemain</span>
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('status'); }}
+              className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-secondary flex items-center gap-1.5 transition-all"
+              title="Status & Kavling"
+            >
+              <span className="material-symbols-outlined text-lg">analytics</span>
+              <span className="hidden md:inline text-xs font-bold">Status</span>
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('chat'); }}
+              className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-sky-400 flex items-center gap-1.5 transition-all relative"
+              title="Obrolan Meja"
+            >
+              <span className="material-symbols-outlined text-lg">chat</span>
+              <span className="hidden md:inline text-xs font-bold">Chat</span>
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
+              className="h-9 w-9 sm:w-auto sm:px-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-on-surface-variant flex items-center justify-center gap-1 transition-all"
+              title="Pengaturan"
+            >
+              <span className="material-symbols-outlined text-lg">tune</span>
+            </button>
+          </div>
+
+          {/* Center Status Label (Desktop) */}
+          <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-on-surface-variant">
+            <span>{currentPlayer.name} &bull; Kavling {currentPlayer.properties?.length || 0}</span>
+            <span className="text-primary font-bold">Kas Dompet: Rp {(currentPlayer.cleanMoney || 0).toLocaleString('id-ID')}</span>
+          </div>
+
+          {/* Right Action Area: Kocok Dadu & Selesai Giliran */}
+          <div className="flex items-center gap-2">
+            {isMyTurn && (
+              <button
+                onClick={handleRollDice}
+                className="h-9 px-4 sm:px-5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_16px_rgba(37,99,235,0.5)] transition-all active:scale-95"
+              >
+                <span className="text-sm animate-spin" style={{ animationDuration: '4s' }}>🎲</span>
+                <span className="tracking-wide">KOCOK DADU</span>
+              </button>
+            )}
+            <button
+              onClick={handleEndTurn}
+              className="h-9 px-2.5 sm:px-3 rounded-lg bg-surface-container-low hover:bg-surface-container border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">skip_next</span>
+              <span className="hidden sm:inline">SELESAI</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* BOTTOM TICKER WARTA MEJA */}
+      <footer className="w-full bg-background-lowest border-t border-outline-variant py-2 px-4 text-xs shadow-inner hidden md:block fixed bottom-14 left-0 z-30">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="px-2 py-0.5 rounded bg-surface-container text-primary font-bold text-[10px] tracking-wider uppercase shrink-0">WARTA MEJA</span>
+            <p className="text-on-surface-variant truncate text-xs">
+              <span className="text-secondary font-semibold">{players[1]?.name || 'Pemain 2'}</span> membeli <span className="text-primary font-medium">Menteng VIP</span> seharga <span className="font-mono text-on-surface">Rp 750.000</span> &bull; Bank menyalurkan dividen Kas Keliling
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-on-surface-variant shrink-0 text-xs font-mono">
+            <span className="flex items-center gap-1 text-secondary"><span className="w-2 h-2 rounded-full bg-secondary" /> 18ms</span>
+            <span>Babak {(room.currentTurn || 0) + 1} / 20</span>
+            <span>Pool Kas: <strong className="text-primary">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
+          </div>
+        </div>
+      </footer>
+
+      {/* GAME MODAL */}
+      <GameModal
+        isOpen={gameModalOpen}
+        onClose={() => setGameModalOpen(false)}
+        defaultTab={gameModalTab}
+        players={players}
+        currentPlayer={currentPlayer}
+        roomCode={roomCode}
+        chatMessages={chatMessages}
+        onSendChat={(text) => setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text }])}
+      />
+
+      {/* OTHER MODALS */}
       <DiceRollModal isOpen={showDiceModal} onClose={() => setShowDiceModal(false)} onRollComplete={handleDiceRollComplete} />
       {selectedCell && (
         <BuyPropertyModal

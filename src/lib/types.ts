@@ -5,17 +5,20 @@
 // --- Board Types ---
 export type CellType = 'property' | 'corner' | 'event' | 'tax' | 'draw_takdir' | 'draw_kegiatan';
 
-export type PropertyGroup = 'coklat' | 'cyan' | 'pink' | 'orange' | 'merah' | 'kuning' | 'hijau' | null;
+export type PropertyGroup = 'coklat' | 'cyan' | 'kuning' | 'orange' | 'merah' | 'hijau' | 'ungu' | 'transport' | null;
 
 export interface BoardCell {
   index: number;
   name: string;
+  subtitle: string;
   type: CellType;
   group: PropertyGroup;
   price: number | null;
   rent: number | null;
   description: string;
   color: string;
+  groupColor: string;
+  emoji: string;
 }
 
 // --- Role Types ---
