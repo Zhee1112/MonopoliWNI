@@ -183,8 +183,8 @@ export const GAME_MODES: Record<GameMode, {
 }> = {
   bundir: {
     id: 'bundir',
-    title: 'BUNDIR: Main atau Gugur',
-    subtitle: 'Siapa yang goyang, dia yang dikubur',
+    title: 'BUNDIR',
+    subtitle: 'Main atau Gugur',
     description: 'Bangkrut = keluar. Pemain terakhir yang bertahan hidup menang. Hidup cuma sekali, dompet juga.',
     icon: '💀',
     color: '#f87171',
@@ -193,8 +193,8 @@ export const GAME_MODES: Record<GameMode, {
   },
   sultan: {
     id: 'sultan',
-    title: 'KAYA RAYA: Sultan atau Miskin',
-    subtitle: 'Bro sini gua kasih duit',
+    title: 'KAYA RAYA',
+    subtitle: 'Sultan atau Miskin',
     description: 'Main 20 babak. Pemain paling kaya di akhir babak 20 menang. Kalo miskin, scroll HP aja.',
     icon: '💎',
     color: '#ffd56d',
@@ -203,8 +203,8 @@ export const GAME_MODES: Record<GameMode, {
   },
   kilat: {
     id: 'kilat',
-    title: 'KILAT: Ngebut atau Keabisan',
-    subtitle: 'Speedrun monopoli, goyang ngebut!',
+    title: 'KILAT',
+    subtitle: 'Ngebut atau Keabisan',
     description: 'Cuma 10 babak! Uang awal 2x lipat, sewa naik 50%. Yang lambat, gulung tikar.',
     icon: '⚡',
     color: '#38bdf8',

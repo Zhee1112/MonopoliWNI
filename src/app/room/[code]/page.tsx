@@ -523,11 +523,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                           </span>
                           {isSelected && <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.15)', color: '#ffd56d' }}>DIPILIH</span>}
                         </div>
-                        <p className="text-xs font-bold mb-0.5" style={{ color: isSelected ? mode.color : '#cbead1', fontFamily: "'Syne', sans-serif" }}>{mode.title}</p>
-                        <p className="text-[10px] text-[#9a907c] italic mb-1.5">{mode.subtitle}</p>
+                        <p className="text-sm font-extrabold mb-0.5" style={{ color: isSelected ? mode.color : '#cbead1' }}>{mode.title}</p>
+                        <p className="text-xs text-[#9a907c] italic mb-1.5">{mode.subtitle}</p>
                         <p className="text-[10px] text-[#d1c5af] leading-snug">{mode.description}</p>
                         <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(32,58,41,0.5)' }}>
-                          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: mode.color }}>{mode.winCondition}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: mode.color }}>{mode.winCondition}</span>
                         </div>
                       </button>
                     );
@@ -551,7 +551,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="text-xs font-bold text-[#ffd56d]" style={{ fontFamily: "'Syne', sans-serif" }}>JAKARTA MEGAPOLIS</p>
+                          <p className="text-sm font-extrabold text-[#ffd56d]">JAKARTA MEGAPOLIS</p>
                           <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.15)', color: '#ffd56d' }}>DIPILIH</span>
                         </div>
                         <p className="text-[10px] text-[#9a907c]">40 Petak &bull; 6 Zona &bull; Monas sampai Bandara</p>
@@ -567,7 +567,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                         <span className="text-xl">🔒</span>
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-[#9a907c]" style={{ fontFamily: "'Syne', sans-serif" }}>BALI PARADISE</p>
+                        <p className="text-sm font-extrabold text-[#9a907c]">BALI PARADISE</p>
                         <p className="text-[10px] text-[#9a907c]">Segera hadir &bull; Kuta sampai Ubud</p>
                       </div>
                     </div>
