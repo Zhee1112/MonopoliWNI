@@ -8,6 +8,7 @@ import DiceRollModal from '@/components/Modal/DiceRollModal';
 import EventCardModal from '@/components/Modal/EventCardModal';
 import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
 import GameModal from '@/components/Modal/GameModal';
+import InfoModal from '@/components/Modal/InfoModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById } from '@/lib/game/takdir-cards';
@@ -31,6 +32,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
   const [showRegulations, setShowRegulations] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [gameModalOpen, setGameModalOpen] = useState(false);
   const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat' | 'settings'>('players');
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
@@ -496,14 +498,23 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               </button>
             )}
 
-            {/* Regulations */}
-            <button
-              onClick={() => setShowRegulations(!showRegulations)}
-              className="w-full py-2.5 text-[10px] font-semibold transition-colors"
-              style={{ color: '#d1c5af' }}
-            >
-              {showRegulations ? 'Sembunyikan Peraturan ▲' : 'Lihat Peraturan ▼'}
-            </button>
+            {/* Info & Regulations */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowInfoModal(true)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                style={{ backgroundColor: 'rgba(255,213,109,0.1)', border: '1px solid rgba(255,213,109,0.3)', color: '#ffd56d' }}
+              >
+                <span>📖</span> INFO
+              </button>
+              <button
+                onClick={() => setShowRegulations(!showRegulations)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                style={{ backgroundColor: 'rgba(78,222,163,0.1)', border: '1px solid rgba(78,222,163,0.3)', color: '#4edea3' }}
+              >
+                <span>📋</span> PERATURAN {showRegulations ? '▲' : '▼'}
+              </button>
+            </div>
             {showRegulations && (
               <div className="rounded-2xl p-4 text-[11px] space-y-1.5" style={{ backgroundColor: '#052011', border: '1px solid #203a29', color: '#d1c5af' }}>
                 <p>1. Minimal 2 pemain, maksimal 8 pemain</p>
@@ -571,6 +582,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             </div>
           </div>
         )}
+
+        {/* Info Modal */}
+        {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
       </div>
     );
   }
