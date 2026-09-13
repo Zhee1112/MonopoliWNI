@@ -185,20 +185,28 @@ function LeftColCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cell
 
   return (
     <div
-      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between text-left bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 sm:p-1.5 transition-colors cursor-pointer`}
+      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 text-center transition-colors cursor-pointer`}
       onClick={() => onCellClick?.(cell)}
     >
-      <div className="flex items-center gap-1">
-        {isProperty && !isTax && <div className="w-1.5 sm:w-2 h-4 rounded-sm shrink-0" style={{ backgroundColor: cell.groupColor }} />}
-        {isDraw && <span className="text-xs">{cell.emoji}</span>}
-        {isTax && <span className="text-xs">{cell.emoji}</span>}
-        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] leading-tight truncate">{cell.name}</span>
+      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full shrink-0" style={{ backgroundColor: cell.groupColor }} />}
+      {isTax && <span className="text-[8px] sm:text-[9px] font-bold text-[#fca5a5] shrink-0">{cell.emoji}</span>}
+      {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase shrink-0">TAKDIR</span>}
+
+      <div className="my-auto py-0.5">
+        {isDraw && <span className="text-sm sm:text-base font-black text-[#ffd56d] block">{cell.emoji}</span>}
+        {isTax && <span className="text-sm sm:text-base block">{cell.emoji}</span>}
+        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] block leading-tight truncate">{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] text-[#d1c5af] hidden sm:block">{cell.subtitle}</span>
       </div>
+
       {cell.price ? (
-        <span className="text-[9px] font-mono font-bold text-[#ffd56d] text-right">Rp {(cell.price / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d] shrink-0">Rp {(cell.price / 1000).toFixed(0)}k</span>
+      ) : isTax ? (
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">-Rp 200k</span>
       ) : isDraw ? (
-        <span className="text-[8px] text-[#d1c5af] text-right">Ambil Kartu</span>
+        <span className="text-[8px] text-[#9a907c] shrink-0">Ambil Kartu</span>
       ) : null}
+
       <CellTokenDots cellPlayers={cellPlayers} />
     </div>
   );
@@ -211,21 +219,28 @@ function RightColCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cel
 
   return (
     <div
-      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between text-right bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 sm:p-1.5 transition-colors cursor-pointer`}
+      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 text-center transition-colors cursor-pointer`}
       onClick={() => onCellClick?.(cell)}
     >
-      <div className="flex items-center justify-end gap-1">
-        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] leading-tight truncate">{cell.name}</span>
-        {isProperty && !isTax && <div className="w-1.5 sm:w-2 h-4 rounded-sm shrink-0" style={{ backgroundColor: cell.groupColor }} />}
-        {isDraw && <span className="text-xs font-black text-[#ffd56d]">{cell.emoji}</span>}
+      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full shrink-0" style={{ backgroundColor: cell.groupColor }} />}
+      {isTax && <span className="text-[8px] sm:text-[9px] font-bold text-[#fca5a5] shrink-0">{cell.emoji}</span>}
+      {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase shrink-0">TAKDIR</span>}
+
+      <div className="my-auto py-0.5">
+        {isDraw && <span className="text-sm sm:text-base font-black text-[#ffd56d] block">{cell.emoji}</span>}
+        {isTax && <span className="text-sm sm:text-base block">{cell.emoji}</span>}
+        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] block leading-tight truncate">{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] text-[#d1c5af] hidden sm:block">{cell.subtitle}</span>
       </div>
+
       {cell.price ? (
-        <span className="text-[9px] font-mono font-bold text-[#ffd56d]">Rp {(cell.price / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d] shrink-0">Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
-        <span className="text-[9px] font-mono font-bold text-[#fca5a5]">-Rp 200k</span>
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">-Rp 150k</span>
       ) : isDraw ? (
-        <span className="text-[8px] text-[#d1c5af]">{cell.subtitle}</span>
+        <span className="text-[8px] text-[#9a907c] shrink-0">Ambil Kartu</span>
       ) : null}
+
       <CellTokenDots cellPlayers={cellPlayers} />
     </div>
   );
