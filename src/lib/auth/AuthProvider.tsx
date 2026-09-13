@@ -14,6 +14,9 @@ interface UserProfile {
   rank: string;
   totalGames: number;
   totalWins: number;
+  cleanMoney: number;
+  highestCash: number;
+  propertiesOwned: number;
   createdAt: string;
 }
 
@@ -138,6 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           rank,
           totalGames: existing.total_games || 0,
           totalWins: existing.total_wins || 0,
+          cleanMoney: existing.clean_money || 0,
+          highestCash: existing.highest_cash || 2500000,
+          propertiesOwned: existing.properties_owned || 0,
           createdAt: existing.created_at,
         });
         setLoading(false);
@@ -170,6 +176,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           rank: '🟢 Magang',
           totalGames: 0,
           totalWins: 0,
+          cleanMoney: 0,
+          highestCash: 2500000,
+          propertiesOwned: 0,
           createdAt: created.created_at,
         });
       } else {
@@ -183,6 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           rank: '🟢 Magang',
           totalGames: 0,
           totalWins: 0,
+          cleanMoney: 0,
+          highestCash: 2500000,
+          propertiesOwned: 0,
           createdAt: new Date().toISOString(),
         });
       }
@@ -197,6 +209,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         rank: '🟢 Magang',
         totalGames: 0,
         totalWins: 0,
+        cleanMoney: 0,
+        highestCash: 2500000,
+        propertiesOwned: 0,
         createdAt: new Date().toISOString(),
       });
     }
