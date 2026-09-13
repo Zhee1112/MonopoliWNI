@@ -2,6 +2,7 @@
 
 @theme inline {
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 
   /* ── Core Colors ── */
   --color-primary: #ffd56d;
