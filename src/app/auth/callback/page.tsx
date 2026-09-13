@@ -26,36 +26,63 @@ export default function AuthCallbackPage() {
       setTimeout(() => window.location.replace('/login'), 3000);
     }
 
-    // Log URL for debugging
-    setDebug(window.location.href);
+    async function handleCallback() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      const hash = window.location.hash;
+      const urlParams = new URLSearchParams(hash.substring(1));
+      const accessToken = urlParams.get('access_token');
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, sess) => {
-        if (sess) {
-          goHome();
+      setDebug(`code=${!!code}, hash=${!!hash}, url=${url.pathname}`);
+
+      // Method 1: Exchange PKCE code
+      if (code) {
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            setDebug(`exchangeCode error: ${error.message}`);
+          } else if (data.session) {
+            goHome();
+            return;
+          }
+        } catch (e: any) {
+          setDebug(`exchangeCode exception: ${e.message}`);
         }
       }
-    );
 
-    // Poll session
-    let attempts = 0;
-    const interval = setInterval(async () => {
-      attempts++;
-      const { data: { session }, error } = await supabase.auth.getSession();
-      setDebug(`Attempt ${attempts}: session=${!!session}, error=${error?.message || 'none'}, url=${window.location.href.substring(0, 80)}`);
-      if (session) {
-        clearInterval(interval);
-        goHome();
-      } else if (attempts >= 20) {
-        clearInterval(interval);
-        goLogin('Timeout: sesi tidak ditemukan');
+      // Method 2: Check hash tokens (implicit flow)
+      if (accessToken) {
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: urlParams.get('refresh_token') || '',
+          });
+          if (data.session) {
+            goHome();
+            return;
+          }
+        } catch (e: any) {
+          setDebug(`setSession exception: ${e.message}`);
+        }
       }
-    }, 500);
 
-    return () => {
-      subscription.unsubscribe();
-      clearInterval(interval);
-    };
+      // Method 3: Poll getSession
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        const { data: { session } } = await supabase.auth.getSession();
+        setDebug(`poll ${attempts}: session=${!!session}`);
+        if (session) {
+          clearInterval(interval);
+          goHome();
+        } else if (attempts >= 15) {
+          clearInterval(interval);
+          goLogin('Timeout: sesi tidak ditemukan');
+        }
+      }, 500);
+    }
+
+    handleCallback();
   }, [router]);
 
   return (
