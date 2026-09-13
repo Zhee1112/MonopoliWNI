@@ -612,35 +612,72 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-[#ffd56d] text-lg sm:text-xl tracking-tighter">MONOPOLI WNI</span>
-              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ backgroundColor: '#203a29', color: '#4edea3' }}>V2.4</span>
+              <span className="font-bold text-[#ffd56d] text-lg sm:text-xl tracking-tighter" style={{ fontFamily: "'Syne', sans-serif" }}>MONOPOLI WNI</span>
             </div>
-            <span className="text-xs text-[#d1c5af] block tracking-wide font-medium">Arena Meja Nusantara</span>
+            <span className="text-[10px] text-[#d1c5af] block tracking-widest uppercase font-semibold" style={{ fontFamily: "'Syne', sans-serif" }}>Arena Meja Nusantara</span>
           </div>
-          <div className="hidden lg:flex items-center gap-1.5 ml-4 px-2.5 py-1 rounded-md" style={{ backgroundColor: '#001206', border: '1px solid #203a29' }}>
-            <span className="text-[10px] text-[#9a907c] font-semibold">KAMAR:</span>
-            <span className="text-xs font-mono font-bold text-[#4edea3]">#{roomCode}</span>
+          <div className="hidden lg:flex items-center gap-1.5 ml-4 px-2.5 py-1 rounded" style={{ backgroundColor: '#001206' }}>
+            <span className="text-[10px] text-[#9a907c] font-semibold" style={{ fontFamily: "'Syne', sans-serif" }}>KAMAR:</span>
+            <span className="text-sm font-mono font-bold text-[#4edea3]">#{roomCode}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 px-3 sm:px-4 py-1.5 rounded-xl shadow-md" style={{ backgroundColor: '#152f1f', border: '1px solid #203a29' }}>
+        <div className="flex items-center gap-3 px-3 sm:px-4 py-2 rounded-xl shadow-md" style={{ backgroundColor: '#152f1f', border: '1px solid #203a29' }}>
           <div className="flex items-center gap-2">
-            <span className="text-xl animate-pulse">&#x23F3;</span>
+            <span className="text-secondary text-lg animate-pulse">&#x23F3;</span>
             <div className="text-left leading-tight hidden md:block">
               <span className="text-xs font-bold text-[#ffd56d] block">
-                Giliran {players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}
-                {isMyTurn && ' (Anda)'}
+                Giliran {isMyTurn ? '(Anda)' : players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}
               </span>
               <span className="text-[10px] text-[#d1c5af]">Sisa Waktu Lempar Dadu</span>
             </div>
           </div>
-          <div className="px-2.5 py-0.5 rounded-md font-mono font-bold text-[#ffd56d] text-base" style={{ backgroundColor: '#001206', border: '1px solid rgba(255,213,109,0.2)' }}>
+          <div className="px-2.5 py-1 rounded-lg font-mono font-bold text-[#ffd56d] text-base" style={{ backgroundColor: '#001206' }}>
             38s
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="w-9 h-9 rounded-full text-white font-bold flex items-center justify-center text-sm shadow-md" style={{ backgroundColor: currentPlayer.tokenColor, boxShadow: '0 0 0 2px rgba(255,213,109,0.3)' }}>
+          {/* Navigation Tabs (Desktop) */}
+          <nav className="hidden xl:flex items-center gap-1">
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('players'); }}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Arena
+            </button>
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Aturan
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('status'); }}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Sertifikat
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('chat'); }}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Log Chat
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Suara
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#ff4757]/20 hover:text-[#ff4757] transition-colors"
+            >
+              Keluar
+            </button>
+          </nav>
+          <div className="w-8 h-8 rounded-full text-white font-bold flex items-center justify-center text-sm shadow-md" style={{ backgroundColor: currentPlayer.tokenColor, boxShadow: '0 0 0 2px rgba(255,213,109,0.3)' }}>
             {currentPlayer.name.charAt(0).toUpperCase()}
           </div>
         </div>
@@ -666,8 +703,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       </main>
 
       {/* FLOATING BOTTOM TOOLBAR */}
-      <aside className="fixed bottom-0 left-0 right-0 h-14 z-40 backdrop-blur-md border-t px-3 sm:px-6 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]" style={{ backgroundColor: 'rgba(5,32,17,0.95)', borderColor: '#203a29' }}>
-        <div className="h-full max-w-[1400px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <aside className="fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md border-t px-3 sm:px-6 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]" style={{ backgroundColor: 'rgba(5,32,17,0.95)', borderColor: '#203a29' }}>
+        <div className="h-14 max-w-[1400px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => { setGameModalOpen(true); setGameModalTab('players'); }}
@@ -715,14 +752,14 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             {isMyTurn && !hasRolledThisTurn && (
               <button
                 onClick={handleRollDice}
-                className="h-9 px-4 sm:px-5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_16px_rgba(37,99,235,0.5)] transition-all active:scale-95"
+                className="h-9 px-4 sm:px-5 rounded-lg bg-[#ffd56d] hover:bg-[#eec14a] text-[#3e2e00] font-bold text-xs sm:text-sm flex items-center gap-2 shadow-[2px_2px_0_0_#000] transition-all active:scale-95"
               >
-                <span className="text-sm animate-spin" style={{ animationDuration: '4s' }}>&#x1F3B2;</span>
+                <span className="text-sm" style={{ animationDuration: '4s' }}>&#x1F3B2;</span>
                 <span className="tracking-wide">KOCOK DADU</span>
               </button>
             )}
             {isMyTurn && hasRolledThisTurn && (
-              <span className="h-9 px-4 sm:px-5 rounded-lg bg-blue-600/50 text-white/60 font-bold text-xs sm:text-sm flex items-center gap-2 cursor-not-allowed">
+              <span className="h-9 px-4 sm:px-5 rounded-lg bg-[#203a29] text-[#9a907c] font-bold text-xs sm:text-sm flex items-center gap-2 cursor-not-allowed border border-[#4e4635]">
                 <span className="text-sm">&#x1F3B2;</span>
                 <span className="tracking-wide">SUDAH ROLL</span>
               </span>
