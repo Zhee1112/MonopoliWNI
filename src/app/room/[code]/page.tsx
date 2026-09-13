@@ -10,6 +10,7 @@ import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
 import GameModal from '@/components/Modal/GameModal';
 import InfoModal from '@/components/Modal/InfoModal';
 import LoanModal from '@/components/Modal/LoanModal';
+import GameEventModal from '@/components/Modal/GameEventModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells } from '@/lib/game/board-data';
@@ -41,6 +42,25 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
+  const [showGameEventModal, setShowGameEventModal] = useState(false);
+  const [gameEventCell, setGameEventCell] = useState<BoardCell | null>(null);
+  const [gameEventDice, setGameEventDice] = useState<{ dice1: number; dice2: number; total: number } | undefined>(undefined);
+  const [gameEventRollResult, setGameEventRollResult] = useState<{
+    baseDice: number;
+    statBonus: number;
+    luckBonus: number;
+    evidenceBonus: number;
+    totalScore: number;
+    dcTarget: number;
+    passed: boolean;
+    margin: number;
+  } | undefined>(undefined);
+  const [gameEventCard, setGameEventCard] = useState<{
+    title: string;
+    description: string;
+    reward?: string;
+    expReward?: number;
+  } | undefined>(undefined);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -241,12 +261,55 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           );
           setHasRolledThisTurn(true);
           const cell = getCellByIndex(newPosition);
-          if (cell.type === 'property') {
+          
+          // Trigger GameEventModal for special petaks
+          if (cell.type === 'tax' || cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
+            const d1 = result.dice1;
+            const d2 = result.dice2;
+            const baseDice = d1 + d2;
+            const statBonus = Math.floor(Math.random() * 3);
+            const luckBonus = currentPlayer.luck ? Math.floor(currentPlayer.luck * 0.45) : 0;
+            const totalScore = baseDice + statBonus + luckBonus;
+            const dcTarget = 10;
+            const passed = totalScore >= dcTarget;
+            
+            setGameEventCell(cell);
+            setGameEventDice({ dice1: d1, dice2: d2, total: d1 + d2 });
+            setGameEventRollResult({
+              baseDice,
+              statBonus,
+              luckBonus,
+              evidenceBonus: 0,
+              totalScore,
+              dcTarget,
+              passed,
+              margin: totalScore - dcTarget,
+            });
+            
+            // Set event card for draw types
+            if (cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
+              const card = drawRandomCard();
+              setGameEventCard({
+                title: card.name,
+                description: card.flavorText,
+                reward: card.effect.value ? `Rp ${Math.abs(card.effect.value).toLocaleString('id-ID')}` : undefined,
+                expReward: undefined,
+              });
+            } else if (cell.type === 'tax') {
+              setGameEventCard({
+                title: 'Denda Pajak Warga',
+                description: 'Anda tertangkap tidak membayar pajak tepat waktu. Bayar denda atau coba banding.',
+                reward: 'Bebas Denda',
+                expReward: 10,
+              });
+            } else {
+              setGameEventCard(undefined);
+            }
+            
+            setShowGameEventModal(true);
+          } else if (cell.type === 'property') {
             const property = getPropertyCells().find((p) => p.index === newPosition);
             if (property) { setSelectedCell(property); setShowBuyModal(true); }
-          } else if (cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
-            const card = drawRandomCard();
-            broadcastCard({ cardId: card.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
           }
         });
       } catch (err) { console.error('Roll dice error:', err); }
@@ -858,6 +921,28 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         properties={players.find((p) => p.id === currentPlayer.id)?.properties?.map((p) => ({ id: p, name: p })) || []}
         existingLoans={activeLoans}
       />
+      {gameEventCell && (
+        <GameEventModal
+          isOpen={showGameEventModal}
+          onClose={() => setShowGameEventModal(false)}
+          onContinue={() => {
+            setShowGameEventModal(false);
+            // Broadcast card if needed
+            if (gameEventCell.type === 'draw_takdir' || gameEventCell.type === 'draw_kegiatan') {
+              const card = drawRandomCard();
+              broadcastCard({ cardId: card.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
+            }
+          }}
+          cell={gameEventCell}
+          diceResult={gameEventDice}
+          playerName={currentPlayer.name}
+          playerLevel={currentPlayer.roleLevel || 1}
+          playerRank={currentPlayer.selectedRole || 'Magang'}
+          rollResult={gameEventRollResult}
+          eventCard={gameEventCard}
+          turnNumber={(room.currentTurn || 0) + 1}
+        />
+      )}
     </div>
   );
 }
