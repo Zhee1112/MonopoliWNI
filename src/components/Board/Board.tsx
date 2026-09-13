@@ -245,7 +245,7 @@ export default function Board({ players, currentPlayer, activePlayerName, active
     <div className="w-full max-w-[1400px] min-h-[600px] p-2 sm:p-3 rounded-2xl bg-[#001206] border-2 border-[#203a29] shadow-[0_24px_64px_rgba(0,0,0,0.85)] relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(21,47,31,0.3) 0%, transparent 60%, rgba(0,0,0,0.6) 100%)' }} />
 
-      <div className="relative z-10 w-full h-full grid gap-0.5 sm:gap-1" style={{ gridTemplateColumns: '2fr repeat(9, 1fr) 2fr', gridTemplateRows: '2fr repeat(9, 1fr) 2fr' }}>
+      <div className="relative z-10 w-full h-full grid grid-cols-11 gap-0.5 sm:gap-1" style={{ gridTemplateRows: '2fr repeat(9, 1fr) 2fr' }}>
         {BOARD_CELLS.map((cell) => {
           const posType = getCellPositionType(cell.index);
           const cellPlayers = getPlayersOnCell(cell.index, players);
