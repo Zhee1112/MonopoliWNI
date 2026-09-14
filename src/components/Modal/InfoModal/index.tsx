@@ -35,7 +35,7 @@ const ROLE_STATS = [
     emoji: '🫠',
     title: 'Emak-emak Sirkel',
     stats: { strategy: 'C', luck: 'B', negotiation: 'A' },
-    passive: 'Denda/Blacklist turun 20% → ganti rugi naik 20%',
+    passive: 'Denda turun 20% → ganti rugi naik 20%',
     playstyle: 'Nego King',
     tier: 'Tier B',
   },
@@ -74,24 +74,24 @@ const ROLE_STATS = [
 ]
 
 const STAT_INFO = {
-  'Strategy (C → A)': 'Mengurangi DC pinjaman & biaya blacklist → menambah peluang lolos denda',
-  'Luck (C → A)': 'Mengurangi risiko event negatif (gagal DC, kena penipuan, denda) → menambah peluang menang undian/event positif',
-  'Negotiation (C → S)': 'Memperbesar peluang sukses nego → memperkecil peluang pemain lain lolos dari denda',
+  'Strategy (C → S)': 'Menentukan stat bonus saat DnD check. Strategi tinggi = lebih mudah lolos.',
+  'Luck (C → S)': 'Modifikator hoki (45% dari luck). Luck tinggi = lebih sering dapat efek bagus.',
+  'Negotiation (C → S)': 'Menentukan kemampuan negosiasi sewa dan interaksi pemain lain.',
 }
 
 const TIMELINE = [
-  { icon: '1️⃣', title: 'Membuat/Masuk Room', desc: 'Tentukan jumlah pemain (2-8) & mode permainan' },
-  { icon: '2️⃣', title: 'Memilih Role', desc: 'Setiap role punya skill & stat yang beda' },
-  { icon: '3️⃣', title: 'Roll The Dice', desc: 'Kocok dadu untuk menentukan jumlah langkah' },
-  { icon: '4️⃣', title: 'Mulai Perjalanan', desc: 'Jalanin petualangan di peta Jakarta meme' },
-  { icon: '5️⃣', title: 'Ambil Kartu', desc: 'Ketemu petak = ambil kartu Takdir/Kegiatan' },
-  { icon: '6️⃣', title: 'Tantangan DnD', desc: 'Roll dadu + stat karakter vs Difficulty Class' },
-  { icon: '7️⃣', title: 'Denda & Blacklist', desc: 'Kalau gagal = bayar denda. 3x gagal = blacklist!' },
-  { icon: '8️⃣', title: 'Beli Properti', desc: 'Beli tanah/bangunan sebagai sumber passive income' },
-  { icon: '9️⃣', title: 'Bayar Sewa', desc: 'Kalau hoki tanah orang = harus bayar sewa' },
-  { icon: '🔟', title: 'Strategi & Nego', desc: 'Negosiasi, gertak, atau manfaatin role ability' },
-  { icon: '🏃', title: 'Pemain Kalah', desc: 'Kalau bangkrut = Bundir (keluar dari game)' },
-  { icon: '👑', title: 'Menang!', desc: 'Pemain terakhir yang bertahan = Sultan Monopoli WNI!' },
+  { icon: '1️⃣', title: 'Buat / Masuk Room', desc: 'Undang teman atau tambah bot (2-8 pemain)' },
+  { icon: '2️⃣', title: 'Pilih Mode', desc: 'BUNDIR (bertahan hidup), KAYA RAYA (20 babak), atau KILAT (10 babak)' },
+  { icon: '3️⃣', title: 'Pilih Role', desc: '8 role unik dengan stat & passive berbeda' },
+  { icon: '4️⃣', title: 'Roll Dadu (1x per turn)', desc: 'Kocok dadu 2d6 untuk menentukan langkah. Hanya boleh roll sekali!' },
+  { icon: '5️⃣', title: 'Bergerak di Peta', desc: 'Pion bergerak sejumlah langkah. Lewat Start = +Rp100.000' },
+  { icon: '6️⃣', title: 'Hadapi Petak', desc: 'Properti, Event, Takdir, Kegiatan, atau Pajak — setiap petak punya efek beda' },
+  { icon: '7️⃣', title: 'DnD Check', desc: 'Roll 1d6 + stat + bukti warga vs DC. PASS = sukses, FAIL = penalty + bisa sogok!' },
+  { icon: '8️⃣', title: 'Upgrade Properti', desc: 'Upgrade sampai Level 4, atau jadikan Landmark (Level 5, tak bisa ditakeover)' },
+  { icon: '9️⃣', title: 'Event Global', desc: 'Setiap babak (mulai babak 2) ada event chaos yang mempengaruhi semua pemain' },
+  { icon: '🔟', title: 'Kumpulkan Bukti', desc: 'Dari kartu audit/koruptor. Pakai saat DnD untuk bonus skor' },
+  { icon: '💰', title: 'Koleksi Pot', desc: 'Mendarat di Bebas Parkir = ambil seluruh pool dana kas + Rp100.000' },
+  { icon: '👑', title: 'Menang!', desc: 'BUNDIR: terakhir bertahan. KAYA RAYA: terkaya di babak 20. KILAT: terkaya di babak 10.' },
 ]
 
 const ZONES = [
@@ -131,8 +131,8 @@ export default function InfoModal({ onClose }: InfoModalProps) {
   const tabs = [
     { id: 'cara-main', label: 'Cara Bermain' },
     { id: 'role-stats', label: '8 Role & Stats' },
-    { id: 'peraturan', label: 'Peraturan & Finansial' },
-    { id: 'peta', label: 'Peta Jakarta 11x11' },
+    { id: 'peraturan', label: 'Aturan & Mekanik' },
+    { id: 'peta', label: 'Peta Jakarta' },
   ]
 
   return (
@@ -186,10 +186,11 @@ export default function InfoModal({ onClose }: InfoModalProps) {
           {activeTab === 'cara-main' && (
             <div className="space-y-4">
               <div className="mb-6 rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-2 text-base font-bold text-[#e4e4e7]">How to Play</h3>
+                <h3 className="mb-2 text-base font-bold text-[#e4e4e7]">Cara Bermain</h3>
                 <p className="text-xs leading-relaxed text-[#777]">
                   Monopoli WNI adalah board game 2-8 pemain bergaya Monopoly dengan mekanik DnD.
                   Setiap langkah menentukan nasibmu berdasarkan Role, Stat, dan Keberuntungan.
+                  Ada 3 mode: BUNDIR (bertahan hidup 999 babak), KAYA RAYA (terkaya di babak 20), KILAT (10 babak, 2x uang).
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -267,73 +268,201 @@ export default function InfoModal({ onClose }: InfoModalProps) {
 
           {activeTab === 'peraturan' && (
             <div className="space-y-6">
+              {/* Roll Dadu */}
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-3 font-bold text-[#e4e4e7]">Basic Rules</h3>
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🎲 Roll Dadu</h3>
                 <div className="space-y-2 text-xs text-[#777]">
-                  <p>🎲 <strong className="text-[#e4e4e7]">Roll Dadu:</strong> Klik tombol roll untuk mendapatkan angka 2-12. Angka menentukan langkah.</p>
-                  <p>🚶 <strong className="text-[#e4e4e7]">Bergerak:</strong> Pion bergerak sejumlah langkah di peta. Lewat Start = bonus Rp100.000.</p>
-                  <p>🏠 <strong className="text-[#e4e4e7]">Beli Properti:</strong> Mendarat di petak kosong = bisa beli. Harga bervariasi per zona.</p>
-                  <p>💳 <strong className="text-[#e4e4e7]">Bayar Sewa:</strong> Mendarat di properti orang = harus bayar sewa. Nego bisa dilakukan.</p>
-                  <p>🃏 <strong className="text-[#e4e4e7]">Kartu:</strong> Mendarat di petak Takdir/Kegiatan = ambil kartu. Efek langsung aktif.</p>
-                  <p>💀 <strong className="text-[#e4e4e7]">Bundir:</strong> Uang habis = bangkrut = keluar dari game. Pemain terakhir menang.</p>
+                  <p><strong className="text-[#e4e4e7]">Satu Roll per Turn:</strong> Setiap pemain hanya boleh roll dadu <strong className="text-[#ffd56d]">SEKALI</strong> per giliran. Setelah roll, tombol berubah jadi &quot;SUDAH ROLL&quot;.</p>
+                  <p><strong className="text-[#e4e4e7]">Dadu 2d6:</strong> Dua dadu dilempar, total menentukan langkah (2-12). Lewat Start = bonus Rp100.000.</p>
+                  <p><strong className="text-[#e4e4e7]">Bot Auto-Play:</strong> Bot akan roll + end turn otomatis.</p>
                 </div>
               </div>
+
+              {/* DnD System */}
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-3 font-bold text-[#e4e4e7]">Blacklist System</h3>
-                <p className="mb-3 text-xs text-[#777]">Sistem Blacklist Monopoli WNI:</p>
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">⚔️ Sistem DnD (Dungeons & Dragons)</h3>
                 <div className="space-y-2 text-xs text-[#777]">
-                  <p>⚠️ <strong className="text-[#e4e4e7]">1x Gagal DnD:</strong> Dapat peringatan (warning)</p>
-                  <p>🚫 <strong className="text-[#e4e4e7]">2x Gagal DnD:</strong> Denda naik 20%</p>
-                  <p>💀 <strong className="text-[#e4e4e7]">3x Gagal DnD:</strong> BLACKLIST! Uang dibekukan 3 putaran & aset disita 20%</p>
-                  <p>🔄 <strong className="text-[#e4e4e7]">Reset:</strong> Lewat Start = reset blacklist counter</p>
+                  <p><strong className="text-[#e4e4e7]">Kapan DnD?</strong> Saat kartu Takdir/Kegiatan & event cell (Tagihan PLN, Macet, Kripto).</p>
+                  <p><strong className="text-[#e4e4e7]">Roll 1d6:</strong> Dadu tunggal (1-6) sebagai DnD dice.</p>
+                  <p><strong className="text-[#e4e4e7]">Total Skor = 1d6 + Stat Bonus + Hoki + Bukti Warga</strong></p>
+                  <p><strong className="text-[#e4e4e7]">DC (Difficulty Class) = 4</strong> — Skor harus ≥ DC untuk PASS.</p>
+                  <p><strong className="text-[#4edea3]">PASS ✅:</strong> Dapat buff / lolos dari efek buruk.</p>
+                  <p><strong className="text-[#f87171]">FAIL ❌:</strong> Kena penalty / efek buruk diterapkan.</p>
                 </div>
               </div>
+
+              {/* Card Types + DnD */}
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-3 font-bold text-[#e4e4e7]">Duit Kotor vs Duit Bersih</h3>
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🃏 Tipe Kartu & DnD</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-[#4edea3]/10 p-2">
+                      <h4 className="font-bold text-[#4edea3]">Buff 🟢</h4>
+                      <p>PASS = efek bagus aktif. FAIL = tidak terjadi apa-apa.</p>
+                    </div>
+                    <div className="rounded-lg bg-[#f87171]/10 p-2">
+                      <h4 className="font-bold text-[#f87171]">Debuff 🔴</h4>
+                      <p>FAIL = efek buruk aktif. PASS = lolos, aman!</p>
+                    </div>
+                    <div className="rounded-lg bg-[#ffd56d]/10 p-2">
+                      <h4 className="font-bold text-[#ffd56d]">Takdir 🟡</h4>
+                      <p>Selalu aktif, tidak ada DnD check.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bribe System */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">💰 Sistem Sogokan (Bribe)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#ffd56d]">Kapan?</strong> Saat DnD GAGAL di event cell (Tagihan PLN, Macet, Kripto).</p>
+                  <p><strong className="text-[#ffd56d]">Biaya:</strong> 15% CleanMoney (min Rp50.000). Dibayarkan ke bank.</p>
+                  <p><strong className="text-[#4edea3]">Efek:</strong> Mengubah hasil DnD dari FAIL → PASS. Efek bagus diterapkan.</p>
+                  <p><strong className="text-[#f87171]">Tombol:</strong> Muncul di modal DnD saat gagal. Klik &quot;Sogok&quot; untuk auto-pass.</p>
+                </div>
+              </div>
+
+              {/* Event Cells */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">⚡ Event Cells (Petak Event)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">Petak 13 — Tagihan PLN:</strong> PASS = bayar Rp100k. FAIL = bayar Rp400k.</p>
+                  <p><strong className="text-[#e4e4e7]">Petak 16 — Macet Tomang:</strong> PASS = bayar Rp50k. FAIL = skip 2 putaran.</p>
+                  <p><strong className="text-[#e4e4e7]">Petak 28 — FOMO Kripto:</strong> PASS = profit 200%. FAIL = rugpull -90%.</p>
+                  <p><strong className="text-[#ffd56d]">Semua pakai DnD!</strong> Roll 1d6 + stat + hoki vs DC 4. Bisa sogok jika gagal.</p>
+                </div>
+              </div>
+
+              {/* Global Events */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🌍 Event Global (Mulai Babak 2)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">Trigger:</strong> Setiap babak mulai babak 2, 1 event global random terjadi.</p>
+                  <p><strong className="text-[#e4e4e7]">Durasi:</strong> Efek hanya berlaku 1 babak, habis di babak berikutnya.</p>
+                  <p><strong className="text-[#e4e4e7]">Contoh event:</strong> Reshuffle posisi, Inflasi, Ganjil Genap, Grebek Judi, IKN, Cancel Culture, OTT KPK, dll.</p>
+                  <p><strong className="text-[#f87171]">12 event chaotik</strong> — Semua pemain terkena dampak!</p>
+                </div>
+              </div>
+
+              {/* Property System */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🏠 Sistem Properti</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">Beli:</strong> Mendarat di petak kosong = beli seharga harga dasar.</p>
+                  <p><strong className="text-[#e4e4e7]">Upgrade:</strong> Klik properti sendiri → Upgrade (Level 1-4). Biaya = 50% harga dasar × level.</p>
+                  <p><strong className="text-[#4edea3]">Landmark:</strong> Level 5 = Landmark. Tidak bisa ditakeover. Sewa 5x lipat.</p>
+                  <p><strong className="text-[#f87171]">Takeover:</strong> Mendarat di properti lawan (Level &lt; 5) = bisa takeover seharga 200% harga dasar.</p>
+                  <p><strong className="text-[#ffd56d]">Sewa Scaling:</strong> Lv0=1x, Lv1=1.5x, Lv2=2x, Lv3=2.5x, Lv4=3x, Lv5=5x. Monopoly = +1.5x bonus.</p>
+                </div>
+              </div>
+
+              {/* Sewa */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">💳 Bayar Sewa</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">Langsung Bayar:</strong> Mendarat di properti orang = bayar sewa langsung (tidak ada DnD).</p>
+                  <p><strong className="text-[#f87171]">Takeover:</strong> Jika properti bukan Landmark (Lv &lt; 5), bisa takeover 200% harga ke pemilik.</p>
+                  <p><strong className="text-[#4edea3]">Landmark:</strong> Tidak bisa ditakeover. Hanya bayar sewa 5x lipat.</p>
+                  <p><strong className="text-[#ffd56d]">Rent Frozen:</strong> Jika kena event global property_disable, sewa dibekukan 1 babak.</p>
+                </div>
+              </div>
+
+              {/* Free Parking */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🅿️ Free Parking (Pool Dana)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">Pool:</strong> 10% dari semua duit yang keluar (sewa, pajak, denda event global) masuk pool.</p>
+                  <p><strong className="text-[#4edea3]">Koleksi:</strong> Mendarat di posisi 20 = ambil SELURUH pool + Rp100.000 bonus.</p>
+                  <p><strong className="text-[#ffd56d]">Strategi:</strong> Semakin lama pool terkumpul, semakin besar hadiahnya!</p>
+                </div>
+              </div>
+
+              {/* Bukti Warga */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">📋 Bukti Warga (Evidence)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">Dari mana?</strong> Kartu Takdir bertipe Audit/Koruptor (gacha roll ≥ 3).</p>
+                  <p><strong className="text-[#e4e4e7]">Fungsi:</strong> Dipilih saat DnD → menambah bonus skor DnD.</p>
+                  <p><strong className="text-[#e4e4e7]">Jenis:</strong> Kwitansi Pajak (+1), Rekaman Oknum (+2), Mutasi Rekening (+1), Screenshot Viral (+2), Saksi Mata (+3), Dokumen Resmi (+4), Rekening Koran (+5), Bukti Viral (+3).</p>
+                  <p><strong className="text-[#4edea3]">Tip:</strong> Kumpulkan bukti sebanyak mungkin, pakai saat DnD kritis!</p>
+                </div>
+              </div>
+
+              {/* Duit Kotor vs Bersih */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">💵 Duit Kotor vs Duit Bersih</h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="rounded-lg bg-[#ff4757]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#ff4757]">Duit Kotor</h4>
-                    <p className="text-[#777]">Total seluruh uang & aset pemain termasuk properti & investasi.</p>
-                  </div>
                   <div className="rounded-lg bg-[#4edea3]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#4edea3]">Duit Bersih</h4>
-                    <p className="text-[#777]">Uang tunai saja, tidak termasuk properti. Yang ini dipegang pemain.</p>
+                    <h4 className="mb-2 font-bold text-[#4edea3]">Duit Bersih (CleanMoney)</h4>
+                    <p className="text-[#777]">Uang tunai yang dipegang. Digunakan untuk beli properti, bayar sewa, denda, sogok, pinjaman.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-2 font-bold text-[#f87171]">Duit Kotor (DirtyMoney)</h4>
+                    <p className="text-[#777]">Uang dari sumber ilegal (korupsi, judi). Bisa disita oleh event global OTT KPK / Grebek Judi.</p>
                   </div>
                 </div>
               </div>
+
+              {/* Bank vs Pinjol */}
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-3 font-bold text-[#e4e4e7]">Bank vs Pinjol</h3>
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🏦 Pinjaman: Bank vs Pinjol</h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="rounded-lg bg-[#4edea3]/10 p-3">
                     <h4 className="mb-2 font-bold text-[#4edea3]">Bank BUMN</h4>
                     <ul className="space-y-1 text-[#777]">
                       <li>✅ Bunga rendah (10%)</li>
-                      <li>✅ Perlu jaminan properti</li>
+                      <li>✅ Perlu jaminan properti (max 50% aset)</li>
                       <li>✅ Aman & terpercaya</li>
-                      <li>⚠️ Proses agak lama</li>
                     </ul>
                   </div>
-                  <div className="rounded-lg bg-[#ff4757]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#ff4757]">Pinjol Ilegal</h4>
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-2 font-bold text-[#f87171]">Pinjol Ilegal</h4>
                     <ul className="space-y-1 text-[#777]">
                       <li>❌ Bunga tinggi (25%)</li>
                       <li>❌ Tanpa jaminan</li>
-                      <li>❌ 15% risiko aset disita</li>
-                      <li>✅ Cair instan</li>
+                      <li>❌ 15% risiko properti disita otomatis</li>
                     </ul>
                   </div>
                 </div>
               </div>
+
+              {/* Pajak */}
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-3 font-bold text-[#e4e4e7]">Mata Uang Ganda</h3>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🏛️ Pajak</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#e4e4e7]">PBB Jakarta:</strong> Denda tetap Rp100.000.</p>
+                  <p><strong className="text-[#e4e4e7]">Uji Emisi:</strong> Denda tetap Rp150.000.</p>
+                  <p><strong className="text-[#e4e4e7]">PPN 12%:</strong> 12% dari total harta (CleanMoney + nilai properti). Pakai DnD untuk lolos!</p>
+                </div>
+              </div>
+
+              {/* BunDIR */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">💀 Kondisi Kalah (Bundir)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#f87171]">Bangkrut:</strong> CleanMoney ≤ 0 + DirtyMoney ≤ 0 = BANGKRUT.</p>
+                  <p><strong className="text-[#f87171]">Properti Disita:</strong> Semua properti dilepas ke bank.</p>
+                  <p><strong className="text-[#f87171]">Menyerah:</strong> Bisa menyerah kapan saja via tombol &quot;Menyerah&quot; di toolbar.</p>
+                  <p><strong className="text-[#4edea3]">Menang:</strong> BUNDIR = terakhir bertahan. KAYA RAYA = terkaya di babak 20. KILAT = terkaya di babak 10.</p>
+                </div>
+              </div>
+
+              {/* Game Modes */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🎮 3 Mode Permainan</h3>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#f87171]">💀 BUNDIR</h4>
+                    <p className="text-[#777]">Bertahan hidup. 999 babak. Terakhir menang.</p>
+                  </div>
                   <div className="rounded-lg bg-[#ffd56d]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#ffd56d]">Rupiah Tunai</h4>
-                    <p className="text-[#777]">Uang tunai utama. Digunakan untuk beli properti, bayar sewa, denda.</p>
+                    <h4 className="mb-1 font-bold text-[#ffd56d]">👑 KAYA RAYA</h4>
+                    <p className="text-[#777]">20 babak. Pemain terkaya di akhir menang.</p>
                   </div>
                   <div className="rounded-lg bg-[#4edea3]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#4edea3]">Koin Emas</h4>
-                    <p className="text-[#777]">Premium currency. Dapat dari event khusus, bisa beli role skill upgrade.</p>
+                    <h4 className="mb-1 font-bold text-[#4edea3]">⚡ KILAT</h4>
+                    <p className="text-[#777]">10 babak. 2x uang awal. Sewa naik 50%.</p>
                   </div>
                 </div>
               </div>
@@ -344,7 +473,7 @@ export default function InfoModal({ onClose }: InfoModalProps) {
             <div className="space-y-4">
               <div className="mb-4 rounded-xl border border-[#203a29] bg-[#0c1f14] p-4 text-center">
                 <h3 className="mb-2 font-bold text-[#e4e4e7]">Peta Jakarta 11×11</h3>
-                <p className="text-xs text-[#777]">Monopoli WNI menggunakan peta berbasis grid Jakarta dengan 4 zona tematik</p>
+                <p className="text-xs text-[#777]">40 petak di sekeliling papan, 4 zona tematik Jakarta</p>
               </div>
               <div className="space-y-3">
                 {ZONES.map((zone, i) => (
@@ -367,23 +496,61 @@ export default function InfoModal({ onClose }: InfoModalProps) {
                 ))}
               </div>
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
-                <h3 className="mb-3 font-bold text-[#e4e4e7]">Special Zones</h3>
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">Petak Khusus</h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="rounded-lg bg-[#4edea3]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#4edea3]">🏁 Start</h4>
-                    <p className="text-[#777]">Lewat Start = bonus Rp100.000 & reset blacklist</p>
-                  </div>
-                  <div className="rounded-lg bg-[#ff4757]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#ff4757]">💀 Free Parking</h4>
-                    <p className="text-[#777]">Istirahat 1 putaran. Tidak kena efek apapun.</p>
+                    <h4 className="mb-2 font-bold text-[#4edea3]">🏁 Start (Pos 0)</h4>
+                    <p className="text-[#777]">Lewat Start = bonus Rp100.000. Gaji UMR Jakarta cair.</p>
                   </div>
                   <div className="rounded-lg bg-[#ffd56d]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#ffd56d]">🏠 Go To Jail</h4>
-                    <p className="text-[#777]">Bayar Rp50.000 atau lewati 2 putaran. Blacklist reset.</p>
+                    <h4 className="mb-2 font-bold text-[#ffd56d]">🅿️ Bebas Parkir (Pos 20)</h4>
+                    <p className="text-[#777]">Ambil SELURUH pool dana + Rp100.000 bonus. Pool = 10% dari semua duit keluar.</p>
                   </div>
-                  <div className="rounded-lg bg-[#4edea3]/10 p-3">
-                    <h4 className="mb-2 font-bold text-[#4edea3]">🌳 Monas</h4>
-                    <p className="text-[#777]">Bonus Rp150.000 + free kartu Takdir premium</p>
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-2 font-bold text-[#f87171]">🚨 Tahanan KPK (Pos 10)</h4>
+                    <p className="text-[#777]">Kena OTT KPK! Skip 2 putaran berikutnya.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-2 font-bold text-[#f87171]">⛓️ Masuk Sel (Pos 30)</h4>
+                    <p className="text-[#777]">Bui! Skip 3 putaran berikutnya.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">Petak Event</h3>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-lg bg-[#a78bfa]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#a78bfa]">⚡ Tagihan PLN (Pos 13)</h4>
+                    <p className="text-[#777]">DnD: PASS = -Rp100k, FAIL = -Rp400k. Bisa sogok.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#a78bfa]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#a78bfa]">🚦 Macet Tomang (Pos 16)</h4>
+                    <p className="text-[#777]">DnD: PASS = -Rp50k, FAIL = skip 2 putaran. Bisa sogok.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#a78bfa]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#a78bfa]">📈 FOMO Kripto (Pos 28)</h4>
+                    <p className="text-[#777]">DnD: PASS = profit 200%, FAIL = rugpull -90%. Bisa sogok.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#a78bfa]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#a78bfa]">🃏 Takdir / Kegiatan</h4>
+                    <p className="text-[#777]">Ambil kartu. Buff/Debuff pakai DnD. Takdir selalu aktif.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">Petak Pajak</h3>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#f87171]">🏛️ PBB Jakarta</h4>
+                    <p className="text-[#777]">Denda tetap Rp100.000.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#f87171]">🚗 Uji Emisi</h4>
+                    <p className="text-[#777]">Denda tetap Rp150.000.</p>
+                  </div>
+                  <div className="rounded-lg bg-[#f87171]/10 p-3">
+                    <h4 className="mb-1 font-bold text-[#f87171]">💰 PPN 12%</h4>
+                    <p className="text-[#777]">12% total harta. DnD untuk lolos!</p>
                   </div>
                 </div>
               </div>
