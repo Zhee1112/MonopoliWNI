@@ -48,13 +48,14 @@ export function usePionAnimation() {
     let step = 0;
     const interval = setInterval(() => {
       if (step < path.length) {
+        const nextPos = path[step];
         setAnimatedPions(prev => {
           const next = new Map(prev);
           const pion = next.get(playerId);
           if (pion) {
             next.set(playerId, {
               ...pion,
-              currentPosition: path[step],
+              currentPosition: nextPos,
             });
           }
           return next;

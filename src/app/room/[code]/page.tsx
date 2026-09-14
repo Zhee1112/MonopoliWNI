@@ -337,7 +337,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleDiceRollComplete = useCallback(
     async (result: { dice1: number; dice2: number; total: number }) => {
-      if (!currentPlayer || !room) return;
+      if (!currentPlayerRef.current || !room) return;
       setLastRoll(result);
       SoundEffects.diceResult(result.total);
       try {
@@ -355,7 +355,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           setLastRoll({ dice1: data.dice1, dice2: data.dice2, total: data.total });
           broadcastAnnouncement({
             type: 'skip',
-            playerName: currentPlayer.name,
+            playerName: currentPlayerRef.current?.name || 'Pemain',
             message: data.skipReason || 'Skip putaran',
             detail: '',
           });
@@ -366,12 +366,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         // Close dice modal BEFORE animation starts so user can see the board
         setShowDiceModal(false);
         
-        // Animate pion step by step
-        const oldPosition = currentPlayer.position;
+        // Animate pion step by step — use ref for fresh position
+        const freshPlayer = currentPlayerRef.current;
+        if (!freshPlayer) return;
+        const oldPosition = freshPlayer.position;
         const newPosition = data.newPosition;
+        const playerId = freshPlayer.id;
         const rolledDice = { dice1: result.dice1, dice2: result.dice2 };
         
-        animatePion(currentPlayer.id, oldPosition, newPosition, () => {
+        animatePion(playerId, oldPosition, newPosition, () => {
           // Use refs inside callback to avoid stale closures
           const player = currentPlayerRef.current;
           if (!player) return;
@@ -656,7 +659,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         });
       } catch (err) { console.error('Roll dice error:', err); }
     },
-    [currentPlayer, room, broadcastCard, animatePion]
+    [room, broadcastCard, animatePion]
   );
 
   const handleBuyProperty = useCallback(async () => {
@@ -1621,7 +1624,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           onClose={() => setShowGameEventModal(false)}
           onContinue={() => {
             setShowGameEventModal(false);
-            if (!currentPlayer || !room) return;
+      if (!currentPlayerRef.current || !room) return;
 
             // Apply card effects
             let effectApplied = false;
