@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Player } from '@/lib/types';
-import { getPropertyCells } from '@/lib/game/board-data';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Announcement } from '@/hooks/useRealtime';
 
@@ -32,6 +31,9 @@ interface GameModalProps {
   musicOn?: boolean;
   onToggleMusic?: () => void;
   announcements?: Announcement[];
+  round?: number;
+  totalRounds?: number;
+  potMoney?: number;
 }
 
 const TAB_CONFIG = [
@@ -60,7 +62,7 @@ function formatChatTime(time?: string): string {
 export default function GameModal({
   isOpen, onClose, defaultTab = 'players', players, currentPlayer, roomCode,
   chatMessages = [], onSendChat, onLeaveRoom, musicOn = false, onToggleMusic,
-  announcements = [],
+  announcements = [], round = 1, totalRounds = 20, potMoney = 0,
 }: GameModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>(defaultTab);
   const [chatInput, setChatInput] = useState('');
@@ -101,7 +103,7 @@ export default function GameModal({
             <div>
               <h2 className="text-sm font-bold leading-tight" style={{ color: '#ffd56d' }}>
                 {activeTab === 'players' && 'Pemain Meja'}
-                {activeTab === 'status' && 'Status & Aset'}
+                {activeTab === 'status' && 'Status Pemain'}
                 {activeTab === 'log' && 'Log Permainan'}
                 {activeTab === 'chat' && 'Log Chat Meja'}
                 {activeTab === 'settings' && 'Pengaturan'}
@@ -177,52 +179,82 @@ export default function GameModal({
             </div>
           )}
 
-          {/* PANEL: STATUS & ASET */}
+          {/* PANEL: STATUS */}
           {activeTab === 'status' && (
             <div className="p-3 space-y-3">
-              {/* Room Code */}
-              <div className="p-3 rounded-xl flex items-center justify-between" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
-                <div>
-                  <span className="text-[10px] uppercase font-semibold block" style={{ color: '#7a9a7a' }}>Kode Meja</span>
-                  <span className="font-mono font-bold text-sm" style={{ color: '#ffd56d' }}>#{roomCode}</span>
+              {/* Room Info */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase font-semibold" style={{ color: '#7a9a7a' }}>Kode Meja</span>
+                  <button
+                    onClick={() => navigator.clipboard?.writeText(roomCode)}
+                    className="px-2.5 py-1 rounded-md text-xs flex items-center gap-1 transition-colors"
+                    style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#4edea3' }}
+                  >
+                    <span className="text-sm">📋</span>
+                    <span>Salin</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => navigator.clipboard?.writeText(roomCode)}
-                  className="px-2.5 py-1 rounded-md text-xs flex items-center gap-1 transition-colors"
-                  style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#4edea3' }}
-                >
-                  <span className="text-sm">📋</span>
-                  <span>Salin</span>
-                </button>
+                <span className="font-mono font-bold text-sm" style={{ color: '#ffd56d' }}>#{roomCode}</span>
+                <div className="flex items-center gap-4 mt-2 text-[11px]" style={{ color: '#7a9a7a' }}>
+                  <span>Babak <strong style={{ color: '#ffd56d' }}>{round}</strong>/{totalRounds}</span>
+                  <span>Pool: <strong style={{ color: '#ffd56d' }}>Rp {potMoney.toLocaleString('id-ID')}</strong></span>
+                </div>
               </div>
 
-              {/* Owned Properties */}
+              {/* Ringkasan Pemain */}
               <div>
-                <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Kavling Dikuasai</span>
+                <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Ringkasan Pemain</span>
                 <div className="space-y-1.5">
-                  {(currentPlayer.properties || []).length === 0 ? (
-                    <div className="p-3 rounded-lg text-center" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
-                      <span className="text-xs" style={{ color: '#7a9a7a' }}>Belum ada properti</span>
-                    </div>
-                  ) : (
-                    (currentPlayer.properties || []).map((propName) => {
-                      const cell = getPropertyCells().find(c => c.name === propName);
-                      return cell ? (
-                        <div key={cell.index} className="p-2.5 rounded-lg flex items-center justify-between" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-5 rounded-sm" style={{ backgroundColor: cell.groupColor }} />
-                            <div>
-                              <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>{cell.name}</span>
-                              <span className="text-[10px]" style={{ color: '#7a9a7a' }}>Sewa Rp {((cell.rent || 0) / 1000).toFixed(0)}k</span>
-                            </div>
-                          </div>
-                          <span className="font-mono text-xs font-bold" style={{ color: '#4edea3' }}>Rp {(cell.price || 0) / 1000}k</span>
+                  {players.map((p) => {
+                    const isActive = p.id === currentPlayer.id;
+                    return (
+                      <div key={p.id} className="p-2.5 rounded-lg flex items-center justify-between" style={{ backgroundColor: isActive ? '#152f1f' : '#0d2e1a', border: `1px solid ${isActive ? '#ffd56d30' : '#203a29'}` }}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.tokenColor || '#3b82f6' }} />
+                          <span className="text-xs font-bold" style={{ color: isActive ? '#ffd56d' : '#e0d8c8' }}>
+                            {p.name} {isActive && <span className="text-[9px]" style={{ color: '#7a9a7a' }}>(kamu)</span>}
+                          </span>
+                          {p.isBot && <span className="text-[9px] px-1 rounded" style={{ backgroundColor: '#a78bfa20', color: '#a78bfa' }}>BOT</span>}
+                          {p.isBankrupt && <span className="text-[9px] px-1 rounded" style={{ backgroundColor: '#f8717120', color: '#f87171' }}>BANGKRUT</span>}
                         </div>
-                      ) : null;
-                    })
-                  )}
+                        <div className="text-right">
+                          <span className="font-mono text-[11px] font-bold block" style={{ color: '#ffd56d' }}>Rp {(p.cleanMoney || 0).toLocaleString('id-ID')}</span>
+                          <span className="text-[9px]" style={{ color: '#7a9a7a' }}>{p.properties?.length || 0} kavling</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+
+              {/* Status Effects */}
+              {currentPlayer.statusEffects && currentPlayer.statusEffects.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Status Aktif</span>
+                  <div className="space-y-1">
+                    {currentPlayer.statusEffects.map((eff, i) => (
+                      <div key={i} className="p-2 rounded-lg text-[11px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', color: '#f87171' }}>
+                        ⏳ {eff.effect || eff.type} {eff.duration > 0 && <span style={{ color: '#7a9a7a' }}>({eff.duration} giliran)</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bukti Warga */}
+              {currentPlayer.evidence && currentPlayer.evidence.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Bukti Warga</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {currentPlayer.evidence.map((ev, i) => (
+                      <span key={i} className="px-2 py-1 rounded text-[10px] font-bold" style={{ backgroundColor: '#4edea315', color: '#4edea3', border: '1px solid #4edea330' }}>
+                        📄 {ev.id || `Bukti ${i + 1}`} (+{ev.bonusModifier || 1})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

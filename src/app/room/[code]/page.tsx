@@ -1539,6 +1539,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         roomCode={roomCode}
         chatMessages={chatMessages}
         announcements={announcements}
+        round={Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}
+        totalRounds={room.totalRounds || 20}
+        potMoney={room.potMoney || 0}
         onSendChat={(text) => {
           if (currentPlayer) {
             sendChatMessage(currentPlayer.name, text);
