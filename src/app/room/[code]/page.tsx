@@ -74,6 +74,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('bundir');
   const [gameOver, setGameOver] = useState(false);
   const [winnerName, setWinnerName] = useState<string | null>(null);
+  const [surrendered, setSurrendered] = useState(false);
+  const [surrenderedWinnerName, setSurrenderedWinnerName] = useState<string | null>(null);
   const [gameRankings, setGameRankings] = useState<Array<{
     playerId: string; playerName: string; placement: number; totalAssets: number;
     cleanMoney: number; properties: string[]; isBot: boolean; isBankrupt: boolean;
@@ -177,6 +179,19 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       SoundEffects.turnStart();
     }
   }, [room?.currentTurn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect game end while surrendered — show final results
+  useEffect(() => {
+    if (surrendered && room?.status === 'finished') {
+      setSurrendered(false);
+      SoundEffects.gameOver();
+      setGameOver(true);
+      // Fetch final results
+      fetch(`/api/active-room?userId=${user?.id || ''}`)
+        .then(r => r.json())
+        .catch(() => {});
+    }
+  }, [surrendered, room?.status]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -559,6 +574,17 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   cleanMoney: newMoney,
                   statusEffects: newEffects,
                 } : null);
+                // Sync corner effects to DB
+                fetch('/api/update-player', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    roomId: room.id,
+                    playerId: freshPlayer.id,
+                    cleanMoneyDelta: moneyChange,
+                    statusEffects: newEffects,
+                  }),
+                }).catch(() => {});
               }
             }
 
@@ -776,9 +802,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         alert(data.error || 'Gagal menyerah');
         return;
       }
-      sessionStorage.removeItem('player');
-      sessionStorage.removeItem('room');
       if (data.gameOver) {
+        sessionStorage.removeItem('player');
+        sessionStorage.removeItem('room');
         SoundEffects.gameOver();
         setGameOver(true);
         setWinnerName(data.winnerName || 'Tidak ada');
@@ -790,13 +816,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           }
         }
       } else {
-        router.push('/');
+        // Game not over — show eliminated screen, player can still watch or leave
+        SoundEffects.gameOver();
+        setSurrendered(true);
+        setSurrenderedWinnerName(null);
       }
     } catch (err) {
       console.error('Surrender error:', err);
       alert('Terjadi kesalahan jaringan');
     }
-  }, [currentPlayer, room, user, router]);
+  }, [currentPlayer, room, user]);
 
   const handleReaction = useCallback(
     (reaction: string) => { if (currentPlayer) broadcastReaction(currentPlayer.id, reaction); },
@@ -1265,6 +1294,31 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         />
         <div className="min-h-screen bg-[#001809]" />
       </>
+    );
+  }
+
+  // ---- SURRENDERED / ELIMINATED STATE ----
+  if (surrendered) {
+    return (
+      <div className="min-h-screen bg-[#001809] flex items-center justify-center">
+        <div className="max-w-md w-full mx-4 rounded-xl p-8 text-center border" style={{ backgroundColor: '#0a2014', borderColor: '#203a29' }}>
+          <span className="text-5xl block mb-4">&#x1F6AA;</span>
+          <h2 className="text-xl font-bold text-[#f87171] mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>KAMU MENYERAH</h2>
+          <p className="text-sm text-[#9a907c] mb-6">Kamu telah keluar dari permainan. Tunggu pemain lain selesai, atau kembali ke lobby.</p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => {
+                SoundEffects.click();
+                router.push('/');
+              }}
+              className="w-full py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              style={{ backgroundColor: '#152f1f', color: '#4edea3', border: '1px solid #203a29' }}
+            >
+              Kembali ke Lobby
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

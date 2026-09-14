@@ -265,10 +265,14 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (lastPlayer) {
-        // Finish the room
+        // Calculate actual round number from turn index
+        const totalPlayers = turnOrder.length;
+        const completedRound = totalPlayers > 0 ? Math.floor(room.currentTurn / totalPlayers) + 1 : 1;
+
+        // Finish the room with winner_id
         await supabaseAdmin
           .from('rooms')
-          .update({ status: 'finished' })
+          .update({ status: 'finished', winner_id: lastPlayer.id })
           .eq('id', roomId);
 
         // Generate rankings, achievements, XP
@@ -290,7 +294,7 @@ export async function POST(request: NextRequest) {
             xp_earned: p.placement === 1 ? 150 : p.placement === 2 ? 100 : p.placement === 3 ? 75 : 30,
             is_winner: p.id === lastPlayer.id,
             game_mode: gameMode,
-            total_rounds: room.currentTurn,
+            total_rounds: completedRound,
           });
         }
 
