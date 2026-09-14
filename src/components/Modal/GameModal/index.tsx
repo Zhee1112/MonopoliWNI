@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Player } from '@/lib/types';
 import { getPropertyCells } from '@/lib/game/board-data';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
+import { Announcement } from '@/hooks/useRealtime';
 
 // ============================================================
-// GAME MODAL - 4 Tabs: Pemain, Status, Chat, Pengaturan
+// GAME MODAL - 5 Tabs: Pemain, Status, Log, Chat, Pengaturan
 // ============================================================
 
-type TabKey = 'players' | 'status' | 'chat' | 'settings';
+type TabKey = 'players' | 'status' | 'log' | 'chat' | 'settings';
 
 interface ChatMessage {
   sender: string;
@@ -30,11 +31,13 @@ interface GameModalProps {
   onLeaveRoom?: () => void;
   musicOn?: boolean;
   onToggleMusic?: () => void;
+  announcements?: Announcement[];
 }
 
 const TAB_CONFIG = [
   { key: 'players' as TabKey, label: 'Pemain', icon: '👥' },
   { key: 'status' as TabKey, label: 'Status', icon: '📊' },
+  { key: 'log' as TabKey, label: 'Log', icon: '📋' },
   { key: 'chat' as TabKey, label: 'Chat', icon: '💬' },
   { key: 'settings' as TabKey, label: 'Pengaturan', icon: '⚙️' },
 ];
@@ -57,14 +60,20 @@ function formatChatTime(time?: string): string {
 export default function GameModal({
   isOpen, onClose, defaultTab = 'players', players, currentPlayer, roomCode,
   chatMessages = [], onSendChat, onLeaveRoom, musicOn = false, onToggleMusic,
+  announcements = [],
 }: GameModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>(defaultTab);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [announcements]);
 
   if (!isOpen) return null;
 
@@ -93,6 +102,7 @@ export default function GameModal({
               <h2 className="text-sm font-bold leading-tight" style={{ color: '#ffd56d' }}>
                 {activeTab === 'players' && 'Pemain Meja'}
                 {activeTab === 'status' && 'Status & Aset'}
+                {activeTab === 'log' && 'Log Permainan'}
                 {activeTab === 'chat' && 'Log Chat Meja'}
                 {activeTab === 'settings' && 'Pengaturan'}
               </h2>
@@ -212,6 +222,61 @@ export default function GameModal({
                     })
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* PANEL: LOG PERMAINAN */}
+          {activeTab === 'log' && (
+            <div className="flex flex-col" style={{ minHeight: '350px', maxHeight: '450px' }}>
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5" style={{ minHeight: 0 }}>
+                {announcements.length === 0 ? (
+                  <div className="text-center py-12">
+                    <span className="text-3xl block mb-2">📋</span>
+                    <span className="text-xs block" style={{ color: '#7a9a7a' }}>Belum ada aktivitas</span>
+                    <span className="text-[10px] block mt-1" style={{ color: '#4a6a4a' }}>Semua aksi permainan akan tercatat di sini.</span>
+                  </div>
+                ) : (
+                  [...announcements].reverse().map((ann) => {
+                    const typeColors: Record<string, string> = {
+                      roll: '#a78bfa',
+                      buy: '#4edea3',
+                      rent: '#fb923c',
+                      card: '#ffd56d',
+                      event: '#f472b6',
+                      tax: '#f87171',
+                      loan: '#38bdf8',
+                      bankrupt: '#f87171',
+                      turn: '#9a907c',
+                      round: '#ffd56d',
+                      system: '#d1c5af',
+                      skip: '#a78bfa',
+                    };
+                    const typeIcons: Record<string, string> = {
+                      roll: '🎲', buy: '🏠', rent: '💸', card: '🃏', event: '⚡',
+                      tax: '🏛️', loan: '🏦', bankrupt: '💀', turn: '🔄', round: '📅',
+                      system: '📢', skip: '⏭️',
+                    };
+                    const color = typeColors[ann.type] || '#d1c5af';
+                    const icon = typeIcons[ann.type] || '•';
+                    return (
+                      <div key={ann.id} className="flex items-start gap-2 py-1.5 px-2 rounded-lg" style={{ backgroundColor: '#0d2e1a' }}>
+                        <span className="text-sm shrink-0 mt-0.5">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xs font-bold" style={{ color }}>{ann.playerName}</span>
+                            <span className="text-[10px]" style={{ color: '#d1c5af' }}>{ann.message}</span>
+                          </div>
+                          {ann.detail && (
+                            <span className="text-[10px] font-medium block" style={{ color: '#ffd56d' }}>{ann.detail}</span>
+                          )}
+                        </div>
+                        <span className="text-[9px] shrink-0 mt-0.5" style={{ color: '#4a6a4a' }}>{ann.time}</span>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={logEndRef} />
               </div>
             </div>
           )}

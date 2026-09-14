@@ -1,8 +1,19 @@
-import { PlayerStats, Evidence, RollResult, LuckEvent, DirtySource, Card, KegiatanCard, Player, StatusEffect } from '../types';
+import { PlayerStats, Evidence, RollResult, LuckEvent, DirtySource, Card, KegiatanCard, Player, StatusEffect, CardType } from '../types';
 
 // ============================================================
 // GAME LOGIC - Stats, Evidence, Roll System
 // ============================================================
+
+// --- CARD TYPE HELPER ---
+export function getCardType(card: Card): CardType {
+  if (card.cardType) return card.cardType;
+  // Derive from effect: negative value = debuff, positive = buff, special/interaction/role = takdir
+  if (card.effect.type === 'money') {
+    return (card.effect.value || 0) < 0 ? 'debuff' : 'buff';
+  }
+  if (card.effect.type === 'skip') return 'debuff';
+  return 'takdir';
+}
 
 // --- DICE ROLL ---
 export function rollDice(sides: number): number {

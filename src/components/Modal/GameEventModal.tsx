@@ -8,11 +8,14 @@ interface GameEventModalProps {
   onClose: () => void;
   onContinue: () => void;
   onEvidenceSelect?: (bonus: number) => void;
+  onBribe?: () => void;
   cell: BoardCell;
   diceResult?: { dice1: number; dice2: number; total: number };
   playerName: string;
   playerLevel?: number;
   playerRank?: string;
+  playerCleanMoney?: number;
+  bribed?: boolean;
   playerEvidence?: Array<{ id?: string; bonusModifier?: number }>;
   rollResult?: {
     baseDice: number;
@@ -70,11 +73,16 @@ function DiceFace({ value }: { value: number }) {
 }
 
 export default function GameEventModal({
-  isOpen, onClose, onContinue, onEvidenceSelect, cell, diceResult, playerName, playerLevel = 1,
+  isOpen, onClose, onContinue, onEvidenceSelect, onBribe, cell, diceResult, playerName, playerLevel = 1,
   playerRank = 'Magang', playerEvidence = [], rollResult, takdirCard, kegiatanCard, ppnAmount = 0, turnNumber = 1,
+  playerCleanMoney = 0, bribed = false,
 }: GameEventModalProps) {
   const [selectedEvidence, setSelectedEvidence] = useState<string | null>(null);
   if (!isOpen) return null;
+
+  const bribeCost = Math.max(50000, Math.floor(playerCleanMoney * 0.15));
+  const isEventCell = cell.type === 'event' && !takdirCard && !kegiatanCard && !ppnAmount;
+  const canBribe = isEventCell && !bribed && !rollResult?.passed;
 
   const d1 = diceResult?.dice1 ?? 3;
   const d2 = diceResult?.dice2 ?? 4;
@@ -402,9 +410,19 @@ export default function GameEventModal({
             <span>Eksekusi bidak otomatis</span>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button onClick={onClose} className="w-1/2 sm:w-auto px-4 py-2.5 bg-[#0d2a1a] hover:bg-[#133824] border border-[#245337] rounded-xl text-xs sm:text-sm font-bold text-slate-200 hover:text-white transition-all shadow-sm">📜 Audit Log Meja</button>
+            {bribed && (
+              <span className="px-3 py-1.5 bg-amber-500/20 border border-amber-400/40 rounded-lg text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                💰 Sogokan berhasil!
+              </span>
+            )}
+            {canBribe && (
+              <button onClick={onBribe} className="w-1/2 sm:w-auto px-4 py-2.5 bg-amber-600/20 hover:bg-amber-500/30 border border-amber-400/40 rounded-xl text-xs sm:text-sm font-bold text-amber-200 hover:text-amber-100 transition-all shadow-sm flex items-center gap-2">
+                <span>💰</span>
+                <span>Sogok (Rp {bribeCost.toLocaleString('id-ID')})</span>
+              </button>
+            )}
             <button onClick={onContinue} className="w-1/2 sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#4edea3] via-emerald-400 to-[#ffd56d] hover:from-[#4edea3] hover:to-amber-300 text-slate-950 rounded-xl text-xs sm:text-sm font-extrabold shadow-lg hover:shadow-[#4edea3]/25 active:scale-98 transition-all flex items-center justify-center gap-2">
-              <span>Lanjutkan Langkah ({d1 + d2} Petak)</span>
+              <span>Lanjutkan</span>
               <span className="text-base leading-none">➔</span>
             </button>
           </div>

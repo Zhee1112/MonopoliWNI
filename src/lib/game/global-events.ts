@@ -326,7 +326,9 @@ export const GLOBAL_EVENTS: GlobalEventDefinition[] = [
 // ============================================================
 
 export function getEventsForRound(round: number): GlobalEventDefinition[] {
-  return GLOBAL_EVENTS.filter(e => e.triggerRound.includes(round));
+  if (round < 2) return [];
+  const idx = (round * 7 + 3) % GLOBAL_EVENTS.length;
+  return [GLOBAL_EVENTS[idx]];
 }
 
 export function pickRandomEvent(events: GlobalEventDefinition[]): GlobalEventDefinition {
@@ -338,10 +340,11 @@ export function pickRandomSubEvent(event: GlobalEventDefinition): SubEvent {
 }
 
 export function shouldTriggerGlobalEvent(round: number): boolean {
-  return GLOBAL_EVENTS.some(e => e.triggerRound.includes(round));
+  return round >= 2;
 }
 
 export function getGlobalEventsForRound(round: number): Array<{ event: GlobalEventDefinition; subEvent: SubEvent }> {
+  if (round < 2) return [];
   const events = getEventsForRound(round);
   return events.map(event => ({
     event,

@@ -87,6 +87,7 @@ export interface Evidence {
 // --- Card Types ---
 export type CardTier = 'ringan' | 'sedang' | 'berat' | 'legendary';
 export type CardCategory = 'event_normal' | 'event_meme' | 'interaksi' | 'koruptor' | 'audit' | 'legendary';
+export type CardType = 'buff' | 'debuff' | 'takdir';
 export type KegiatanCategory = 'usaha' | 'kerja_sampingan' | 'investasi' | 'sosial' | 'tantangan';
 
 export interface CardEffect {
@@ -101,6 +102,7 @@ export interface Card {
   name: string;
   tier: CardTier;
   category: CardCategory;
+  cardType?: CardType;
   effect: CardEffect;
   luckModifier?: LuckModifier;
   evidenceGrant?: string;

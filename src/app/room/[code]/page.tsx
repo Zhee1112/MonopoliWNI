@@ -24,7 +24,7 @@ import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Loan } from '@/lib/game/loan-system';
 import { SoundEffects } from '@/lib/game/sound-effects';
 import { BackgroundMusic } from '@/lib/game/background-music';
-import { processCardEffect, processKegiatanEffect, CardEffectResult, KegiatanEffectResult } from '@/lib/game/game-logic';
+import { processCardEffect, processKegiatanEffect, getCardType, CardEffectResult, KegiatanEffectResult } from '@/lib/game/game-logic';
 import { Player, Room, BoardCell, GameMode, GAME_MODES, Card, KegiatanCard } from '@/lib/types';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
@@ -47,7 +47,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showRegulations, setShowRegulations] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [gameModalOpen, setGameModalOpen] = useState(false);
-  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'chat'>('players');
+  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'log' | 'chat'>('players');
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
@@ -91,6 +91,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [pendingGachaEffect, setPendingGachaEffect] = useState<((gachaRoll: number) => void) | null>(null);
   const [lastGachaRoll, setLastGachaRoll] = useState<number>(0);
   const [lastCellPosition, setLastCellPosition] = useState<number>(0);
+  const [pendingEventOutcome, setPendingEventOutcome] = useState<{ cellPosition: number; passed: boolean; gachaRoll: number } | null>(null);
+  const [bribedThisEvent, setBribedThisEvent] = useState(false);
 
   // Global event state
   const [showGlobalEventModal, setShowGlobalEventModal] = useState(false);
@@ -471,75 +473,37 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             setGachaCellEmoji(cell.emoji);
             setShowGachaModal(true);
           } else if (cell.type === 'event') {
-            // Event cells — show gacha first, then apply effect
+            // Event cells — DnD system: gacha roll = DnD roll, pass/fail determines outcome
             setGameEventCell(cell);
             setGameEventDice({ dice1: rolledDice.dice1, dice2: rolledDice.dice2, total: rolledDice.dice1 + rolledDice.dice2 });
 
             const newPos = newPosition;
 
+            // Store DnD outcomes for this cell
             setPendingGachaEffect(() => (gachaRoll: number) => {
               const freshPlayer = currentPlayerRef.current;
               if (!freshPlayer) return;
-              let moneyChange = 0;
-              let skipTurns = 0;
-              let eventDescription = '';
 
-              if (newPos === 13) {
-                // Tagihan PLN — gacha determines severity
-                if (gachaRoll <= 2) {
-                  moneyChange = -400000;
-                  eventDescription = 'Tagihan PLN naik gila-gilaan! Bayar -Rp 400.000';
-                } else if (gachaRoll <= 4) {
-                  moneyChange = -200000;
-                  eventDescription = 'Tagihan PLN naik 30%! Bayar -Rp 200.000';
-                } else {
-                  moneyChange = -100000;
-                  eventDescription = 'Tagihan PLN sedikit naik. Bayar -Rp 100.000';
-                }
-              } else if (newPos === 16) {
-                // Macet Tomang — gacha determines severity
-                if (gachaRoll <= 2) {
-                  skipTurns = 2;
-                  eventDescription = 'Macet parah Tomang! Skip 2 putaran.';
-                } else if (gachaRoll <= 4) {
-                  skipTurns = 1;
-                  eventDescription = 'Macet Tomang! Skip 1 putaran.';
-                } else {
-                  moneyChange = -50000;
-                  eventDescription = 'Macet Tomang tapi berhasil lewat! Bayar -Rp 50.000 untuk ojol.';
-                }
-              } else if (newPos === 28) {
-                // FOMO Kripto — gacha determines outcome
-                const baseAmount = 100000 + Math.floor(Math.random() * 500000);
-                if (gachaRoll >= 5) {
-                  moneyChange = baseAmount * 2;
-                  eventDescription = `FOMO Kripto moonshot! Investasi naik 200%! +Rp ${(baseAmount * 2).toLocaleString('id-ID')}`;
-                } else if (gachaRoll >= 3) {
-                  moneyChange = baseAmount;
-                  eventDescription = `FOMO Kripto stabil. Investasi naik tipis. +Rp ${baseAmount.toLocaleString('id-ID')}`;
-                } else {
-                  moneyChange = -Math.floor(baseAmount * 0.9);
-                  eventDescription = `FOMO Kripto rugpull! Investasi turun 90%! -Rp ${Math.floor(baseAmount * 0.9).toLocaleString('id-ID')}`;
-                }
-              }
+              // DnD calculation: gacha roll = DnD dice, statBonus = player level, DC = 4
+              const statBonus = Math.floor((freshPlayer.roleLevel || 1) * 1.5);
+              const luckBonus = freshPlayer.luck ? Math.floor(freshPlayer.luck * 0.45) : 0;
+              const totalScore = gachaRoll + statBonus + luckBonus;
+              const dcTarget = 4;
+              const passed = totalScore >= dcTarget;
 
-              // Apply event effect
-              const newMoney = Math.max(0, (freshPlayer.cleanMoney || 0) + moneyChange);
-              const newEffects = [...(freshPlayer.statusEffects || [])];
-              if (skipTurns > 0) {
-                newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
-              }
-              setCurrentPlayer((prev) => prev ? {
-                ...prev,
-                cleanMoney: newMoney,
-                statusEffects: newEffects,
-              } : null);
-
-              // Set roll result for display
               setGameEventRollResult({
-                baseDice: 0, statBonus: gachaRoll, luckBonus: 0, evidenceBonus: 0,
-                totalScore: gachaRoll, dcTarget: 0, passed: true, margin: 0,
+                baseDice: gachaRoll,
+                statBonus,
+                luckBonus,
+                evidenceBonus: 0,
+                totalScore,
+                dcTarget,
+                passed,
+                margin: totalScore - dcTarget,
               });
+
+              // Store cell position + outcomes for onCardContinue to apply
+              setPendingEventOutcome({ cellPosition: newPos, passed, gachaRoll });
               setDrawnTakdirCard(undefined);
               setDrawnKegiatanCard(undefined);
               setPpnAmount(0);
@@ -648,7 +612,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setUpgradeModalIsOwn(true);
               setShowUpgradeModal(true);
             } else {
-              // Owned by another player — pay rent first, then offer takeover
+              // Owned by another player — pay rent, then offer takeover if not landmark
               const rentPayload = {
                 roomId: room.id,
                 payerId: currentPlayerRef.current?.id,
@@ -670,17 +634,24 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                     message: `membayar sewa ke ${rentData.ownerName}`,
                     detail: `-Rp ${rentData.rent.toLocaleString('id-ID')}`,
                   });
-                  // Show GameEventModal with rent info
-                  setGameEventCell(cell);
-                  setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
-                  setGameEventRollResult({
-                    baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
-                    totalScore: 0, dcTarget: 0, passed: true, margin: 0,
-                  });
-                  setDrawnTakdirCard(undefined);
-                  setDrawnKegiatanCard(undefined);
-                  setPpnAmount(rentData.rent);
-                  setShowGameEventModal(true);
+                  // If property is not landmark (level < 5), show takeover modal
+                  if (!dbProp.is_landmark && dbProp.house_level < 5) {
+                    setUpgradeModalCell(property);
+                    setUpgradeModalIsOwn(false);
+                    setShowUpgradeModal(true);
+                  } else {
+                    // Landmark — just show rent info
+                    setGameEventCell(cell);
+                    setGameEventDice({ dice1: 0, dice2: 0, total: 0 });
+                    setGameEventRollResult({
+                      baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
+                      totalScore: rentData.rent, dcTarget: 0, passed: true, margin: 0,
+                    });
+                    setDrawnTakdirCard(undefined);
+                    setDrawnKegiatanCard(undefined);
+                    setPpnAmount(rentData.rent);
+                    setShowGameEventModal(true);
+                  }
                 })
                 .catch(err => console.error('Rent payment error:', err));
             }
@@ -1369,7 +1340,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               onClick={() => { setGameModalOpen(true); setGameModalTab('players'); }}
               className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
             >
-              Arena
+              Pemain
+            </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('status'); }}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Status
             </button>
             <button
               onClick={() => setShowInfoModal(true)}
@@ -1378,10 +1355,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               Aturan
             </button>
             <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('status'); }}
+              onClick={() => { setGameModalOpen(true); setGameModalTab('log'); }}
               className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
             >
-              Sertifikat
+              Log
             </button>
             <button
               onClick={() => { setGameModalOpen(true); setGameModalTab('chat'); }}
@@ -1455,6 +1432,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               <span className="hidden md:inline text-xs font-bold">Status</span>
             </button>
             <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('log'); }}
+              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all relative"
+              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#d1c5af' }}
+              title="Log Permainan"
+            >
+              <span className="text-lg">&#x1F4CB;</span>
+              <span className="hidden md:inline text-xs font-bold">Log</span>
+            </button>
+            <button
               onClick={() => { setGameModalOpen(true); setGameModalTab('chat'); }}
               className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all relative"
               style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#38bdf8' }}
@@ -1515,27 +1501,30 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       </aside>
 
       {/* BOTTOM TICKER WARTA MEJA */}
-      <footer className="w-full py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.5)] hidden md:block fixed bottom-14 left-0 z-30" style={{ backgroundColor: '#001206' }}>
-        <div className="w-full px-5 flex flex-col md:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="px-2 py-0.5 rounded font-bold text-[11px] tracking-wider uppercase shrink-0" style={{ backgroundColor: '#152f1f', color: '#ffd56d' }}>WARTA MEJA</span>
-            <p className="text-[#d1c5af] truncate text-xs">
-              {announcements.length > 0 ? (
-                <>
-                  <span className="text-[#4edea3] font-bold">{announcements[announcements.length - 1].playerName}</span>
-                  {' '}{announcements[announcements.length - 1].message}
-                  {announcements[announcements.length - 1].detail && (
-                    <span className="text-[#ffd56d] font-medium"> {announcements[announcements.length - 1].detail}</span>
-                  )}
-                </>
-              ) : (
-                <span className="text-[#588568]">Menunggu aksi pertama pemain...</span>
-              )}
-            </p>
+      {/* ROUND + POT INFO BAR */}
+      <footer className="w-full py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.5)] hidden md:block fixed bottom-14 left-0 z-30" style={{ backgroundColor: '#001206' }}>
+        <div className="w-full px-5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-4 text-[#d1c5af] text-xs">
+            <span>Babak <strong className="text-[#ffd56d]">{Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}</strong> / {room.totalRounds || 20}</span>
+            <span>|</span>
+            <span>Giliran: <strong className="text-[#4edea3]">{players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}</strong></span>
           </div>
-          <div className="flex items-center gap-5 text-[#d1c5af] shrink-0 text-xs">
-            <span>Babak {Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1} / {room.totalRounds || 20}</span>
-            <span>Pool Dana Kas: <strong className="text-[#ffd56d] font-mono">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
+          <div className="flex items-center gap-4 text-xs">
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('log'); }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors"
+              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#d1c5af' }}
+              title="Lihat Log"
+            >
+              <span className="text-sm">📋</span>
+              <span className="hidden lg:inline">Log</span>
+              {announcements.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold" style={{ backgroundColor: '#ffd56d', color: '#3e2e00' }}>
+                  {announcements.length}
+                </span>
+              )}
+            </button>
+            <span>Pool: <strong className="text-[#ffd56d] font-mono">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
           </div>
         </div>
       </footer>
@@ -1549,6 +1538,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         currentPlayer={currentPlayer}
         roomCode={roomCode}
         chatMessages={chatMessages}
+        announcements={announcements}
         onSendChat={(text) => {
           if (currentPlayer) {
             sendChatMessage(currentPlayer.name, text);
@@ -1635,6 +1625,27 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         <GameEventModal
           isOpen={showGameEventModal}
           onClose={() => setShowGameEventModal(false)}
+          onBribe={() => {
+            const bribeCost = Math.max(50000, Math.floor((currentPlayer.cleanMoney || 0) * 0.15));
+            if ((currentPlayer.cleanMoney || 0) < bribeCost) return;
+            const newMoney = Math.max(0, currentPlayer.cleanMoney - bribeCost);
+            setCurrentPlayer(prev => prev ? { ...prev, cleanMoney: newMoney } : null);
+            setBribedThisEvent(true);
+            // Update roll result to passed
+            setGameEventRollResult(prev => prev ? { ...prev, passed: true, margin: prev.totalScore - prev.dcTarget + 99 } : prev);
+            fetch('/api/update-player', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ roomId: room.id, playerId: currentPlayer.id, cleanMoneyDelta: -bribeCost }),
+            }).catch(() => {});
+            SoundEffects.payRent();
+            broadcastAnnouncement({
+              type: 'event',
+              playerName: currentPlayer.name,
+              message: `mensogok petugas untuk lolos!`,
+              detail: `-Rp ${bribeCost.toLocaleString('id-ID')}`,
+            });
+          }}
           onContinue={() => {
             setShowGameEventModal(false);
       if (!currentPlayerRef.current || !room) return;
@@ -1645,26 +1656,44 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
             if (gameEventCell?.type === 'draw_takdir' && drawnTakdirCard) {
               SoundEffects.cardDraw();
-              const result = processCardEffect(drawnTakdirCard, currentPlayer, lastGachaRoll, players);
-              updatedPlayerData = result.updatedPlayer;
-              setCurrentPlayer(result.updatedPlayer);
-              broadcastAnnouncement({
-                type: 'card',
-                playerName: currentPlayer.name,
-                message: `menarik kartu ${drawnTakdirCard.name}`,
-                detail: result.statusMessages.join(', '),
-              });
-              // Apply money changes to other players via API
-              for (const change of result.moneyChanges) {
-                if (change.playerId !== currentPlayer.id) {
-                  fetch('/api/update-player', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ roomId: room.id, playerId: change.playerId, cleanMoneyDelta: change.amount }),
-                  }).catch(() => {});
+              const rollResult = gameEventRollResult;
+              const cardType = getCardType(drawnTakdirCard);
+              const passed = rollResult?.passed ?? true;
+
+              // DnD logic: debuff=only apply if FAILED; buff=only apply if PASSED; takdir=always apply
+              const shouldApply = cardType === 'debuff' ? !passed : cardType === 'buff' ? passed : true;
+
+              if (shouldApply) {
+                const result = processCardEffect(drawnTakdirCard, currentPlayer, lastGachaRoll, players);
+                updatedPlayerData = result.updatedPlayer;
+                setCurrentPlayer(result.updatedPlayer);
+                broadcastAnnouncement({
+                  type: 'card',
+                  playerName: currentPlayer.name,
+                  message: `menarik kartu ${drawnTakdirCard.name}`,
+                  detail: result.statusMessages.join(', '),
+                });
+                for (const change of result.moneyChanges) {
+                  if (change.playerId !== currentPlayer.id) {
+                    fetch('/api/update-player', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ roomId: room.id, playerId: change.playerId, cleanMoneyDelta: change.amount }),
+                    }).catch(() => {});
+                  }
                 }
+                effectApplied = true;
+              } else {
+                // Card negated by DnD result
+                broadcastAnnouncement({
+                  type: 'card',
+                  playerName: currentPlayer.name,
+                  message: cardType === 'debuff'
+                    ? `berhasil menangkis ${drawnTakdirCard.name}! (DnD PASSED)`
+                    : `gagal mendapat buff dari ${drawnTakdirCard.name} (DnD GAGAL)`,
+                  detail: passed ? `Skor ${rollResult?.totalScore} ≥ DC ${rollResult?.dcTarget}` : `Skor ${rollResult?.totalScore} < DC ${rollResult?.dcTarget}`,
+                });
               }
-              effectApplied = true;
             } else if (gameEventCell?.type === 'draw_kegiatan' && drawnKegiatanCard) {
               SoundEffects.cardDraw();
               const result = processKegiatanEffect(drawnKegiatanCard, currentPlayer, lastGachaRoll);
@@ -1689,6 +1718,64 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 detail: `-Rp ${ppnAmount.toLocaleString('id-ID')}`,
               });
               effectApplied = true;
+            } else if (gameEventCell?.type === 'event' && pendingEventOutcome) {
+              // Event cell — apply outcome based on DnD pass/fail (or bribe)
+              const { cellPosition, passed: dndPassed } = pendingEventOutcome;
+              const isBribed = bribedThisEvent;
+              const outcomePassed = dndPassed || isBribed;
+              SoundEffects.payRent();
+              let moneyChange = 0;
+              let skipTurns = 0;
+              let eventDescription = '';
+
+              if (cellPosition === 13) {
+                // Tagihan PLN — pass = small bill, fail = big bill
+                if (outcomePassed) {
+                  moneyChange = -100000;
+                  eventDescription = 'Tagihan PLN sedikit naik. Bayar -Rp 100.000';
+                } else {
+                  moneyChange = -400000;
+                  eventDescription = 'Tagihan PLN naik gila-gilaan! Bayar -Rp 400.000';
+                }
+              } else if (cellPosition === 16) {
+                // Macet Tomang — pass = pay small, fail = skip turns
+                if (outcomePassed) {
+                  moneyChange = -50000;
+                  eventDescription = 'Macet Tomang tapi berhasil lewat! Bayar -Rp 50.000 untuk ojol.';
+                } else {
+                  skipTurns = 2;
+                  eventDescription = 'Macet parah Tomang! Skip 2 putaran.';
+                }
+              } else if (cellPosition === 28) {
+                // FOMO Kripto — pass = profit, fail = rugpull
+                const baseAmount = 100000 + Math.floor(Math.random() * 500000);
+                if (outcomePassed) {
+                  moneyChange = baseAmount * 2;
+                  eventDescription = `FOMO Kripto moonshot! Investasi naik 200%! +Rp ${(baseAmount * 2).toLocaleString('id-ID')}`;
+                } else {
+                  moneyChange = -Math.floor(baseAmount * 0.9);
+                  eventDescription = `FOMO Kripto rugpull! Investasi turun 90%! -Rp ${Math.floor(baseAmount * 0.9).toLocaleString('id-ID')}`;
+                }
+              }
+
+              const newMoney = Math.max(0, (currentPlayer.cleanMoney || 0) + moneyChange);
+              const newEffects = [...(currentPlayer.statusEffects || [])];
+              if (skipTurns > 0) {
+                newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
+              }
+              updatedPlayerData = { ...currentPlayer, cleanMoney: newMoney, statusEffects: newEffects };
+              setCurrentPlayer(updatedPlayerData);
+
+              broadcastAnnouncement({
+                type: 'event',
+                playerName: currentPlayer.name,
+                message: isBribed ? `mensogok untuk lolos! ${eventDescription}` : (outcomePassed ? `berhasil! ${eventDescription}` : `gagal! ${eventDescription}`),
+                detail: isBribed ? 'DNGAN SOGOKAN' : `DnD: ${gameEventRollResult?.totalScore} vs DC ${gameEventRollResult?.dcTarget}`,
+              });
+
+              effectApplied = true;
+              setPendingEventOutcome(null);
+              setBribedThisEvent(false);
             }
 
             // Sync card effects to DB
@@ -1758,6 +1845,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           kegiatanCard={drawnKegiatanCard}
           ppnAmount={gameEventCell.type === 'tax' ? ppnAmount : 0}
           turnNumber={(room.currentTurn || 0) + 1}
+          playerCleanMoney={currentPlayer.cleanMoney || 0}
+          bribed={bribedThisEvent}
         />
       )}
 
