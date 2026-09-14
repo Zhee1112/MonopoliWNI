@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
+import { ACHIEVEMENTS, AchievementDef } from '@/lib/game/achievements';
 
 const RANKS: Record<number, { name: string; emoji: string; color: string; dotColor: string; ability: string; subtitle: string }> = {
   1: { name: 'Magang', emoji: '🟢', color: 'text-[#4edea3]', dotColor: 'bg-[#4edea3]', ability: 'Hoki +5 saat pegang bukti kas', subtitle: 'Pangkat Pemula Sipil Republik' },
@@ -36,6 +37,11 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
+  const [gameHistory, setGameHistory] = useState<Array<{
+    game_room_id: string; placement: number; final_total_assets: number;
+    xp_earned: number; is_winner: boolean; game_mode: string; created_at: string;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -47,6 +53,26 @@ export default function ProfilePage() {
       setDisplayName(profile.displayName);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchUserData() {
+      const { data: achData } = await supabase
+        .from('player_achievements')
+        .select('achievement_id')
+        .eq('user_id', user.id);
+      if (achData) setUnlockedAchievements(achData.map(a => a.achievement_id));
+
+      const { data: histData } = await supabase
+        .from('game_results')
+        .select('game_room_id, placement, final_total_assets, xp_earned, is_winner, game_mode, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (histData) setGameHistory(histData);
+    }
+    fetchUserData();
+  }, [user]);
 
   if (authLoading || !user || !profile) {
     return (
@@ -117,7 +143,7 @@ export default function ProfilePage() {
               <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
               Edisi 2025 &bull; Republik Monopoli WNI
             </div>
-            <h1 className="font-bold text-lg text-[#ffd56d] tracking-wide mt-0.5" style={{ fontFamily: "'Syne', sans-serif" }}>PROFIL WARGA &amp; BIROKRASI</h1>
+            <h1 className="font-bold text-lg text-[#ffd56d] tracking-wide mt-0.5">PROFIL WARGA &amp; BIROKRASI</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[#0a2416] border border-[#143722] text-xs">
@@ -152,7 +178,7 @@ export default function ProfilePage() {
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#0a2c19] border border-[#1d4b30] text-[10px] font-bold text-[#4edea3] tracking-wide uppercase mb-1">
             Edisi 2025 &bull; Republik Monopoli WNI
           </div>
-          <h1 className="font-bold text-xl text-[#ffd56d]" style={{ fontFamily: "'Syne', sans-serif" }}>PROFIL WARGA &amp; BIROKRASI</h1>
+          <h1 className="font-bold text-xl text-[#ffd56d]">PROFIL WARGA &amp; BIROKRASI</h1>
         </div>
 
         {/* 2-Column Layout */}
@@ -168,7 +194,7 @@ export default function ProfilePage() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[#ffd56d] text-sm">&#x2714;&#xFE0F;</span>
-                    <span className="text-[11px] font-extrabold text-[#ffd56d] tracking-widest uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>KARTU TANDA PENDUDUK DIGITAL</span>
+                    <span className="text-[11px] font-extrabold text-[#ffd56d] tracking-widest uppercase">KARTU TANDA PENDUDUK DIGITAL</span>
                   </div>
                   <p className="text-[11px] text-[#93c5a7] mt-0.5">Republik Monopoli Indonesia &bull; Edisi Sipil 2025</p>
                 </div>
@@ -191,7 +217,7 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
-                  <div className="absolute -bottom-2 -right-1 bg-[#4edea3] text-[#021f11] font-extrabold text-[10px] px-1.5 py-0.5 rounded shadow-md uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  <div className="absolute -bottom-2 -right-1 bg-[#4edea3] text-[#021f11] font-extrabold text-[10px] px-1.5 py-0.5 rounded shadow-md uppercase">
                     LV {level}
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
@@ -204,7 +230,7 @@ export default function ProfilePage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3]" /> AKTIF
                     </span>
                   </div>
-                  <h2 className="font-bold text-xl text-white truncate mt-1" style={{ fontFamily: "'Syne', sans-serif" }}>{profile.displayName}</h2>
+                  <h2 className="font-bold text-xl text-white truncate mt-1">{profile.displayName}</h2>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <span className="px-2 py-0.5 rounded bg-[#ffd56d]/15 border border-[#ffd56d]/30 text-[#ffd56d] text-[11px] font-bold uppercase">{rank.name}</span>
                     <span className="text-[11px] text-[#93c5a7] truncate">&bull; Bebas Kasus Pajak</span>
@@ -232,29 +258,29 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-[#ffd56d] text-lg">&#x1F4CA;</span>
-                  <h3 className="font-bold text-base text-[#d1fae5]" style={{ fontFamily: "'Syne', sans-serif" }}>Buku Catatan Pertandingan</h3>
+                  <h3 className="font-bold text-base text-[#d1fae5]">Buku Catatan Pertandingan</h3>
                 </div>
                 <span className="text-[11px] text-[#588568] uppercase font-medium">Musim 2025</span>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="rounded-xl bg-[#082013] border border-[#143722] p-3.5">
                   <span className="text-[11px] text-[#588568] block uppercase font-medium">Tingkat Kemenangan</span>
-                  <div className="font-bold text-2xl text-[#ffd56d] mt-0.5" style={{ fontFamily: "'Syne', sans-serif" }}>{winRate}%</div>
+                  <div className="font-bold text-2xl text-[#ffd56d] mt-0.5">{winRate}%</div>
                   <span className="text-[11px] text-[#93c5a7] mt-1 block">{profile.totalWins} Menang dari {profile.totalGames} Game</span>
                 </div>
                 <div className="rounded-xl bg-[#082013] border border-[#143722] p-3.5">
                   <span className="text-[11px] text-[#588568] block uppercase font-medium">Total Pertandingan</span>
-                  <div className="font-bold text-2xl text-[#4edea3] mt-0.5" style={{ fontFamily: "'Syne', sans-serif" }}>{profile.totalGames}</div>
+                  <div className="font-bold text-2xl text-[#4edea3] mt-0.5">{profile.totalGames}</div>
                   <span className="text-[11px] text-[#93c5a7] mt-1 block">Akumulasi Semua Musim</span>
                 </div>
                 <div className="rounded-xl bg-[#082013] border border-[#143722] p-3.5">
                   <span className="text-[11px] text-[#588568] block uppercase font-medium">Kas Tertinggi</span>
-                  <div className="font-bold text-base text-[#ffd56d] mt-1 truncate" style={{ fontFamily: "'Syne', sans-serif" }}>Rp {highestCash.toLocaleString('id-ID')}</div>
+                  <div className="font-bold text-base text-[#ffd56d] mt-1 truncate">Rp {highestCash.toLocaleString('id-ID')}</div>
                   <span className="text-[11px] text-[#93c5a7] mt-1 block">Rekor Saldo Terbesar</span>
                 </div>
                 <div className="rounded-xl bg-[#082013] border border-[#143722] p-3.5">
                   <span className="text-[11px] text-[#588568] block uppercase font-medium">Kavling Dikuasai</span>
-                  <div className="font-bold text-2xl text-[#4edea3] mt-0.5" style={{ fontFamily: "'Syne', sans-serif" }}>{propertiesOwned}</div>
+                  <div className="font-bold text-2xl text-[#4edea3] mt-0.5">{propertiesOwned}</div>
                   <span className="text-[11px] text-[#93c5a7] mt-1 block">{propertiesOwned} Sertifikat Hak Milik</span>
                 </div>
               </div>
@@ -277,7 +303,7 @@ export default function ProfilePage() {
             <div className="rounded-2xl bg-[#0d281a] border border-[#1d4b30] p-5 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[#ffd56d] text-lg">&#x2699;&#xFE0F;</span>
-                <h3 className="font-bold text-base text-[#d1fae5]" style={{ fontFamily: "'Syne', sans-serif" }}>Pengaturan Identitas &amp; Akun</h3>
+                <h3 className="font-bold text-base text-[#d1fae5]">Pengaturan Identitas &amp; Akun</h3>
               </div>
               <div className="mb-4">
                 <label className="block text-xs font-semibold text-[#93c5a7] uppercase tracking-wider mb-1.5">Nama Tampilan Warga</label>
@@ -333,11 +359,11 @@ export default function ProfilePage() {
                 <div>
                   <div className="flex items-center gap-2 text-[#ffd56d]">
                     <span className="text-lg">&#x1F3C6;</span>
-                    <span className="text-xs font-extrabold uppercase tracking-widest" style={{ fontFamily: "'Syne', sans-serif" }}>HIERARKI &amp; HAK ISTIMEWA</span>
+                    <span className="text-xs font-extrabold uppercase tracking-widest">HIERARKI &amp; HAK ISTIMEWA</span>
                   </div>
-                  <h2 className="font-bold text-xl text-white mt-1" style={{ fontFamily: "'Syne', sans-serif" }}>Jenjang Karir Monopoli WNI</h2>
+                  <h2 className="font-bold text-xl text-white mt-1">Jenjang Karir Monopoli WNI</h2>
                 </div>
-                <span className="self-start sm:self-auto px-3 py-1 rounded-full bg-[#ffd56d]/15 border border-[#ffd56d]/30 text-[#ffd56d] text-xs font-bold uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>
+                <span className="self-start sm:self-auto px-3 py-1 rounded-full bg-[#ffd56d]/15 border border-[#ffd56d]/30 text-[#ffd56d] text-xs font-bold uppercase tracking-wider">
                   10 Tingkat Pangkat
                 </span>
               </div>
@@ -381,11 +407,11 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold text-sm ${isCurrentRank ? 'text-white' : isHighestTier ? 'text-[#ffd56d]' : 'text-[#d1fae5]'}`} style={isHighestTier || isCurrentRank ? { fontFamily: "'Syne', sans-serif" } : undefined}>
+                          <span className={`font-semibold text-sm ${isCurrentRank ? 'text-white' : isHighestTier ? 'text-[#ffd56d]' : 'text-[#d1fae5]'}`}>
                             Lv {r.levelRange} &mdash; {r.name}
                           </span>
                           {isCurrentRank && (
-                            <span className="px-2 py-0.5 rounded-full bg-[#4edea3] text-[#012614] font-extrabold text-[10px] tracking-wider uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>
+                            <span className="px-2 py-0.5 rounded-full bg-[#4edea3] text-[#012614] font-extrabold text-[10px] tracking-wider uppercase">
                               SEKARANG
                             </span>
                           )}
@@ -403,6 +429,100 @@ export default function ProfilePage() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Achievements Section */}
+            <div className="rounded-2xl bg-[#0d281a] border border-[#1d4b30] p-5 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#ffd56d] text-lg">&#x1F3C5;</span>
+                  <h3 className="font-bold text-base text-[#d1fae5]">Pencapaian</h3>
+                </div>
+                <span className="text-[11px] text-[#588568] uppercase font-medium">
+                  {unlockedAchievements.length} / {ACHIEVEMENTS.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {ACHIEVEMENTS.map((ach) => {
+                  const unlocked = unlockedAchievements.includes(ach.id);
+                  return (
+                    <div
+                      key={ach.id}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
+                        unlocked
+                          ? `${ach.bgColor} ${ach.borderColor}`
+                          : 'bg-[#082013] border-[#143722] opacity-40'
+                      }`}
+                    >
+                      <div className={`text-xl shrink-0 ${unlocked ? '' : 'grayscale'}`}>
+                        {ach.emoji}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-xs font-semibold truncate ${unlocked ? ach.color : 'text-[#588568]'}`}>
+                          {ach.name}
+                        </div>
+                        <div className="text-[10px] text-[#588568] truncate">{ach.description}</div>
+                      </div>
+                      {unlocked && (
+                        <div className="text-[10px] font-bold text-[#ffd56d] shrink-0">+{ach.xp}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Game History Section */}
+            <div className="rounded-2xl bg-[#0d281a] border border-[#1d4b30] p-5 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#ffd56d] text-lg">&#x1F4DC;</span>
+                  <h3 className="font-bold text-base text-[#d1fae5]">Riwayat Permainan</h3>
+                </div>
+                <span className="text-[11px] text-[#588568] uppercase font-medium">{gameHistory.length} Sesi</span>
+              </div>
+              {gameHistory.length === 0 ? (
+                <div className="text-center py-8 text-[#588568]">
+                  <div className="text-3xl mb-2">&#x1F3B2;</div>
+                  <div className="text-sm">Belum ada riwayat permainan</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {gameHistory.map((g, i) => (
+                    <div
+                      key={`${g.game_room_id}-${i}`}
+                      className={`flex items-center gap-3 p-3 rounded-xl border ${
+                        g.is_winner
+                          ? 'bg-[#ffd56d]/5 border-[#ffd56d]/20'
+                          : 'bg-[#082013] border-[#143722]'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
+                        g.placement === 1 ? 'bg-[#ffd56d]/20 text-[#ffd56d]' :
+                        g.placement === 2 ? 'bg-slate-400/20 text-slate-300' :
+                        g.placement === 3 ? 'bg-amber-600/20 text-amber-600' :
+                        'bg-[#0a2817] text-[#588568]'
+                      }`}>
+                        #{g.placement}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold ${g.is_winner ? 'text-[#ffd56d]' : 'text-[#d1fae5]'}`}>
+                            {g.game_mode === 'bundir' ? '💀 BUNDIR' : g.game_mode === 'sultan' ? '💎 KAYA RAYA' : '⚡ KILAT'}
+                          </span>
+                          {g.is_winner && <span className="text-[10px] text-[#ffd56d]">&#x1F451; MENANG</span>}
+                        </div>
+                        <div className="text-[10px] text-[#588568]">
+                          Aset: Rp {(g.final_total_assets || 0).toLocaleString('id-ID')} &bull; +{g.xp_earned || 0} XP
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-[#588568] shrink-0">
+                        {new Date(g.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

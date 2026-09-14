@@ -212,3 +212,52 @@ export function useRealtimeCard() {
     broadcastDismiss,
   };
 }
+
+// ============================================================
+// REALTIME CHAT HOOK
+// ============================================================
+
+export interface ChatMessage {
+  sender: string;
+  text: string;
+  time: string;
+}
+
+export function useRealtimeChat(roomCode: string) {
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  useEffect(() => {
+    if (!roomCode) return;
+
+    const channel = supabase.channel(`chat:${roomCode}`);
+
+    channel
+      .on('broadcast', { event: 'chat_message' }, (payload) => {
+        const msg = payload.payload as ChatMessage;
+        setChatMessages((prev) => [...prev, msg]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomCode]);
+
+  const sendChatMessage = useCallback(
+    async (sender: string, text: string) => {
+      const msg: ChatMessage = {
+        sender,
+        text,
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      };
+      await supabase.channel(`chat:${roomCode}`).send({
+        type: 'broadcast',
+        event: 'chat_message',
+        payload: msg,
+      });
+    },
+    [roomCode]
+  );
+
+  return { chatMessages, setChatMessages, sendChatMessage };
+}

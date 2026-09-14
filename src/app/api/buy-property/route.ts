@@ -100,6 +100,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update property owner' }, { status: 500 });
     }
 
+    // Check achievement triggers after buy
+    const newPropCount = (player.properties || []).length + 1;
+
+    // Treasure Hunter: 5+ properties
+    if (newPropCount >= 5) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: playerId,
+          user_id: dbPlayer.user_id || null,
+          achievement_id: 'treasure_hunter',
+          xp_granted: 40,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
+
+    // Property Mogul: 8+ properties
+    if (newPropCount >= 8) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: playerId,
+          user_id: dbPlayer.user_id || null,
+          achievement_id: 'property_mogul',
+          xp_granted: 45,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
+
     // Log the action
     await supabaseAdmin.from('game_log').insert({
       room_id: roomId,
@@ -197,15 +226,31 @@ export async function PUT(request: NextRequest) {
     }
 
     // Transfer money
-    await supabaseAdmin.from('players').update({ clean_money: payer.cleanMoney - rent }).eq('id', payerId);
+    const newPayerBalance = payer.cleanMoney - rent;
+    const isPayerBankrupt = newPayerBalance < 0;
+
+    await supabaseAdmin.from('players').update({ clean_money: newPayerBalance }).eq('id', payerId);
     await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + rent }).eq('id', owner.id);
+
+    // If payer goes bankrupt, award bankrupt_maker to owner
+    if (isPayerBankrupt) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: owner.id,
+          user_id: dbOwner.user_id || null,
+          achievement_id: 'bankrupt_maker',
+          xp_granted: 75,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
 
     // Log the action
     await supabaseAdmin.from('game_log').insert({
       room_id: roomId,
       player_id: payerId,
       action: 'rent',
-      detail: { propertyId, propertyName: cell.name, rent, ownerId: owner.id, ownerName: owner.name },
+      detail: { propertyId, propertyName: cell.name, rent, ownerId: owner.id, ownerName: owner.name, payerBankrupt: isPayerBankrupt },
     });
 
     return NextResponse.json({

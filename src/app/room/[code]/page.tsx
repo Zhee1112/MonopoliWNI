@@ -11,13 +11,16 @@ import GameModal from '@/components/Modal/GameModal';
 import InfoModal from '@/components/Modal/InfoModal';
 import LoanModal from '@/components/Modal/LoanModal';
 import GameEventModal from '@/components/Modal/GameEventModal';
-import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard } from '@/hooks/useRealtime';
+import PostGameModal from '@/components/Modal/PostGameModal';
+import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById, drawRandomCardExcluding } from '@/lib/game/takdir-cards';
 import { drawRandomKegiatan, drawRandomKegiatanExcluding, getKegiatanById } from '@/lib/game/kegiatan-cards';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Loan } from '@/lib/game/loan-system';
+import { SoundEffects } from '@/lib/game/sound-effects';
+import { BackgroundMusic } from '@/lib/game/background-music';
 import { Player, Room, BoardCell, GameMode, GAME_MODES, Card, KegiatanCard } from '@/lib/types';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
@@ -63,16 +66,24 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('bundir');
   const [gameOver, setGameOver] = useState(false);
   const [winnerName, setWinnerName] = useState<string | null>(null);
+  const [gameRankings, setGameRankings] = useState<Array<{
+    playerId: string; playerName: string; placement: number; totalAssets: number;
+    cleanMoney: number; properties: string[]; isBot: boolean; isBankrupt: boolean;
+  }>>([]);
+  const [gameAchievements, setGameAchievements] = useState<Array<{
+    playerId: string; achievementId: string; xp: number;
+  }>>([]);
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<{ sender: string; text: string; time?: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [musicOn, setMusicOn] = useState(false);
 
   // Realtime hooks
   const { room, setRoom } = useRealtimeRoom(roomCode);
   const { players, setPlayers } = useRealtimePlayers(room?.id || '');
   const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard();
+  const { chatMessages, sendChatMessage } = useRealtimeChat(roomCode);
   const { animatePion, getPionPosition } = usePionAnimation();
 
   // Load player from sessionStorage
@@ -103,6 +114,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   useEffect(() => {
     setHasRolledThisTurn(false);
   }, [room?.currentTurn]);
+
+  // Play sound when it's my turn
+  useEffect(() => {
+    if (isMyTurn && room?.status === 'playing') {
+      SoundEffects.turnStart();
+    }
+  }, [room?.currentTurn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll chat
   useEffect(() => {
@@ -198,9 +216,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleSendChat = useCallback(() => {
     if (!chatInput.trim() || !currentPlayer) return;
-    setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text: chatInput.trim(), time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }]);
+    sendChatMessage(currentPlayer.name, chatInput.trim());
     setChatInput('');
-  }, [chatInput, currentPlayer]);
+  }, [chatInput, currentPlayer, sendChatMessage]);
 
   // ---- BOT HANDLERS ----
 
@@ -242,6 +260,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleRollDice = useCallback(async () => {
     if (!currentPlayer || !room) return;
+    SoundEffects.diceRoll();
     setShowDiceModal(true);
   }, [currentPlayer, room]);
 
@@ -296,12 +315,14 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             
             // Set event card for draw types
             if (cell.type === 'draw_takdir') {
+              SoundEffects.cardDraw();
               const card = drawRandomCardExcluding(drawnCardIds);
               setDrawnTakdirCard(card);
               setDrawnKegiatanCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
               setPpnAmount(0);
             } else if (cell.type === 'draw_kegiatan') {
+              SoundEffects.cardDraw();
               const card = drawRandomKegiatanExcluding(drawnCardIds);
               setDrawnKegiatanCard(card);
               setDrawnTakdirCard(undefined);
@@ -441,6 +462,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
+      SoundEffects.buyProperty();
       setCurrentPlayer((prev) =>
         prev ? { ...prev, cleanMoney: data.newBalance, properties: [...(prev.properties || []), data.property.id] } : null
       );
@@ -462,8 +484,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: data.newBalance } : null);
       setLastRoll(null);
       if (data.gameOver) {
+        SoundEffects.gameOver();
         setGameOver(true);
         setWinnerName(data.winnerName || 'Tidak ada');
+        if (data.rankings) setGameRankings(data.rankings);
+        if (data.achievements) setGameAchievements(data.achievements);
       }
     } catch (err) { console.error('End turn error:', err); }
   }, [currentPlayer, room]);
@@ -891,40 +916,21 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   // ---- GAME OVER STATE ----
   if (room.status === 'finished' || gameOver) {
     return (
-      <div className="min-h-screen bg-[#001809] flex items-center justify-center p-4">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(255,213,109,0.08) 0%, transparent 70%)' }} />
-          <div className="absolute bottom-1/4 right-1/3 w-80 h-80 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(78,222,163,0.08) 0%, transparent 70%)' }} />
-        </div>
-        <div className="relative z-10 w-full max-w-md rounded-2xl p-8 text-center" style={{ backgroundColor: '#052011', border: '2px solid #ffd56d', boxShadow: '0 20px 60px rgba(255,213,109,0.15)' }}>
-          <div className="text-6xl mb-4">&#x1F3C6;</div>
-          <h1 className="text-2xl font-extrabold text-[#ffd56d] mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>GAME OVER!</h1>
-          <p className="text-sm text-[#d1c5af] mb-6">Permainan telah selesai</p>
-          <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: '#092515', border: '1px solid #203a29' }}>
-            <p className="text-[10px] text-[#9a907c] uppercase tracking-wider mb-1">Pemenang</p>
-            <p className="text-xl font-extrabold text-[#4edea3]">{winnerName}</p>
-            <p className="text-xs text-[#d1c5af] mt-1">
-              {room.gameMode === 'bundir' ? 'Terakhir bertahan!' : 'Pemain paling kaya!'}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/')}
-              className="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#d1c5af' }}
-            >
-              Kembali ke Lobby
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-              style={{ backgroundColor: '#ffd56d', color: '#3e2e00' }}
-            >
-              Main Lagi
-            </button>
-          </div>
-        </div>
-      </div>
+      <>
+        <PostGameModal
+          isOpen={true}
+          onClose={() => {}}
+          rankings={gameRankings}
+          achievements={gameAchievements}
+          currentPlayerId={currentPlayer?.id || ''}
+          gameMode={room.gameMode || 'bundir'}
+          winnerId={gameRankings.find(p => p.placement === 1)?.playerId}
+          winnerName={winnerName}
+          onPlayAgain={() => window.location.reload()}
+          onBackToLobby={() => router.push('/')}
+        />
+        <div className="min-h-screen bg-[#001809]" />
+      </>
     );
   }
 
@@ -1051,6 +1057,27 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               <span className="text-lg">&#x1F3E6;</span>
               <span className="hidden md:inline text-xs font-bold">Pinjam</span>
             </button>
+            <button
+              onClick={() => {
+                if (musicOn) {
+                  BackgroundMusic.stop();
+                  setMusicOn(false);
+                } else {
+                  BackgroundMusic.start();
+                  setMusicOn(true);
+                }
+              }}
+              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
+              style={{
+                backgroundColor: musicOn ? '#1a3d2a' : '#152f1f',
+                border: musicOn ? '1px solid #4edea3' : '1px solid #203a29',
+                color: musicOn ? '#4edea3' : '#9a907c',
+              }}
+              title={musicOn ? 'Matikan Musik' : 'Nyalakan Musik'}
+            >
+              <span className="text-lg">{musicOn ? '&#x1F3B5;' : '&#x1F507;'}</span>
+              <span className="hidden md:inline text-xs font-bold">{musicOn ? 'Musik' : 'Musik'}</span>
+            </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-[#d1c5af]">
@@ -1113,7 +1140,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         currentPlayer={currentPlayer}
         roomCode={roomCode}
         chatMessages={chatMessages}
-        onSendChat={(text) => setChatMessages((prev) => [...prev, { sender: currentPlayer.name, text, time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }])}
+        onSendChat={(text) => {
+          if (currentPlayer) {
+            sendChatMessage(currentPlayer.name, text);
+          }
+        }}
       />
 
       {/* OTHER MODALS */}
