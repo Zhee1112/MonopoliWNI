@@ -451,6 +451,130 @@ export async function POST(request: NextRequest) {
       .update({ current_turn: nextTurn })
       .eq('id', roomId);
 
+    // Check if new round started (all players have had a turn)
+    let globalEventTriggered = false;
+    let globalEventName = '';
+    let globalEventEmoji = '';
+    let globalEventDescription = '';
+
+    if (nextTurn === 0) {
+      // New round! Check for global events
+      const newRound = Math.floor(room.currentTurn / room.turnOrder.length) + 1;
+      const { getGlobalEventsForRound } = await import('@/lib/game/global-events');
+      const triggeredEvents = getGlobalEventsForRound(newRound);
+
+      if (triggeredEvents.length > 0) {
+        const { event, subEvent } = triggeredEvents[0]; // Take first triggered event
+        globalEventTriggered = true;
+        globalEventName = event.name;
+        globalEventEmoji = event.emoji;
+        globalEventDescription = subEvent.description;
+
+        // Apply effects based on subEvent
+        const allPlayers = await supabaseAdmin
+          .from('players')
+          .select('*')
+          .eq('room_id', roomId);
+
+        if (allPlayers.data) {
+          for (const p of allPlayers.data) {
+            const playerProps = (p.properties as string[]) || [];
+            let moneyChange = 0;
+            const newStatusEffects = [...((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])];
+
+            switch (subEvent.effect.type) {
+              case 'all_money_divide': {
+                const divisor = subEvent.effect.value || 10;
+                moneyChange = -(p.clean_money - Math.floor(p.clean_money / divisor));
+                break;
+              }
+              case 'all_pay_percent': {
+                const percent = subEvent.effect.value || 10;
+                moneyChange = -Math.floor(p.clean_money * (percent / 100));
+                break;
+              }
+              case 'seize_dirty': {
+                moneyChange = -(p.dirty_money || 0);
+                if (subEvent.effect.value) {
+                  moneyChange -= subEvent.effect.value;
+                }
+                // Also clear dirty money
+                await supabaseAdmin
+                  .from('players')
+                  .update({ dirty_money: 0, dirty_history: [] })
+                  .eq('id', p.id);
+                break;
+              }
+              case 'cancel_rent': {
+                const duration = subEvent.effect.duration || 2;
+                newStatusEffects.push({
+                  type: 'rent_frozen',
+                  duration,
+                  effect: `Sewa dibekukan selama ${duration} babak (Cancel Culture)`,
+                });
+                break;
+              }
+              case 'skip_even': {
+                const duration = subEvent.effect.duration || 1;
+                const fine = subEvent.effect.value || 100000;
+                newStatusEffects.push({
+                  type: 'dice_modifier',
+                  duration,
+                  effect: `Ganjil Genap: Dadu ganjil = skip + denda Rp ${fine.toLocaleString('id-ID')}`,
+                });
+                break;
+              }
+              case 'property_disable': {
+                const duration = subEvent.effect.duration || 1;
+                newStatusEffects.push({
+                  type: 'rent_frozen',
+                  duration,
+                  effect: `Semua properti tidak bisa disewa selama ${duration} babak`,
+                });
+                break;
+              }
+              case 'tech_disable': {
+                const duration = subEvent.effect.duration || 1;
+                newStatusEffects.push({
+                  type: 'rent_frozen',
+                  duration,
+                  effect: `Properti digital tidak berfungsi selama ${duration} babak`,
+                });
+                break;
+              }
+              case 'rich_penalty': {
+                const percent = subEvent.effect.value || 30;
+                moneyChange = -Math.floor(p.clean_money * (percent / 100));
+                break;
+              }
+              case 'random_fine': {
+                const fine = subEvent.effect.value || 200000;
+                // Random 1-2 players get fined
+                if (Math.random() < 0.4) {
+                  moneyChange = -fine;
+                }
+                break;
+              }
+            }
+
+            const newMoney = Math.max(0, p.clean_money + moneyChange);
+            await supabaseAdmin
+              .from('players')
+              .update({ clean_money: newMoney, status_effects: newStatusEffects })
+              .eq('id', p.id);
+          }
+        }
+
+        // Log the global event
+        await supabaseAdmin.from('game_log').insert({
+          room_id: roomId,
+          player_id: room.turnOrder[0],
+          action: 'event',
+          detail: { globalEvent: true, eventName: event.name, subEventName: subEvent.name },
+        });
+      }
+    }
+
     // Clear has_rolled flag for the next player
     const nextPlayerId = room.turnOrder[nextTurn];
     const { data: nextPlayer } = await supabaseAdmin
@@ -556,6 +680,10 @@ export async function POST(request: NextRequest) {
       gameMode: room.gameMode,
       currentRound: Math.floor(nextTurn / room.turnOrder.length) + 1,
       totalRounds: room.totalRounds,
+      globalEventTriggered,
+      globalEventName,
+      globalEventEmoji,
+      globalEventDescription,
     });
   } catch (error) {
     console.error('End turn error:', error);

@@ -3,6 +3,15 @@
 import { BOARD_CELLS } from '@/lib/game/board-data';
 import { BoardCell, Player } from '@/lib/types';
 
+interface PropertyInfo {
+  boardIndex: number;
+  ownerId: string | null;
+  ownerName: string | null;
+  ownerColor: string | null;
+  houseLevel: number;
+  isLandmark: boolean;
+}
+
 interface BoardProps {
   players: Array<{
     id: string;
@@ -16,7 +25,7 @@ interface BoardProps {
   potMoney?: number;
   round?: number;
   totalRounds?: number;
-  ownedCells?: Record<number, string>;
+  propertyInfo?: PropertyInfo[];
   onCellClick?: (cell: BoardCell) => void;
 }
 
@@ -112,7 +121,7 @@ function CornerCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellP
   );
 }
 
-function TopRowCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; onCellClick?: (cell: BoardCell) => void }) {
+function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
@@ -141,11 +150,12 @@ function TopRowCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellP
       ) : null}
 
       <CellTokenDots cellPlayers={cellPlayers} />
+      <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
 }
 
-function BottomRowCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; onCellClick?: (cell: BoardCell) => void }) {
+function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
@@ -174,11 +184,12 @@ function BottomRowCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; ce
       {isTax && <span className="text-[8px] font-bold text-[#fca5a5]">RETRIBUSI</span>}
 
       <CellTokenDots cellPlayers={cellPlayers} />
+      <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
 }
 
-function LeftColCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; onCellClick?: (cell: BoardCell) => void }) {
+function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
@@ -208,11 +219,12 @@ function LeftColCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cell
       ) : null}
 
       <CellTokenDots cellPlayers={cellPlayers} />
+      <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
 }
 
-function RightColCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; onCellClick?: (cell: BoardCell) => void }) {
+function RightColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
@@ -242,6 +254,7 @@ function RightColCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cel
       ) : null}
 
       <CellTokenDots cellPlayers={cellPlayers} />
+      <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
 }
@@ -255,7 +268,40 @@ function getCellPositionType(index: number): 'corner' | 'top' | 'left' | 'right'
   return 'corner';
 }
 
-export default function Board({ players, currentPlayer, activePlayerName, activePlayerTokenColor, potMoney = 0, round = 1, totalRounds = 4, ownedCells = {}, onCellClick }: BoardProps) {
+function PropertyBadge({ cellIndex, propertyInfo }: { cellIndex: number; propertyInfo?: PropertyInfo[] }) {
+  const prop = propertyInfo?.find(p => p.boardIndex === cellIndex);
+  if (!prop || !prop.ownerId) return null;
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center z-20 pointer-events-none">
+      {/* Owner marker */}
+      <div
+        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-bold text-white border border-black/50 shadow-sm"
+        style={{ backgroundColor: prop.ownerColor || '#666' }}
+        title={`Owner: ${prop.ownerName}`}
+      >
+        {prop.ownerName ? prop.ownerName.charAt(0).toUpperCase() : '?'}
+      </div>
+      {/* Upgrade level bars */}
+      {prop.houseLevel > 0 && (
+        <div className="flex gap-0.5 mt-0.5">
+          {Array.from({ length: Math.min(prop.houseLevel, 5) }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-1 sm:w-2 sm:h-1 rounded-full ${prop.isLandmark ? 'bg-[#ffd56d]' : 'bg-[#4edea3]'}`}
+            />
+          ))}
+        </div>
+      )}
+      {/* Landmark crown */}
+      {prop.isLandmark && (
+        <span className="text-[8px] sm:text-[10px] leading-none -mt-0.5">&#x2B50;</span>
+      )}
+    </div>
+  );
+}
+
+export default function Board({ players, currentPlayer, activePlayerName, activePlayerTokenColor, potMoney = 0, round = 1, totalRounds = 4, propertyInfo = [], onCellClick }: BoardProps) {
   return (
     <div className="w-full max-w-[1400px] min-h-[600px] p-2 sm:p-3 rounded-2xl bg-[#001206] border-2 border-[#203a29] shadow-[0_24px_64px_rgba(0,0,0,0.85)] relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(21,47,31,0.3) 0%, transparent 60%, rgba(0,0,0,0.6) 100%)' }} />
@@ -268,13 +314,13 @@ export default function Board({ players, currentPlayer, activePlayerName, active
             case 'corner':
               return <CornerCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} />;
             case 'top':
-              return <TopRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} />;
+              return <TopRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
             case 'bottom':
-              return <BottomRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} />;
+              return <BottomRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
             case 'left':
-              return <LeftColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} />;
+              return <LeftColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
             case 'right':
-              return <RightColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} />;
+              return <RightColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
             default:
               return null;
           }

@@ -145,6 +145,40 @@ export const AUDIT_CARDS: Card[] = [
 ];
 
 // ============================================================
+// KARTU TAKDIR - Sabotase (20 kartu)
+// ============================================================
+
+export const SABOTASE_CARDS: Card[] = [
+  // RINGAN (6 kartu)
+  { id: 'sab_01', name: 'Sweeping Buzzer', tier: 'ringan', category: 'interaksi', effect: { type: 'money', value: -50000, target: 'all' }, frequency: 2, flavorText: 'Buzzer-buzzer digital disweeping, semua kena dampaknya.' },
+  { id: 'sab_02', name: 'Hoaks Viral', tier: 'ringan', category: 'event_normal', effect: { type: 'skip', value: 1, target: 'random' }, frequency: 2, flavorText: 'Hoaks viral, random 1 pemain panik dan skip giliran.' },
+  { id: 'sab_03', name: 'Knalpot Racing', tier: 'ringan', category: 'event_normal', effect: { type: 'dice', special: 'ganda_x2_tapi_gagal_bayar_200rb' }, frequency: 1, flavorText: 'Knalpot racing! Dadu berikutnya x2, tapi kalau gagal bayar Rp 200.000.' },
+  { id: 'sab_04', name: 'Tempat Ibadah', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: 100000, target: 'all' }, frequency: 1, flavorText: 'Semua pemain dapat Rp 100.000 dari sumbangan tetangga.' },
+  { id: 'sab_05', name: 'Nasi Bungkus', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: 50000 }, frequency: 2, flavorText: 'Dapat Rp 50.000 dari nasi bungkus yang kelebihan.' },
+  { id: 'sab_06', name: 'Kutu Buku', tier: 'ringan', category: 'event_normal', effect: { type: 'special', special: 'negotiation_plus2_permanen' }, frequency: 1, flavorText: 'Negotiation naik +2 permanen. Baca buku ternyata berguna.' },
+
+  // SEDANG (7 kartu)
+  { id: 'sab_07', name: 'Blackout Media', tier: 'sedang', category: 'event_normal', effect: { type: 'special', special: 'sembunyikan_kas_3_babak' }, frequency: 1, flavorText: 'Kamu bisa sembunyikan kas dari pemain lain selama 3 babak.' },
+  { id: 'sab_08', name: 'Lapor Pak RT', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target mundur 3 langkah' }, frequency: 1, flavorText: 'Lapor Pak RT! Pilih pemain, paksa mundur 3 langkah ke belakang.' },
+  { id: 'sab_09', name: 'Intervensi Buzzer', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_rent_freeze_2_babak' }, frequency: 1, flavorText: 'Buzzer intervensi! Pilih pemain, propertinya sewa gratis 2 babak.' },
+  { id: 'sab_10', name: 'Calo Tiket Konser', tier: 'sedang', category: 'event_normal', effect: { type: 'money', value: -300000 }, frequency: 1, flavorText: 'Beli tiket konser lewat calo. Bayar Rp 300.000 ke Bank.' },
+  { id: 'sab_11', name: 'Surat Cinta Bea Cukai', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'bayar_30_persen_duit_kotor' }, frequency: 1, flavorText: 'Bea Cukai datang! Lapor semua uang kotor, bayar 30% pajak.' },
+  { id: 'sab_12', name: 'Hack Rekening', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'curi_30_persen_kas_target' }, frequency: 1, flavorText: 'Hack rekening! Curi 30% kas dari target.' },
+  { id: 'sab_13', name: 'Debt Collector', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_50_persen_kas_ke_kamu' }, frequency: 1, flavorText: 'Debt collector datang! Paksa target bayar 50% kas ke kamu.' },
+
+  // BERAT (4 kartu)
+  { id: 'sab_14', name: 'Operasi Senyap', tier: 'berat', category: 'interaksi', effect: { type: 'interaction', special: 'curi_20_persen_kas_dari_pemain_kaya' }, frequency: 1, flavorText: 'Operasi senyap! Curi 20% kas dari pemain kaya terpilih.' },
+  { id: 'sab_15', name: 'Investasi Bodong', tier: 'berat', category: 'event_normal', effect: { type: 'money', value: -2000000, special: 'dapat_1_properti_random' }, frequency: 1, flavorText: 'Investasi bodong! Kehilangan 40% kas, tapi dapat 1 properti random.' },
+  { id: 'sab_16', name: 'KPK Datang', tier: 'berat', category: 'audit', effect: { type: 'special', special: 'semua_dirty_money_disita_plus_denda_100rb' }, frequency: 1, flavorText: 'KPK datang! Semua uang kotor disita + denda Rp 100.000.' },
+  { id: 'sab_17', name: 'Sertifikat Tanah Abal-abal', tier: 'berat', category: 'event_normal', effect: { type: 'property', special: '3_properti_nilai_0' }, frequency: 1, flavorText: 'Sertifikat palsu! Pilih 3 propertimu, nilainya jadi 0.' },
+
+  // LEGENDARY (3 kartu)
+  { id: 'sab_18', name: 'Gugat Ke MK (Mahkamah Kocak)', tier: 'legendary', category: 'legendary', effect: { type: 'dice', special: 'batalkan_dadu_pemain_lain' }, frequency: 1, flavorText: 'Kartu pamungkas! Batalkan hasil dadu pemain lain, paksa roll ulang.' },
+  { id: 'sab_19', name: 'Uang Gaib', tier: 'legendary', category: 'legendary', effect: { type: 'money', value: 3000000, special: 'kas_x3_tapi_dicurigai_kpk_3_babak' }, frequency: 1, flavorText: 'Kas x3! Tapi kamu mendapat status "dicurigai KPK" selama 3 babak.' },
+  { id: 'sab_20', name: 'Presiden TikTok', tier: 'legendary', category: 'legendary', effect: { type: 'special', special: 'presiden_tiktok_unlimited_income_3_turn' }, frequency: 1, flavorText: 'Jadi Presiden TikTok! Income unlimited selama 3 giliran.' },
+];
+
+// ============================================================
 // KARTU TAKDIR - Legendaris (10 kartu)
 // ============================================================
 
@@ -169,6 +203,7 @@ export const ALL_TAKDIR_CARDS: Card[] = [
   ...EVENT_NORMAL_CARDS,
   ...EVENT_MEME_CARDS,
   ...INTERAKSI_CARDS,
+  ...SABOTASE_CARDS,
   ...KORUPTOR_CARDS,
   ...AUDIT_CARDS,
   ...LEGENDARY_CARDS,

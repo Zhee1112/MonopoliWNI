@@ -11,8 +11,10 @@ import GameModal from '@/components/Modal/GameModal';
 import InfoModal from '@/components/Modal/InfoModal';
 import LoanModal from '@/components/Modal/LoanModal';
 import GameEventModal from '@/components/Modal/GameEventModal';
+import GachaRollModal from '@/components/Modal/GachaRollModal';
+import GlobalEventModal from '@/components/Modal/GlobalEventModal';
 import PostGameModal from '@/components/Modal/PostGameModal';
-import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat, useRealtimeAnnouncement } from '@/hooks/useRealtime';
+import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat, useRealtimeAnnouncement, useRealtimeProperties, PropertyRow } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById, drawRandomCardExcluding } from '@/lib/game/takdir-cards';
@@ -74,6 +76,18 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     playerId: string; achievementId: string; xp: number;
   }>>([]);
 
+  // Gacha roll state
+  const [showGachaModal, setShowGachaModal] = useState(false);
+  const [gachaCellName, setGachaCellName] = useState('');
+  const [gachaCellEmoji, setGachaCellEmoji] = useState('');
+  const [pendingGachaEffect, setPendingGachaEffect] = useState<((gachaRoll: number) => void) | null>(null);
+
+  // Global event state
+  const [showGlobalEventModal, setShowGlobalEventModal] = useState(false);
+  const [globalEventName, setGlobalEventName] = useState('');
+  const [globalEventEmoji, setGlobalEventEmoji] = useState('');
+  const [globalEventDescription, setGlobalEventDescription] = useState('');
+
   // Chat state
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -85,6 +99,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard(roomCode);
   const { chatMessages, sendChatMessage } = useRealtimeChat(roomCode);
   const { announcements, broadcastAnnouncement } = useRealtimeAnnouncement(roomCode);
+  const { properties: dbProperties } = useRealtimeProperties(room?.id || '');
   const { animatePion, getPionPosition } = usePionAnimation();
 
   // Load player from sessionStorage
@@ -291,45 +306,28 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           setHasRolledThisTurn(true);
           const cell = getCellByIndex(newPosition);
           
-          // Trigger GameEventModal for special petaks
+          // Trigger GachaRollModal for special petaks (tax, takdir, kegiatan)
           if (cell.type === 'tax' || cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
-            const d1 = result.dice1;
-            const d2 = result.dice2;
-            const baseDice = d1 + d2;
-            const statBonus = Math.floor(Math.random() * 3);
-            const luckBonus = currentPlayer.luck ? Math.floor(currentPlayer.luck * 0.45) : 0;
-            const totalScore = baseDice + statBonus + luckBonus;
-            const dcTarget = 10;
-            const passed = totalScore >= dcTarget;
-            
             setGameEventCell(cell);
-            setGameEventDice({ dice1: d1, dice2: d2, total: d1 + d2 });
-            setGameEventRollResult({
-              baseDice,
-              statBonus,
-              luckBonus,
-              evidenceBonus: 0,
-              totalScore,
-              dcTarget,
-              passed,
-              margin: totalScore - dcTarget,
-            });
-            
-            // Set event card for draw types
+            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+
+            // Set event card for draw types (drawn but not yet shown)
+            let drawnTakdir = drawnTakdirCard;
+            let drawnKegiatan = drawnKegiatanCard;
+            let ppnAmt = 0;
+
             if (cell.type === 'draw_takdir') {
-              SoundEffects.cardDraw();
               const card = drawRandomCardExcluding(drawnCardIds);
+              drawnTakdir = card;
               setDrawnTakdirCard(card);
               setDrawnKegiatanCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
-              setPpnAmount(0);
             } else if (cell.type === 'draw_kegiatan') {
-              SoundEffects.cardDraw();
               const card = drawRandomKegiatanExcluding(drawnCardIds);
+              drawnKegiatan = card;
               setDrawnKegiatanCard(card);
               setDrawnTakdirCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
-              setPpnAmount(0);
             } else if (cell.type === 'tax') {
               const propPrices = getPropertyCells();
               const ownedPropTotal = (currentPlayer.properties || []).reduce((sum, propName) => {
@@ -337,66 +335,117 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 return sum + (prop?.price || 0);
               }, 0);
               const totalHarta = (currentPlayer.cleanMoney || 0) + ownedPropTotal;
-              const ppn = Math.floor(totalHarta * 0.12);
-              setPpnAmount(ppn);
+              ppnAmt = Math.floor(totalHarta * 0.12);
+              setPpnAmount(ppnAmt);
               setDrawnTakdirCard(undefined);
               setDrawnKegiatanCard(undefined);
-            } else {
+            }
+
+            // Store the effect to apply after gacha
+            const cellForGacha = cell;
+            const playerForGacha = currentPlayer;
+
+            setPendingGachaEffect(() => (gachaRoll: number) => {
+              // Apply gacha modifier to the event
+              const statBonus = gachaRoll; // gacha dice value IS the stat bonus
+              const luckBonus = playerForGacha.luck ? Math.floor(playerForGacha.luck * 0.45) : 0;
+              const baseDice = result.dice1 + result.dice2;
+              const totalScore = baseDice + statBonus + luckBonus;
+              const dcTarget = 10;
+              const passed = totalScore >= dcTarget;
+
+              setGameEventRollResult({
+                baseDice,
+                statBonus,
+                luckBonus,
+                evidenceBonus: 0,
+                totalScore,
+                dcTarget,
+                passed,
+                margin: totalScore - dcTarget,
+              });
+              setShowGameEventModal(true);
+            });
+            setGachaCellName(cell.name);
+            setGachaCellEmoji(cell.emoji);
+            setShowGachaModal(true);
+          } else if (cell.type === 'event') {
+            // Event cells — show gacha first, then apply effect
+            setGameEventCell(cell);
+            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+
+            const playerForGacha = currentPlayer;
+            const newPos = newPosition;
+
+            setPendingGachaEffect(() => (gachaRoll: number) => {
+              let moneyChange = 0;
+              let skipTurns = 0;
+              let eventDescription = '';
+
+              if (newPos === 13) {
+                // Tagihan PLN — gacha determines severity
+                if (gachaRoll <= 2) {
+                  moneyChange = -400000;
+                  eventDescription = 'Tagihan PLN naik gila-gilaan! Bayar -Rp 400.000';
+                } else if (gachaRoll <= 4) {
+                  moneyChange = -200000;
+                  eventDescription = 'Tagihan PLN naik 30%! Bayar -Rp 200.000';
+                } else {
+                  moneyChange = -100000;
+                  eventDescription = 'Tagihan PLN sedikit naik. Bayar -Rp 100.000';
+                }
+              } else if (newPos === 16) {
+                // Macet Tomang — gacha determines severity
+                if (gachaRoll <= 2) {
+                  skipTurns = 2;
+                  eventDescription = 'Macet parah Tomang! Skip 2 putaran.';
+                } else if (gachaRoll <= 4) {
+                  skipTurns = 1;
+                  eventDescription = 'Macet Tomang! Skip 1 putaran.';
+                } else {
+                  moneyChange = -50000;
+                  eventDescription = 'Macet Tomang tapi berhasil lewat! Bayar -Rp 50.000 untuk ojol.';
+                }
+              } else if (newPos === 28) {
+                // FOMO Kripto — gacha determines outcome
+                const baseAmount = 100000 + Math.floor(Math.random() * 500000);
+                if (gachaRoll >= 5) {
+                  moneyChange = baseAmount * 2;
+                  eventDescription = `FOMO Kripto moonshot! Investasi naik 200%! +Rp ${(baseAmount * 2).toLocaleString('id-ID')}`;
+                } else if (gachaRoll >= 3) {
+                  moneyChange = baseAmount;
+                  eventDescription = `FOMO Kripto stabil. Investasi naik tipis. +Rp ${baseAmount.toLocaleString('id-ID')}`;
+                } else {
+                  moneyChange = -Math.floor(baseAmount * 0.9);
+                  eventDescription = `FOMO Kripto rugpull! Investasi turun 90%! -Rp ${Math.floor(baseAmount * 0.9).toLocaleString('id-ID')}`;
+                }
+              }
+
+              // Apply event effect
+              const newMoney = Math.max(0, (playerForGacha.cleanMoney || 0) + moneyChange);
+              const newEffects = [...(playerForGacha.statusEffects || [])];
+              if (skipTurns > 0) {
+                newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
+              }
+              setCurrentPlayer((prev) => prev ? {
+                ...prev,
+                cleanMoney: newMoney,
+                statusEffects: newEffects,
+              } : null);
+
+              // Set roll result for display
+              setGameEventRollResult({
+                baseDice: 0, statBonus: gachaRoll, luckBonus: 0, evidenceBonus: 0,
+                totalScore: gachaRoll, dcTarget: 0, passed: true, margin: 0,
+              });
               setDrawnTakdirCard(undefined);
               setDrawnKegiatanCard(undefined);
               setPpnAmount(0);
-            }
-            
-            setShowGameEventModal(true);
-          } else if (cell.type === 'event') {
-            // Event cells — apply effect immediately
-            let moneyChange = 0;
-            let skipTurns = 0;
-            let eventDescription = '';
-
-            if (newPosition === 13) {
-              // Tagihan PLN — bayar listrik
-              moneyChange = -200000;
-              eventDescription = 'Tagihan PLN naik 30%! Kamu harus bayar Rp 200.000';
-            } else if (newPosition === 16) {
-              // Macet Tomang — skip 1 putaran
-              skipTurns = 1;
-              eventDescription = 'Macet parah di Tomang! Kamu terjebak dan skip 1 putaran.';
-            } else if (newPosition === 28) {
-              // FOMO Kripto — random win/lose
-              const roll = Math.random();
-              const baseAmount = 100000 + Math.floor(Math.random() * 500000);
-              if (roll < 0.5) {
-                moneyChange = baseAmount * 2;
-                eventDescription = `FOMO Kripto moonshot! Investasi naik 200%! +Rp ${(baseAmount * 2).toLocaleString('id-ID')}`;
-              } else {
-                moneyChange = -Math.floor(baseAmount * 0.9);
-                eventDescription = `FOMO Kripto rugpull! Investasi turun 90%! -Rp ${Math.floor(baseAmount * 0.9).toLocaleString('id-ID')}`;
-              }
-            }
-
-            const newMoney = Math.max(0, (currentPlayer.cleanMoney || 0) + moneyChange);
-            const newEffects = [...(currentPlayer.statusEffects || [])];
-            if (skipTurns > 0) {
-              newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
-            }
-            setCurrentPlayer((prev) => prev ? {
-              ...prev,
-              cleanMoney: newMoney,
-              statusEffects: newEffects,
-            } : null);
-
-            // Show GameEventModal with event info
-            setGameEventCell(cell);
-            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
-            setGameEventRollResult({
-              baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
-              totalScore: 0, dcTarget: 0, passed: true, margin: 0,
+              setShowGameEventModal(true);
             });
-            setDrawnTakdirCard(undefined);
-            setDrawnKegiatanCard(undefined);
-            setPpnAmount(0);
-            setShowGameEventModal(true);
+            setGachaCellName(cell.name);
+            setGachaCellEmoji(cell.emoji);
+            setShowGachaModal(true);
           } else if (cell.type === 'corner') {
             // Corner cells — apply effect
             let eventDescription = '';
@@ -445,8 +494,71 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             setPpnAmount(0);
             setShowGameEventModal(true);
           } else if (cell.type === 'property') {
+            // Property cell — check ownership
             const property = getPropertyCells().find((p) => p.index === newPosition);
-            if (property) { setSelectedCell(property); setShowBuyModal(true); }
+            const dbProp = dbProperties.find((p) => p.board_index === newPosition);
+
+            if (!property) return;
+
+            if (!dbProp || !dbProp.owner_id) {
+              // Unowned — show buy modal
+              setSelectedCell(property);
+              setShowBuyModal(true);
+            } else if (dbProp.owner_id === currentPlayer.id) {
+              // Owned by self — show upgrade info (future: upgrade modal)
+              setGameEventCell(cell);
+              setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+              setGameEventRollResult({
+                baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
+                totalScore: 0, dcTarget: 0, passed: true, margin: 0,
+              });
+              setDrawnTakdirCard(undefined);
+              setDrawnKegiatanCard(undefined);
+              setPpnAmount(0);
+              setShowGameEventModal(true);
+            } else {
+              // Owned by another player — pay rent
+              const rentPayload = {
+                roomId: room.id,
+                payerId: currentPlayer.id,
+                propertyId: dbProp.id,
+              };
+              const cellRef = cell;
+              const resultRef = { dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 };
+              const playerRef = currentPlayer;
+
+              fetch('/api/buy-property', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rentPayload),
+              })
+                .then(r => r.json().then(data => ({ ok: r.ok, data })))
+                .then(({ ok, data: rentData }) => {
+                  if (!ok) throw new Error(rentData.error);
+                  SoundEffects.payRent();
+                  setCurrentPlayer((prev) => prev ? {
+                    ...prev,
+                    cleanMoney: rentData.newPayerBalance,
+                  } : null);
+                  broadcastAnnouncement({
+                    type: 'rent',
+                    playerName: playerRef.name,
+                    message: `membayar sewa ke ${rentData.ownerName}`,
+                    detail: `-Rp ${rentData.rent.toLocaleString('id-ID')}`,
+                  });
+                  setGameEventCell(cellRef);
+                  setGameEventDice(resultRef);
+                  setGameEventRollResult({
+                    baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
+                    totalScore: 0, dcTarget: 0, passed: true, margin: 0,
+                  });
+                  setDrawnTakdirCard(undefined);
+                  setDrawnKegiatanCard(undefined);
+                  setPpnAmount(rentData.rent);
+                  setShowGameEventModal(true);
+                })
+                .catch(err => console.error('Rent payment error:', err));
+            }
           }
         });
       } catch (err) { console.error('Roll dice error:', err); }
@@ -465,13 +577,20 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       SoundEffects.buyProperty();
+      // Store property NAME (not UUID) to match server-side storage
       setCurrentPlayer((prev) =>
-        prev ? { ...prev, cleanMoney: data.newBalance, properties: [...(prev.properties || []), data.property.id] } : null
+        prev ? { ...prev, cleanMoney: data.newBalance, properties: [...(prev.properties || []), selectedCell.name] } : null
       );
+      broadcastAnnouncement({
+        type: 'buy',
+        playerName: currentPlayer.name,
+        message: `membeli ${selectedCell.name}`,
+        detail: `-Rp ${(data.price || 0).toLocaleString('id-ID')}`,
+      });
       setShowBuyModal(false);
       setSelectedCell(null);
     } catch (err) { console.error('Buy property error:', err); }
-  }, [currentPlayer, room, selectedCell]);
+  }, [currentPlayer, room, selectedCell, broadcastAnnouncement]);
 
   const handleEndTurn = useCallback(async () => {
     if (!currentPlayer || !room) return;
@@ -491,6 +610,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         setWinnerName(data.winnerName || 'Tidak ada');
         if (data.rankings) setGameRankings(data.rankings);
         if (data.achievements) setGameAchievements(data.achievements);
+      }
+      // Check for global event
+      if (data.globalEventTriggered) {
+        setGlobalEventName(data.globalEventName);
+        setGlobalEventEmoji(data.globalEventEmoji);
+        setGlobalEventDescription(data.globalEventDescription);
+        setShowGlobalEventModal(true);
       }
     } catch (err) { console.error('End turn error:', err); }
   }, [currentPlayer, room]);
@@ -1015,6 +1141,17 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           potMoney={room.potMoney || 0}
           round={Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}
           totalRounds={room.totalRounds || 20}
+          propertyInfo={dbProperties.map((dp) => {
+            const owner = players.find(p => p.id === dp.owner_id);
+            return {
+              boardIndex: dp.board_index,
+              ownerId: dp.owner_id,
+              ownerName: owner?.name || null,
+              ownerColor: owner?.tokenColor || null,
+              houseLevel: dp.house_level,
+              isLandmark: dp.is_landmark,
+            };
+          })}
           onCellClick={handleCellClick}
         />
       </main>
@@ -1156,6 +1293,25 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           onSkip={() => { setShowBuyModal(false); setSelectedCell(null); }}
         />
       )}
+      <GachaRollModal
+        isOpen={showGachaModal}
+        cellName={gachaCellName}
+        cellEmoji={gachaCellEmoji}
+        onRollComplete={(gachaRoll) => {
+          setShowGachaModal(false);
+          if (pendingGachaEffect) {
+            pendingGachaEffect(gachaRoll);
+            setPendingGachaEffect(null);
+          }
+        }}
+      />
+      <GlobalEventModal
+        isOpen={showGlobalEventModal}
+        eventName={globalEventName}
+        eventEmoji={globalEventEmoji}
+        eventDescription={globalEventDescription}
+        onContinue={() => setShowGlobalEventModal(false)}
+      />
       {activeCard && (
         <EventCardModal
           isOpen={true}

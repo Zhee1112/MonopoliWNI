@@ -15,6 +15,7 @@ export interface BoardCell {
   group: PropertyGroup;
   price: number | null;
   rent: number | null;
+  buildingCost: number | null;
   description: string;
   color: string;
   groupColor: string;

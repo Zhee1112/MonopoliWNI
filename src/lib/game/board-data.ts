@@ -10,7 +10,7 @@ export const BOARD_CELLS: BoardCell[] = [
   // === START ===
   {
     index: 0, name: 'GAJI UMR JAKARTA', subtitle: 'Lewat Start', type: 'corner', group: null,
-    price: null, rent: null, description: 'Lewat start, gaji UMR Jakarta Rp 5.3 juta',
+    price: null, rent: null, buildingCost: null, description: 'Lewat start, gaji UMR Jakarta Rp 5.3 juta',
     color: '#152f1f', groupColor: '#ffd56d', emoji: '⭐',
   },
 
@@ -18,49 +18,49 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 1 - Tanah Abang (Pasar Tradisional)
   {
     index: 1, name: 'Pasar Tanah Abang', subtitle: 'Pasar Tekstil', type: 'property', group: 'coklat',
-    price: 150000, rent: 30000, description: 'Pasar tekstil terbesar se-Asia Tenggara',
+    price: 150000, rent: 30000, buildingCost: 75000, description: 'Pasar tekstil terbesar se-Asia Tenggara',
     color: '#052011', groupColor: '#8B4513', emoji: '🏪',
   },
   // Cell 2 - Pajak Bumi (Tax)
   {
     index: 2, name: 'PBB Jakarta', subtitle: 'Pajak Bumi', type: 'tax', group: null,
-    price: null, rent: null, description: 'Bayar PBB tahunan -Rp 100.000',
+    price: null, rent: null, buildingCost: null, description: 'Bayar PBB tahunan -Rp 100.000',
     color: '#052011', groupColor: '#ff6b6b', emoji: '📋',
   },
   // Cell 3 - Kos Gambir (Brown)
   {
     index: 3, name: 'Kos Gambir', subtitle: 'Dekat Istana', type: 'property', group: 'coklat',
-    price: 180000, rent: 35000, description: 'Kos eksklusif Gambir, langganan PNS',
+    price: 180000, rent: 35000, buildingCost: 90000, description: 'Kos eksklusif Gambir, langganan PNS',
     color: '#052011', groupColor: '#8B4513', emoji: '🏠',
   },
   // Cell 4 - Takdir WNI (Takdir)
   {
     index: 4, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
   // Cell 5 - Warteg Senen (Brown)
   {
     index: 5, name: 'Warteg Senen', subtitle: 'Nasi Kuning', type: 'property', group: 'coklat',
-    price: 200000, rent: 40000, description: 'Warteg legendaris Senen, lauk 12 macam',
+    price: 200000, rent: 40000, buildingCost: 100000, description: 'Warteg legendaris Senen, lauk 12 macam',
     color: '#052011', groupColor: '#8B4513', emoji: '🍜',
   },
   // Cell 6 - KRL Commuter (Transport)
   {
     index: 6, name: 'Stasiun Senen', subtitle: 'KRL Commuter', type: 'property', group: 'transport',
-    price: 300000, rent: 60000, description: 'Stasiun Senen, transit KRL commuter',
+    price: 300000, rent: 60000, buildingCost: 150000, description: 'Stasiun Senen, transit KRL commuter',
     color: '#052011', groupColor: '#4edea3', emoji: '🚆',
   },
   // Cell 7 - Kegiatan WNI (Kegiatan)
   {
     index: 7, name: 'Kegiatan WNI', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
-    price: null, rent: null, description: 'Ambil kartu Kegiatan WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Kegiatan WNI',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
   // Cell 8 - Indomaret Pusat (Cyan)
   {
     index: 8, name: 'Indomaret HQ', subtitle: 'Kantor Pusat', type: 'property', group: 'cyan',
-    price: 220000, rent: 45000, description: 'Kantor pusat Indomaret, franchise terbesar',
+    price: 220000, rent: 45000, buildingCost: 110000, description: 'Kantor pusat Indomaret, franchise terbesar',
     color: '#052011', groupColor: '#0ea5e9', emoji: '🏢',
   },
 
@@ -68,43 +68,43 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 9 - Tebet Eco Park (Cyan)
   {
     index: 9, name: 'Tebet Eco Park', subtitle: 'Hijau Kota', type: 'property', group: 'cyan',
-    price: 280000, rent: 55000, description: 'Taman hijau Tebet, viral Instagram',
+    price: 280000, rent: 55000, buildingCost: 140000, description: 'Taman hijau Tebet, viral Instagram',
     color: '#052011', groupColor: '#0ea5e9', emoji: '🌳',
   },
   // Cell 10 - TAHANAN KPK (Corner - Penjara)
   {
     index: 10, name: 'TAHANAN KPK', subtitle: 'OTT Mencengangkan', type: 'corner', group: null,
-    price: null, rent: null, description: 'Kena razia OTT KPK, masuk tahanan',
+    price: null, rent: null, buildingCost: null, description: 'Kena razia OTT KPK, masuk tahanan',
     color: '#152f1f', groupColor: '#d1c5af', emoji: '🔒',
   },
   // Cell 11 - MRT Bundaran HI (Transport)
   {
     index: 11, name: 'MRT Bundaran HI', subtitle: 'Stasiun Elite', type: 'property', group: 'transport',
-    price: 350000, rent: 70000, description: 'MRT Bundaran HI, jantung Jakarta',
+    price: 350000, rent: 70000, buildingCost: 175000, description: 'MRT Bundaran HI, jantung Jakarta',
     color: '#052011', groupColor: '#4edea3', emoji: '🚇',
   },
   // Cell 12 - Mall Senayan City (Kuning)
   {
     index: 12, name: 'Senayan City', subtitle: 'Mall Elite', type: 'property', group: 'kuning',
-    price: 400000, rent: 80000, description: 'Senayan City, mall elite favorit sultan',
+    price: 400000, rent: 80000, buildingCost: 200000, description: 'Senayan City, mall elite favorit sultan',
     color: '#052011', groupColor: '#eab308', emoji: '🏬',
   },
   // Cell 13 - Token Listrik (Event)
   {
     index: 13, name: 'Tagihan PLN', subtitle: 'Listrik Naik', type: 'event', group: null,
-    price: null, rent: null, description: 'Tagihan PLN naik 30%, bayar -Rp 200.000',
+    price: null, rent: null, buildingCost: null, description: 'Tagihan PLN naik 30%, bayar -Rp 200.000',
     color: '#052011', groupColor: '#ff6b6b', emoji: '⚡',
   },
   // Cell 14 - SCBD Sudirman (Kuning)
   {
     index: 14, name: 'SCBD Sudirman', subtitle: 'Gedung Emas', type: 'property', group: 'kuning',
-    price: 450000, rent: 90000, description: 'SCBD, gedung perkantoran termahal',
+    price: 450000, rent: 90000, buildingCost: 225000, description: 'SCBD, gedung perkantoran termahal',
     color: '#052011', groupColor: '#eab308', emoji: '🏢',
   },
   // Cell 15 - Kebayoran Residence (Kuning)
   {
     index: 15, name: 'Kebayoran Baru', subtitle: 'Hunian Elit', type: 'property', group: 'kuning',
-    price: 500000, rent: 100000, description: 'Kebayoran Baru, hunian diplomat',
+    price: 500000, rent: 100000, buildingCost: 250000, description: 'Kebayoran Baru, hunian diplomat',
     color: '#052011', groupColor: '#eab308', emoji: '🏛️',
   },
 
@@ -112,31 +112,31 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 16 - Lampu Merah (Event)
   {
     index: 16, name: 'Macet Tomang', subtitle: 'Skip Putaran', type: 'event', group: null,
-    price: null, rent: null, description: 'Macet parah Tomang, skip 1 putaran',
+    price: null, rent: null, buildingCost: null, description: 'Macet parah Tomang, skip 1 putaran',
     color: '#052011', groupColor: '#ff6b6b', emoji: '🚦',
   },
   // Cell 17 - Kegiatan WNI (Kegiatan)
   {
     index: 17, name: 'Kegiatan WNI', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
-    price: null, rent: null, description: 'Ambil kartu Kegiatan WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Kegiatan WNI',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
   // Cell 18 - Mall Taman Anggrek (Orange)
   {
     index: 18, name: 'Taman Anggrek', subtitle: 'Mall Raksasa', type: 'property', group: 'orange',
-    price: 550000, rent: 110000, description: 'Mall Taman Anggrek, ice skating legendaris',
+    price: 550000, rent: 110000, buildingCost: 275000, description: 'Mall Taman Anggrek, ice skating legendaris',
     color: '#052011', groupColor: '#f97316', emoji: '🏬',
   },
   // Cell 19 - Grogol Plaza (Orange)
   {
     index: 19, name: 'Grogol Plaza', subtitle: 'Pusat Elektronik', type: 'property', group: 'orange',
-    price: 580000, rent: 115000, description: 'Grogol, pusat elektronik dan gadget',
+    price: 580000, rent: 115000, buildingCost: 290000, description: 'Grogol, pusat elektronik dan gadget',
     color: '#052011', groupColor: '#f97316', emoji: '🖥️',
   },
   // Cell 20 - BEBAS PARKIR (Corner)
   {
     index: 20, name: 'BEBAS PARKIR', subtitle: 'Rest Area', type: 'corner', group: null,
-    price: null, rent: null, description: 'Parkir gratis, istirahat sejenak',
+    price: null, rent: null, buildingCost: null, description: 'Parkir gratis, istirahat sejenak',
     color: '#152f1f', groupColor: '#4edea3', emoji: '🅿️',
   },
 
@@ -144,43 +144,43 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 21 - Cijantung Coffee (Red)
   {
     index: 21, name: 'Cijantung Kopi', subtitle: 'Kopi Viral', type: 'property', group: 'merah',
-    price: 620000, rent: 125000, description: 'Kopi viral Cijantung, nongkrong anak muda',
+    price: 620000, rent: 125000, buildingCost: 310000, description: 'Kopi viral Cijantung, nongkrong anak muda',
     color: '#052011', groupColor: '#ef4444', emoji: '☕',
   },
   // Cell 22 - Takdir WNI (Takdir)
   {
     index: 22, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
   // Cell 23 - Pondok Indah Mall (Red)
   {
     index: 23, name: 'Pondok Indah', subtitle: 'Mall Premium', type: 'property', group: 'merah',
-    price: 700000, rent: 140000, description: 'Pondok Indah Mall, surganya belanja',
+    price: 700000, rent: 140000, buildingCost: 350000, description: 'Pondok Indah Mall, surganya belanja',
     color: '#052011', groupColor: '#ef4444', emoji: '🏬',
   },
   // Cell 24 - Halte Transjakarta (Transport)
   {
     index: 24, name: 'Transjakarta', subtitle: 'Busway', type: 'property', group: 'transport',
-    price: 400000, rent: 80000, description: 'Halte Transjakarta, transportasi umum',
+    price: 400000, rent: 80000, buildingCost: 200000, description: 'Halte Transjakarta, transportasi umum',
     color: '#052011', groupColor: '#4edea3', emoji: '🚌',
   },
   // Cell 25 - Cawang Roundabout (Red)
   {
     index: 25, name: 'Bundaran Cawang', subtitle: 'Simpang Siur', type: 'property', group: 'merah',
-    price: 650000, rent: 130000, description: 'Bundaran Cawang, simpang 5 Jakarta',
+    price: 650000, rent: 130000, buildingCost: 325000, description: 'Bundaran Cawang, simpang 5 Jakarta',
     color: '#052011', groupColor: '#ef4444', emoji: '🏗️',
   },
   // Cell 26 - Uji Emisi DKI (Tax)
   {
     index: 26, name: 'Uji Emisi DKI', subtitle: 'Tilang', type: 'tax', group: null,
-    price: null, rent: null, description: 'Kena tilang uji emisi -Rp 150.000',
+    price: null, rent: null, buildingCost: null, description: 'Kena tilang uji emisi -Rp 150.000',
     color: '#052011', groupColor: '#ff6b6b', emoji: '💨',
   },
   // Cell 27 - Kemang Village (Red)
   {
     index: 27, name: 'Kemang Village', subtitle: 'Apartemen Elite', type: 'property', group: 'merah',
-    price: 750000, rent: 150000, description: 'Kemang Village, apartemen ekspat',
+    price: 750000, rent: 150000, buildingCost: 375000, description: 'Kemang Village, apartemen ekspat',
     color: '#052011', groupColor: '#ef4444', emoji: '🏢',
   },
 
@@ -188,43 +188,43 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 28 - FOMO Kripto (Event)
   {
     index: 28, name: 'FOMO Kripto', subtitle: 'Volatile', type: 'event', group: null,
-    price: null, rent: null, description: 'FOMO kripto! Bisa naik 200% atau turun 90%',
+    price: null, rent: null, buildingCost: null, description: 'FOMO kripto! Bisa naik 200% atau turun 90%',
     color: '#052011', groupColor: '#4edea3', emoji: '🪙',
   },
   // Cell 29 - PIK 2 Beach (Green)
   {
     index: 29, name: 'PIK 2 Beach', subtitle: 'Villa Pantai', type: 'property', group: 'hijau',
-    price: 800000, rent: 160000, description: 'PIK 2, villa pantai privat sultan',
+    price: 800000, rent: 160000, buildingCost: 400000, description: 'PIK 2, villa pantai privat sultan',
     color: '#052011', groupColor: '#22c55e', emoji: '🏖️',
   },
   // Cell 30 - MASUK SEL (Corner - Penjara)
   {
     index: 30, name: 'MASUK SEL', subtitle: 'OTT KPK', type: 'corner', group: null,
-    price: null, rent: null, description: 'Kena OTT KPK, langsung bui',
+    price: null, rent: null, buildingCost: null, description: 'Kena OTT KPK, langsung bui',
     color: '#2b1013', groupColor: '#ff6b6b', emoji: '⚖️',
   },
   // Cell 31 - Kelapa Gading Mall (Green)
   {
     index: 31, name: 'Mall Kelapa Gading', subtitle: 'Mall Terbesar', type: 'property', group: 'hijau',
-    price: 850000, rent: 170000, description: 'Mall Kelapa Gading, mall terbesar Jakarta',
+    price: 850000, rent: 170000, buildingCost: 425000, description: 'Mall Kelapa Gading, mall terbesar Jakarta',
     color: '#052011', groupColor: '#22c55e', emoji: '🏬',
   },
   // Cell 32 - Pajak PPN 12% (Tax)
   {
     index: 32, name: 'PPN 12%', subtitle: 'Pajak', type: 'tax', group: null,
-    price: null, rent: null, description: 'Bayar PPN 12% dari total harta',
+    price: null, rent: null, buildingCost: null, description: 'Bayar PPN 12% dari total harta',
     color: '#052011', groupColor: '#ff6b6b', emoji: '📋',
   },
   // Cell 33 - Pantai Priok (Green)
   {
     index: 33, name: 'Tanjung Priok', subtitle: 'Pelabuhan', type: 'property', group: 'hijau',
-    price: 780000, rent: 155000, description: 'Pelabuhan Tanjung Priok, gerbang perdagangan',
+    price: 780000, rent: 155000, buildingCost: 390000, description: 'Pelabuhan Tanjung Priok, gerbang perdagangan',
     color: '#052011', groupColor: '#22c55e', emoji: '⚓',
   },
   // Cell 34 - Takdir WNI (Takdir)
   {
     index: 34, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
 
@@ -232,31 +232,31 @@ export const BOARD_CELLS: BoardCell[] = [
   // Cell 35 - BSD City (Ungu)
   {
     index: 35, name: 'BSD City', subtitle: 'Kota Mandiri', type: 'property', group: 'ungu',
-    price: 900000, rent: 180000, description: 'BSD City, kota mandiri terbesar',
+    price: 900000, rent: 180000, buildingCost: 450000, description: 'BSD City, kota mandiri terbesar',
     color: '#052011', groupColor: '#6366f1', emoji: '🏘️',
   },
   // Cell 36 - Kegiatan WNI (Kegiatan)
   {
     index: 36, name: 'Kegiatan WNI', subtitle: 'Ambil Kartu', type: 'draw_kegiatan', group: null,
-    price: null, rent: null, description: 'Ambil kartu Kegiatan WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Kegiatan WNI',
     color: '#052011', groupColor: '#4edea3', emoji: '📦',
   },
   // Cell 37 - Monas (Ungu - Premium)
   {
     index: 37, name: 'Monas Ikon', subtitle: 'Lapangan Banteng', type: 'property', group: 'ungu',
-    price: 1200000, rent: 240000, description: 'Monas, ikon Jakarta yang legendaris',
+    price: 1200000, rent: 240000, buildingCost: 600000, description: 'Monas, ikon Jakarta yang legendaris',
     color: '#052011', groupColor: '#6366f1', emoji: '🏛️',
   },
   // Cell 38 - Takdir WNI (Takdir)
   {
     index: 38, name: 'Takdir WNI', subtitle: 'Ambil Kartu', type: 'draw_takdir', group: null,
-    price: null, rent: null, description: 'Ambil kartu Takdir WNI',
+    price: null, rent: null, buildingCost: null, description: 'Ambil kartu Takdir WNI',
     color: '#052011', groupColor: '#ffcec9', emoji: '❓',
   },
   // Cell 39 - Bandara Soetta (Ungu - Premium)
   {
     index: 39, name: 'Soekarno-Hatta', subtitle: 'Bandara Internasional', type: 'property', group: 'ungu',
-    price: 1100000, rent: 220000, description: 'Bandara Soekarno-Hatta, gerbang Indonesia',
+    price: 1100000, rent: 220000, buildingCost: 550000, description: 'Bandara Soekarno-Hatta, gerbang Indonesia',
     color: '#052011', groupColor: '#6366f1', emoji: '✈️',
   },
 ];
@@ -369,8 +369,10 @@ export function getGroupCells(group: string): BoardCell[] {
 }
 
 export function calculateRent(baseRent: number, houseLevel: number, hasMonopoly: boolean): number {
-  let rent = baseRent;
-  rent += houseLevel * baseRent * 0.5;
-  if (hasMonopoly) rent *= 1.5;
-  return Math.round(rent);
+  // Level scaling: 0=1x, 1=1.5x, 2=2x, 3=2.5x, 4=3x, 5(landmark)=5x
+  const levelMultipliers = [1, 1.5, 2, 2.5, 3, 5];
+  const multiplier = levelMultipliers[Math.min(houseLevel, 5)];
+  let rent = Math.round(baseRent * multiplier);
+  if (hasMonopoly) rent = Math.round(rent * 1.5);
+  return rent;
 }

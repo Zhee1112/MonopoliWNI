@@ -222,6 +222,76 @@ export function useRealtimeCard(roomCode: string) {
 }
 
 // ============================================================
+// REALTIME PROPERTIES - Room-scoped property ownership
+// ============================================================
+
+export interface PropertyRow {
+  id: string;
+  room_id: string;
+  board_index: number;
+  owner_id: string | null;
+  house_level: number;
+  is_mortgaged: boolean;
+  is_landmark: boolean;
+}
+
+export function useRealtimeProperties(roomId: string) {
+  const [properties, setProperties] = useState<PropertyRow[]>([]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const fetchProperties = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('room_id', roomId)
+          .order('board_index', { ascending: true });
+
+        if (data && !error) {
+          setProperties(data as PropertyRow[]);
+        }
+      } catch (e) {
+        console.error('Failed to fetch properties:', e);
+      }
+    };
+
+    fetchProperties();
+
+    const channel = supabase
+      .channel(`properties:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'properties',
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setProperties((prev) => [...prev, payload.new as PropertyRow]);
+          } else if (payload.eventType === 'UPDATE') {
+            setProperties((prev) =>
+              prev.map((p) => (p.id === payload.new.id ? (payload.new as PropertyRow) : p))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setProperties((prev) => prev.filter((p) => p.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomId]);
+
+  return { properties, setProperties };
+}
+
+// ============================================================
 // REALTIME CHAT HOOK - Room-scoped
 // ============================================================
 
