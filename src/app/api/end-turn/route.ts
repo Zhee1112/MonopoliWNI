@@ -294,6 +294,7 @@ async function checkGameOver(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   roomId: string,
   room: ReturnType<typeof mapRoomFromDB>,
+  completedRound: number,
 ): Promise<{ gameOver: boolean; winnerId?: string; winnerName?: string }> {
   const gameMode = room.gameMode as GameMode;
 
@@ -313,35 +314,29 @@ async function checkGameOver(
   }
 
   if (gameMode === 'sultan' || gameMode === 'kilat') {
-    if (room.currentTurn >= room.turnOrder.length - 1) {
-      const completedTurns = room.currentTurn + 1;
-      const totalPlayers = room.turnOrder.length;
-      const completedRounds = Math.floor(completedTurns / totalPlayers);
+    if (completedRound >= room.totalRounds) {
+      const { data: allPlayers } = await supabaseAdmin
+        .from('players')
+        .select('*')
+        .eq('room_id', roomId);
 
-      if (completedRounds >= room.totalRounds) {
-        const { data: allPlayers } = await supabaseAdmin
-          .from('players')
-          .select('*')
-          .eq('room_id', roomId);
+      if (allPlayers && allPlayers.length > 0) {
+        let richestPlayer = allPlayers[0];
+        let richestAssets = 0;
 
-        if (allPlayers && allPlayers.length > 0) {
-          let richestPlayer = allPlayers[0];
-          let richestAssets = 0;
-
-          for (const p of allPlayers) {
-            const assets = await calculatePlayerAssets(supabaseAdmin, {
-              cleanMoney: p.clean_money,
-              dirtyMoney: p.dirty_money,
-              properties: p.properties || [],
-            });
-            if (assets > richestAssets) {
-              richestAssets = assets;
-              richestPlayer = p;
-            }
+        for (const p of allPlayers) {
+          const assets = await calculatePlayerAssets(supabaseAdmin, {
+            cleanMoney: p.clean_money,
+            dirtyMoney: p.dirty_money,
+            properties: p.properties || [],
+          });
+          if (assets > richestAssets) {
+            richestAssets = assets;
+            richestPlayer = p;
           }
-
-          return { gameOver: true, winnerId: richestPlayer.id, winnerName: richestPlayer.name };
         }
+
+        return { gameOver: true, winnerId: richestPlayer.id, winnerName: richestPlayer.name };
       }
     }
   }
@@ -489,6 +484,8 @@ export async function POST(request: NextRequest) {
             }
           } else {
           for (const p of allPlayers.data) {
+            // Skip bankrupt players
+            if (p.is_bankrupt) continue;
             const playerProps = (p.properties as string[]) || [];
             let moneyChange = 0;
             const newStatusEffects = [...((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])];
@@ -505,15 +502,18 @@ export async function POST(request: NextRequest) {
                 break;
               }
               case 'seize_dirty': {
-                moneyChange = -(p.dirty_money || 0);
-                if (subEvent.effect.value) {
-                  moneyChange -= subEvent.effect.value;
-                }
-                // Also clear dirty money
+                moneyChange = 0;
+                const seizedDirty = p.dirty_money || 0;
+                const seizeFine = subEvent.effect.value || 0;
+                // Clear dirty money
                 await supabaseAdmin
                   .from('players')
                   .update({ dirty_money: 0, dirty_history: [] })
                   .eq('id', p.id);
+                // Apply fine from clean money if any
+                if (seizeFine > 0) {
+                  moneyChange = -seizeFine;
+                }
                 break;
               }
               case 'cancel_rent': {
@@ -621,7 +621,8 @@ export async function POST(request: NextRequest) {
     });
 
     const updatedRoom = { ...room, currentTurn: nextTurn };
-    const gameOverResult = await checkGameOver(supabaseAdmin, roomId, updatedRoom);
+    const completedRound = Math.floor(room.currentTurn / room.turnOrder.length) + 1;
+    const gameOverResult = await checkGameOver(supabaseAdmin, roomId, updatedRoom, completedRound);
 
     if (gameOverResult.gameOver) {
       // Calculate final rankings

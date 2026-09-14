@@ -60,6 +60,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sudah roll giliran ini' }, { status: 400 });
     }
 
+    // Check skip_turn: auto-skip without rolling
+    if (statusEffects.some(e => e.type === 'skip_turn')) {
+      const skipEffect = statusEffects.find(e => e.type === 'skip_turn');
+      // Mark has_rolled so they can end turn
+      const updatedEffects = [...statusEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }];
+      await supabaseAdmin
+        .from('players')
+        .update({ status_effects: updatedEffects })
+        .eq('id', playerId);
+
+      return NextResponse.json({
+        success: true,
+        dice1: 0,
+        dice2: 0,
+        total: 0,
+        newPosition: player.position,
+        passedStart: false,
+        luckFluctuation: 0,
+        newLuck: player.luck,
+        moneyChange: 0,
+        skipTurn: true,
+        skipReason: skipEffect?.effect || 'Skip putaran',
+        gameMode: room.gameMode,
+        currentRound: Math.floor(room.currentTurn / room.turnOrder.length) + 1,
+        totalRounds: room.totalRounds,
+      });
+    }
+
     // Roll two dice
     const dice1 = rollDice(6);
     const dice2 = rollDice(6);

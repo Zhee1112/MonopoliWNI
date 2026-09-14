@@ -258,15 +258,23 @@ export async function POST(request: NextRequest) {
         const gameMode = (dbRoom.game_mode as GameMode) || 'bundir';
         const awardedAchievements = await awardPostGameRewards(supabaseAdmin, roomId, ranked, gameMode);
 
-        // Store game results
-        await supabaseAdmin.from('game_results').insert({
-          room_id: roomId,
-          winner_id: lastPlayer.id,
-          game_mode: gameMode,
-          total_rounds: room.currentTurn,
-          rankings: ranked,
-          final_properties: ranked.map(p => ({ playerId: p.id, properties: p.properties })),
-        });
+        // Store game results (per-player rows, matching end-turn schema)
+        for (const p of ranked) {
+          await supabaseAdmin.from('game_results').insert({
+            game_room_id: roomId,
+            player_id: p.id,
+            user_id: p.user_id,
+            placement: p.placement,
+            final_clean_money: p.clean_money,
+            final_dirty_money: p.dirty_money,
+            final_properties: p.properties || [],
+            final_total_assets: p.totalAssets,
+            xp_earned: p.placement === 1 ? 150 : p.placement === 2 ? 100 : p.placement === 3 ? 75 : 30,
+            is_winner: p.id === lastPlayer.id,
+            game_mode: gameMode,
+            total_rounds: room.currentTurn,
+          });
+        }
 
         return NextResponse.json({
           success: true,

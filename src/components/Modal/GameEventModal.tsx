@@ -114,7 +114,7 @@ export default function GameEventModal({
                 <span className="text-[11px] font-medium text-[#ffd56d]/90">Lv {playerLevel} {playerRank}</span>
               </div>
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-xl bg-[#0e2c1c] border border-[#204a32] text-slate-300 hover:text-white hover:border-[#4edea3]/60 transition-all flex items-center justify-center text-sm active:scale-95">✕</button>
+            <button onClick={onContinue} className="w-10 h-10 rounded-xl bg-[#0e2c1c] border border-[#204a32] text-slate-300 hover:text-white hover:border-[#4edea3]/60 transition-all flex items-center justify-center text-sm active:scale-95">✕</button>
           </div>
         </div>
       </header>

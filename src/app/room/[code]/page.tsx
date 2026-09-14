@@ -101,6 +101,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [musicOn, setMusicOn] = useState(false);
 
+  // Refs for avoiding stale closures in animation callbacks
+  const drawnCardIdsRef = useRef<string[]>([]);
+  const currentPlayerRef = useRef<Player | null>(null);
+
   // Realtime hooks
   const { room, setRoom } = useRealtimeRoom(roomCode);
   const { players, setPlayers } = useRealtimePlayers(room?.id || '');
@@ -152,10 +156,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const updated = players.find((p) => p.id === currentPlayer.id);
       if (updated) {
         setCurrentPlayer(updated);
+        currentPlayerRef.current = updated;
         sessionStorage.setItem('player', JSON.stringify(updated));
       }
     }
   }, [players, currentPlayer]);
+
+  // Sync refs for stale closure prevention
+  useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
+  useEffect(() => { drawnCardIdsRef.current = drawnCardIds; }, [drawnCardIds]);
 
   // Reset dice roll tracking when turn changes
   useEffect(() => {
@@ -324,6 +333,20 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
+
+        // Handle skip turn (ganjil-genap or skip_turn status)
+        if (data.skipTurn) {
+          setHasRolledThisTurn(true);
+          setLastRoll({ dice1: data.dice1, dice2: data.dice2, total: data.total });
+          broadcastAnnouncement({
+            type: 'skip',
+            playerName: currentPlayer.name,
+            message: data.skipReason || 'Skip putaran',
+            detail: '',
+          });
+          setShowDiceModal(false);
+          return;
+        }
         
         // Animate pion step by step
         const oldPosition = currentPlayer.position;
@@ -348,14 +371,14 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             let ppnAmt = 0;
 
             if (cell.type === 'draw_takdir') {
-              const card = drawRandomCardExcluding(drawnCardIds);
+              const card = drawRandomCardExcluding(drawnCardIdsRef.current);
               drawnTakdir = card;
               setDrawnTakdirCard(card);
               setDrawnKegiatanCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
               SoundEffects.cardDraw();
             } else if (cell.type === 'draw_kegiatan') {
-              const card = drawRandomKegiatanExcluding(drawnCardIds);
+              const card = drawRandomKegiatanExcluding(drawnCardIdsRef.current);
               drawnKegiatan = card;
               setDrawnKegiatanCard(card);
               setDrawnTakdirCard(undefined);
@@ -368,11 +391,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               } else {
                 // PPN 12%: percentage of total assets
                 const propPrices = getPropertyCells();
-                const ownedPropTotal = (currentPlayer.properties || []).reduce((sum, propName) => {
+                const ownedPropTotal = (currentPlayerRef.current?.properties || []).reduce((sum, propName) => {
                   const prop = propPrices.find(p => p.name === propName);
                   return sum + (prop?.price || 0);
                 }, 0);
-                const totalHarta = (currentPlayer.cleanMoney || 0) + ownedPropTotal;
+                const totalHarta = (currentPlayerRef.current?.cleanMoney || 0) + ownedPropTotal;
                 ppnAmt = Math.floor(totalHarta * 0.12);
               }
               setPpnAmount(ppnAmt);
