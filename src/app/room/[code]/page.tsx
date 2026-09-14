@@ -14,6 +14,7 @@ import GameEventModal from '@/components/Modal/GameEventModal';
 import GachaRollModal from '@/components/Modal/GachaRollModal';
 import GlobalEventModal from '@/components/Modal/GlobalEventModal';
 import PostGameModal from '@/components/Modal/PostGameModal';
+import UpgradePropertyModal from '@/components/Modal/UpgradePropertyModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat, useRealtimeAnnouncement, useRealtimeProperties, PropertyRow } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
@@ -50,6 +51,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalCell, setUpgradeModalCell] = useState<BoardCell | null>(null);
+  const [upgradeModalIsOwn, setUpgradeModalIsOwn] = useState(true);
   const [showGameEventModal, setShowGameEventModal] = useState(false);
   const [gameEventCell, setGameEventCell] = useState<BoardCell | null>(null);
   const [gameEventDice, setGameEventDice] = useState<{ dice1: number; dice2: number; total: number } | undefined>(undefined);
@@ -544,28 +548,17 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setSelectedCell(property);
               setShowBuyModal(true);
             } else if (dbProp.owner_id === currentPlayer.id) {
-              // Owned by self — show upgrade info (future: upgrade modal)
-              setGameEventCell(cell);
-              setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
-              setGameEventRollResult({
-                baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
-                totalScore: 0, dcTarget: 0, passed: true, margin: 0,
-              });
-              setDrawnTakdirCard(undefined);
-              setDrawnKegiatanCard(undefined);
-              setPpnAmount(0);
-              setShowGameEventModal(true);
+              // Owned by self — show upgrade modal
+              setUpgradeModalCell(property);
+              setUpgradeModalIsOwn(true);
+              setShowUpgradeModal(true);
             } else {
-              // Owned by another player — pay rent
+              // Owned by another player — pay rent first, then offer takeover
               const rentPayload = {
                 roomId: room.id,
                 payerId: currentPlayer.id,
                 propertyId: dbProp.id,
               };
-              const cellRef = cell;
-              const resultRef = { dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 };
-              const playerRef = currentPlayer;
-
               fetch('/api/buy-property', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -575,18 +568,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 .then(({ ok, data: rentData }) => {
                   if (!ok) throw new Error(rentData.error);
                   SoundEffects.payRent();
-                  setCurrentPlayer((prev) => prev ? {
-                    ...prev,
-                    cleanMoney: rentData.newPayerBalance,
-                  } : null);
+                  setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: rentData.newPayerBalance } : null);
                   broadcastAnnouncement({
                     type: 'rent',
-                    playerName: playerRef.name,
+                    playerName: currentPlayer.name,
                     message: `membayar sewa ke ${rentData.ownerName}`,
                     detail: `-Rp ${rentData.rent.toLocaleString('id-ID')}`,
                   });
-                  setGameEventCell(cellRef);
-                  setGameEventDice(resultRef);
+                  // Show GameEventModal with rent info
+                  setGameEventCell(cell);
+                  setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
                   setGameEventRollResult({
                     baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
                     totalScore: 0, dcTarget: 0, passed: true, margin: 0,
@@ -615,7 +606,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
-      SoundEffects.buyProperty();
+      SoundEffects.success();
       // Store property NAME (not UUID) to match server-side storage
       setCurrentPlayer((prev) =>
         prev ? { ...prev, cleanMoney: data.newBalance, properties: [...(prev.properties || []), selectedCell.name] } : null
@@ -630,6 +621,64 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setSelectedCell(null);
     } catch (err) { console.error('Buy property error:', err); }
   }, [currentPlayer, room, selectedCell, broadcastAnnouncement]);
+
+  const handleUpgradeProperty = useCallback(async (boardIndex: number) => {
+    if (!currentPlayer || !room) return;
+    try {
+      const response = await fetch('/api/upgrade-property', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, playerId: currentPlayer.id, boardIndex }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      SoundEffects.buyProperty();
+      setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: data.newBalance } : null);
+      broadcastAnnouncement({
+        type: 'buy',
+        playerName: currentPlayer.name,
+        message: data.isLandmark
+          ? `mengubah ${data.propertyName} menjadi LANDMARK!`
+          : `upgrade ${data.propertyName} ke level ${data.newLevel}`,
+        detail: `-Rp ${data.upgradeCost.toLocaleString('id-ID')}`,
+      });
+      setShowUpgradeModal(false);
+      setUpgradeModalCell(null);
+    } catch (err) {
+      console.error('Upgrade property error:', err);
+      SoundEffects.error();
+    }
+  }, [currentPlayer, room, broadcastAnnouncement]);
+
+  const handleTakeoverProperty = useCallback(async (boardIndex: number) => {
+    if (!currentPlayer || !room) return;
+    try {
+      const response = await fetch('/api/takeover-property', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, buyerId: currentPlayer.id, boardIndex }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      SoundEffects.buyProperty();
+      setCurrentPlayer((prev) => prev ? {
+        ...prev,
+        cleanMoney: data.newBalance,
+        properties: [...(prev.properties || []), data.propertyName],
+      } : null);
+      broadcastAnnouncement({
+        type: 'buy',
+        playerName: currentPlayer.name,
+        message: `takeover ${data.propertyName} dari ${data.ownerName}`,
+        detail: `-Rp ${data.takeoverCost.toLocaleString('id-ID')}`,
+      });
+      setShowUpgradeModal(false);
+      setUpgradeModalCell(null);
+    } catch (err) {
+      console.error('Takeover property error:', err);
+      SoundEffects.error();
+    }
+  }, [currentPlayer, room, broadcastAnnouncement]);
 
   const handleEndTurn = useCallback(async () => {
     if (!currentPlayer || !room) return;
@@ -648,7 +697,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         setGameOver(true);
         setWinnerName(data.winnerName || 'Tidak ada');
         if (data.rankings) setGameRankings(data.rankings);
-        if (data.achievements) setGameAchievements(data.achievements);
+        if (data.achievements) {
+          setGameAchievements(data.achievements);
+          if (data.achievements.length > 0) {
+            setTimeout(() => SoundEffects.achievementUnlock(), 500);
+          }
+        }
       }
       // Check for global event
       if (data.globalEventTriggered) {
@@ -680,6 +734,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         SoundEffects.gameOver();
         setGameOver(true);
         setWinnerName(data.winnerName || 'Tidak ada');
+        if (data.rankings) setGameRankings(data.rankings);
+        if (data.achievements) {
+          setGameAchievements(data.achievements);
+          if (data.achievements.length > 0) {
+            setTimeout(() => SoundEffects.achievementUnlock(), 500);
+          }
+        }
       } else {
         router.push('/');
       }
@@ -1408,6 +1469,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           return cell ? { id: String(cell.index), name: cell.name, price: cell.price } : null;
         }).filter(Boolean) as Array<{ id: string; name: string; price?: number }>}
         existingLoans={activeLoans}
+      />
+      <UpgradePropertyModal
+        isOpen={showUpgradeModal}
+        cell={upgradeModalCell!}
+        dbProperty={upgradeModalCell ? dbProperties.find(p => p.board_index === upgradeModalCell.index) || null : null}
+        playerMoney={currentPlayer.cleanMoney || 0}
+        onUpgrade={handleUpgradeProperty}
+        onTakeover={handleTakeoverProperty}
+        onClose={() => { setShowUpgradeModal(false); setUpgradeModalCell(null); }}
+        isOwnProperty={upgradeModalIsOwn}
       />
       {gameEventCell && (
         <GameEventModal

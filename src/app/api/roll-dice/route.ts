@@ -63,7 +63,42 @@ export async function POST(request: NextRequest) {
     // Roll two dice
     const dice1 = rollDice(6);
     const dice2 = rollDice(6);
-    const total = dice1 + dice2;
+    let total = dice1 + dice2;
+
+    // Check dice_modifier (Ganjil Genap): odd dice = skip + fine
+    const diceModifierEffect = statusEffects.find(e => e.type === 'dice_modifier');
+    if (diceModifierEffect && total % 2 !== 0) {
+      // Odd dice during Ganjil Genap — skip turn and apply fine
+      const fineMatch = diceModifierEffect.effect.match(/denda Rp ([\d.]+)/);
+      const fine = fineMatch ? parseInt(fineMatch[1].replace(/\./g, ''), 10) : 100000;
+      const skipEffect = { type: 'skip_turn', duration: 1, effect: `Ganjil Genap: Dadu ganjil, skip + denda Rp ${fine.toLocaleString('id-ID')}` };
+      const updatedEffectsForSkip = [...statusEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }, skipEffect];
+
+      await supabaseAdmin
+        .from('players')
+        .update({
+          clean_money: Math.max(0, player.cleanMoney - fine),
+          status_effects: updatedEffectsForSkip,
+        })
+        .eq('id', playerId);
+
+      return NextResponse.json({
+        success: true,
+        dice1,
+        dice2,
+        total,
+        newPosition: player.position,
+        passedStart: false,
+        luckFluctuation: 0,
+        newLuck: player.luck,
+        moneyChange: -fine,
+        skipTurn: true,
+        skipReason: `Dadu ganjil (${total}) saat Ganjil Genap! Denda Rp ${fine.toLocaleString('id-ID')}`,
+        gameMode: room.gameMode,
+        currentRound: Math.floor(room.currentTurn / room.turnOrder.length) + 1,
+        totalRounds: room.totalRounds,
+      });
+    }
 
     // Calculate new position
     const newPosition = (player.position + total) % 40;

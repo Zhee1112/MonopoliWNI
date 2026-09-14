@@ -218,6 +218,21 @@ export async function PUT(request: NextRequest) {
     const room = mapRoomFromDB(dbRoom as Record<string, unknown>);
     const isKilat = room.gameMode === 'kilat';
     const rentMultiplier = isKilat ? 1.5 : 1;
+
+    // Check if owner has rent_frozen status effect
+    const ownerEffects = (dbOwner.status_effects as Array<{ type: string; duration: number }>) || [];
+    const isRentFrozen = ownerEffects.some(e => e.type === 'rent_frozen');
+
+    if (isRentFrozen) {
+      return NextResponse.json({
+        success: true,
+        rent: 0,
+        ownerName: owner.name,
+        message: 'Properti dibekukan - sewa gratis!',
+        newPayerBalance: payer.cleanMoney,
+      });
+    }
+
     const baseRent = calculateRent(cell.rent || 0, dbProperty.house_level, false);
     const rent = Math.round(baseRent * rentMultiplier);
 

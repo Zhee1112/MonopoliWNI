@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { mapPlayerFromDB } from '@/lib/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,17 +23,19 @@ export async function GET(request: NextRequest) {
       const room = (existingPlayer as unknown as { rooms: { status: string; code: string } }).rooms;
       const playerRow = await supabaseAdmin
         .from('players')
-        .select('id, name, token_color, role, selected_role, is_ready')
+        .select('*')
         .eq('user_id', userId)
         .eq('room_id', existingPlayer.room_id)
         .maybeSingle();
+
+      const player = playerRow.data ? mapPlayerFromDB(playerRow.data as Record<string, unknown>) : null;
 
       return NextResponse.json({
         activeRoom: {
           code: room.code,
           status: room.status,
           roomId: existingPlayer.room_id,
-          player: playerRow.data || null,
+          player,
         },
       });
     }

@@ -477,12 +477,23 @@ export async function POST(request: NextRequest) {
           .eq('room_id', roomId);
 
         if (allPlayers.data) {
+          // Handle swap_positions separately (needs all positions first)
+          if (subEvent.effect.type === 'swap_positions') {
+            const positions = allPlayers.data.map(p => ({ id: p.id, position: p.position }));
+            const shuffled = [...positions].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < positions.length; i++) {
+              await supabaseAdmin
+                .from('players')
+                .update({ position: shuffled[i].position })
+                .eq('id', positions[i].id);
+            }
+          } else {
           for (const p of allPlayers.data) {
             const playerProps = (p.properties as string[]) || [];
             let moneyChange = 0;
             const newStatusEffects = [...((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])];
 
-            switch (subEvent.effect.type) {
+            switch (subEvent.effect.type as string) {
               case 'all_money_divide': {
                 const divisor = subEvent.effect.value || 10;
                 moneyChange = -(p.clean_money - Math.floor(p.clean_money / divisor));
@@ -555,6 +566,12 @@ export async function POST(request: NextRequest) {
                 }
                 break;
               }
+              case 'swap_positions': {
+                // Handled after the per-player loop
+                break;
+              }
+              default:
+                break;
             }
 
             const newMoney = Math.max(0, p.clean_money + moneyChange);
@@ -563,6 +580,7 @@ export async function POST(request: NextRequest) {
               .update({ clean_money: newMoney, status_effects: newStatusEffects })
               .eq('id', p.id);
           }
+          } // end else (non-swap)
         }
 
         // Log the global event
@@ -584,8 +602,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (nextPlayer) {
+      // Decrement all status effect durations and remove expired ones
       const nextEffects = ((nextPlayer.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
-        .filter(e => e.type !== 'has_rolled');
+        .filter(e => e.type !== 'has_rolled')
+        .map(e => ({ ...e, duration: e.duration - 1 }))
+        .filter(e => e.duration > 0);
       await supabaseAdmin
         .from('players')
         .update({ status_effects: nextEffects })
