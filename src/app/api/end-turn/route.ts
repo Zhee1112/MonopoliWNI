@@ -451,6 +451,23 @@ export async function POST(request: NextRequest) {
       .update({ current_turn: nextTurn })
       .eq('id', roomId);
 
+    // Clear has_rolled flag for the next player
+    const nextPlayerId = room.turnOrder[nextTurn];
+    const { data: nextPlayer } = await supabaseAdmin
+      .from('players')
+      .select('status_effects')
+      .eq('id', nextPlayerId)
+      .maybeSingle();
+
+    if (nextPlayer) {
+      const nextEffects = ((nextPlayer.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
+        .filter(e => e.type !== 'has_rolled');
+      await supabaseAdmin
+        .from('players')
+        .update({ status_effects: nextEffects })
+        .eq('id', nextPlayerId);
+    }
+
     await supabaseAdmin.from('game_log').insert({
       room_id: roomId,
       player_id: playerId,

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Player, Room, mapPlayerFromDB, mapRoomFromDB } from '@/lib/types';
 
 // ============================================================
-// REALTIME HOOKS
+// REALTIME HOOKS - Room-scoped, isolated per meja
 // ============================================================
 
 export function useRealtimeRoom(roomCode: string) {
@@ -15,7 +15,6 @@ export function useRealtimeRoom(roomCode: string) {
   useEffect(() => {
     if (!roomCode) return;
 
-    // Initial fetch
     const fetchRoom = async () => {
       try {
         const { data, error } = await supabase
@@ -36,7 +35,7 @@ export function useRealtimeRoom(roomCode: string) {
 
     fetchRoom();
 
-    // Subscribe to realtime changes
+    // Subscribe ONLY to this room's changes
     const channel = supabase
       .channel(`room:${roomCode}`)
       .on(
@@ -45,10 +44,15 @@ export function useRealtimeRoom(roomCode: string) {
           event: '*',
           schema: 'public',
           table: 'rooms',
+          filter: `code=eq.${roomCode}`,
         },
         (payload) => {
           if (payload.eventType === 'UPDATE') {
-            setRoom(mapRoomFromDB(payload.new as Record<string, unknown>));
+            const updated = mapRoomFromDB(payload.new as Record<string, unknown>);
+            // Guard: only update if this is actually our room
+            if (updated.code === roomCode) {
+              setRoom(updated);
+            }
           }
         }
       )
@@ -68,7 +72,6 @@ export function useRealtimePlayers(roomId: string) {
   useEffect(() => {
     if (!roomId) return;
 
-    // Initial fetch
     const fetchPlayers = async () => {
       try {
         const { data, error } = await supabase
@@ -87,7 +90,6 @@ export function useRealtimePlayers(roomId: string) {
 
     fetchPlayers();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel(`players:${roomId}`)
       .on(
@@ -124,7 +126,11 @@ export function useRealtimePlayers(roomId: string) {
   return { players, setPlayers };
 }
 
-export function useRealtimeCard() {
+// ============================================================
+// REALTIME CARD - Room-scoped (not global)
+// ============================================================
+
+export function useRealtimeCard(roomCode: string) {
   const [activeCard, setActiveCard] = useState<{
     cardId: string;
     drawnBy: string;
@@ -135,7 +141,9 @@ export function useRealtimeCard() {
   } | null>(null);
 
   useEffect(() => {
-    const channel = supabase.channel('cards');
+    if (!roomCode) return;
+
+    const channel = supabase.channel(`cards:${roomCode}`);
 
     channel
       .on('broadcast', { event: 'card_drawn' }, (payload) => {
@@ -166,7 +174,7 @@ export function useRealtimeCard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [roomCode]);
 
   const broadcastCard = useCallback(
     async (cardData: {
@@ -176,33 +184,33 @@ export function useRealtimeCard() {
       targetId?: string;
       targetName?: string;
     }) => {
-      await supabase.channel('cards').send({
+      await supabase.channel(`cards:${roomCode}`).send({
         type: 'broadcast',
         event: 'card_drawn',
         payload: cardData,
       });
     },
-    []
+    [roomCode]
   );
 
   const broadcastReaction = useCallback(
     async (playerId: string, reaction: string) => {
-      await supabase.channel('cards').send({
+      await supabase.channel(`cards:${roomCode}`).send({
         type: 'broadcast',
         event: 'card_reaction',
         payload: { playerId, reaction },
       });
     },
-    []
+    [roomCode]
   );
 
   const broadcastDismiss = useCallback(async () => {
-    await supabase.channel('cards').send({
+    await supabase.channel(`cards:${roomCode}`).send({
       type: 'broadcast',
       event: 'card_dismissed',
       payload: {},
     });
-  }, []);
+  }, [roomCode]);
 
   return {
     activeCard,
@@ -214,7 +222,7 @@ export function useRealtimeCard() {
 }
 
 // ============================================================
-// REALTIME CHAT HOOK
+// REALTIME CHAT HOOK - Room-scoped
 // ============================================================
 
 export interface ChatMessage {
@@ -260,4 +268,60 @@ export function useRealtimeChat(roomCode: string) {
   );
 
   return { chatMessages, setChatMessages, sendChatMessage };
+}
+
+// ============================================================
+// REALTIME ANNOUNCEMENTS - Room-scoped Warta Meja
+// ============================================================
+
+export interface Announcement {
+  id: string;
+  type: 'roll' | 'buy' | 'rent' | 'card' | 'event' | 'tax' | 'loan' | 'bankrupt' | 'turn' | 'round' | 'system';
+  playerName: string;
+  message: string;
+  detail?: string;
+  time: string;
+}
+
+export function useRealtimeAnnouncement(roomCode: string) {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  useEffect(() => {
+    if (!roomCode) return;
+
+    const channel = supabase.channel(`announcements:${roomCode}`);
+
+    channel
+      .on('broadcast', { event: 'game_announcement' }, (payload) => {
+        const ann = payload.payload as Announcement;
+        setAnnouncements((prev) => {
+          const next = [...prev, ann];
+          // Keep last 20 announcements
+          return next.length > 20 ? next.slice(-20) : next;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomCode]);
+
+  const broadcastAnnouncement = useCallback(
+    async (ann: Omit<Announcement, 'id' | 'time'>) => {
+      const full: Announcement = {
+        ...ann,
+        id: crypto.randomUUID(),
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      };
+      await supabase.channel(`announcements:${roomCode}`).send({
+        type: 'broadcast',
+        event: 'game_announcement',
+        payload: full,
+      });
+    },
+    [roomCode]
+  );
+
+  return { announcements, broadcastAnnouncement };
 }

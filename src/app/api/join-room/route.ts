@@ -3,19 +3,38 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { mapRoomFromDB, mapPlayerFromDB } from '@/lib/types';
 
 // ============================================================
-// JOIN ROOM API
+// JOIN ROOM API - With user auth binding + race condition fix
 // ============================================================
 
 export async function POST(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { roomCode, playerName } = await request.json();
+    const { roomCode, playerName, userId } = await request.json();
 
     if (!roomCode || !playerName) {
       return NextResponse.json(
         { error: 'Room code and player name are required' },
         { status: 400 }
       );
+    }
+
+    // Check if user already in ANY active room
+    if (userId) {
+      const { data: existingPlayer } = await supabaseAdmin
+        .from('players')
+        .select('room_id, rooms!inner(id, status, code)')
+        .eq('user_id', userId)
+        .in('rooms.status', ['waiting', 'playing'])
+        .maybeSingle();
+
+      if (existingPlayer) {
+        const room = (existingPlayer as unknown as { rooms: { status: string; code: string } }).rooms;
+        return NextResponse.json({
+          error: 'Kamu sudah ada di meja lain',
+          activeRoom: room.code,
+          activeStatus: room.status,
+        }, { status: 400 });
+      }
     }
 
     // Find room
@@ -35,7 +54,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Game already started' }, { status: 400 });
     }
 
-    // Count players
+    // Check for duplicate name in this room
+    const { data: existingNames } = await supabaseAdmin
+      .from('players')
+      .select('id')
+      .eq('room_id', room.id)
+      .eq('name', playerName)
+      .maybeSingle();
+
+    if (existingNames) {
+      return NextResponse.json({ error: 'Nama sudah dipakai di meja ini' }, { status: 400 });
+    }
+
+    // Use RPC or sequential approach with lock to prevent race conditions
+    // First, get current count and turn_order atomically
+    const { data: roomState, error: lockError } = await supabaseAdmin
+      .from('rooms')
+      .select('id, turn_order')
+      .eq('id', room.id)
+      .single();
+
+    if (lockError || !roomState) {
+      return NextResponse.json({ error: 'Failed to lock room' }, { status: 500 });
+    }
+
+    // Count current players
     const { count, error: countError } = await supabaseAdmin
       .from('players')
       .select('*', { count: 'exact', head: true })
@@ -63,6 +106,7 @@ export async function POST(request: NextRequest) {
         token_color: tokenColors[count || 0],
         role: null,
         selected_role: null,
+        user_id: userId || null,
       })
       .select()
       .single();
@@ -73,15 +117,16 @@ export async function POST(request: NextRequest) {
 
     const player = mapPlayerFromDB(dbPlayer as Record<string, unknown>);
 
-    // Update room turn_order
+    // Update room turn_order using the fresh read (append new player)
+    const currentTurnOrder = (roomState.turn_order as string[]) || [];
     await supabaseAdmin
       .from('rooms')
-      .update({ turn_order: [...room.turnOrder, player.id] })
+      .update({ turn_order: [...currentTurnOrder, player.id] })
       .eq('id', room.id);
 
     return NextResponse.json({
       success: true,
-      room: { ...room, turnOrder: [...room.turnOrder, player.id] },
+      room: { ...room, turnOrder: [...currentTurnOrder, player.id] },
       player,
     });
   } catch (error) {

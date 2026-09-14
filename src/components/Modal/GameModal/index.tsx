@@ -6,10 +6,10 @@ import { getPropertyCells } from '@/lib/game/board-data';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
 
 // ============================================================
-// GAME MODAL - 3 Tabs: Pemain, Status & Aset, Chat
+// GAME MODAL - 4 Tabs: Pemain, Status, Chat, Pengaturan
 // ============================================================
 
-type TabKey = 'players' | 'status' | 'chat';
+type TabKey = 'players' | 'status' | 'chat' | 'settings';
 
 interface ChatMessage {
   sender: string;
@@ -28,12 +28,15 @@ interface GameModalProps {
   chatMessages?: ChatMessage[];
   onSendChat?: (text: string) => void;
   onLeaveRoom?: () => void;
+  musicOn?: boolean;
+  onToggleMusic?: () => void;
 }
 
 const TAB_CONFIG = [
   { key: 'players' as TabKey, label: 'Pemain', icon: '👥' },
   { key: 'status' as TabKey, label: 'Status', icon: '📊' },
   { key: 'chat' as TabKey, label: 'Chat', icon: '💬' },
+  { key: 'settings' as TabKey, label: 'Pengaturan', icon: '⚙️' },
 ];
 
 const CHAT_PLAYER_COLORS = ['#ffd56d', '#4edea3', '#38bdf8', '#f472b6', '#fb923c', '#a78bfa', '#facc15', '#f87171'];
@@ -53,7 +56,7 @@ function formatChatTime(time?: string): string {
 
 export default function GameModal({
   isOpen, onClose, defaultTab = 'players', players, currentPlayer, roomCode,
-  chatMessages = [], onSendChat, onLeaveRoom,
+  chatMessages = [], onSendChat, onLeaveRoom, musicOn = false, onToggleMusic,
 }: GameModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>(defaultTab);
   const [chatInput, setChatInput] = useState('');
@@ -256,6 +259,69 @@ export default function GameModal({
                   >
                     Kirim
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PANEL: PENGATURAN */}
+          {activeTab === 'settings' && (
+            <div className="p-3 space-y-3">
+              {/* Music Toggle */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">{musicOn ? '🎵' : '🔇'}</span>
+                    <div>
+                      <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>Musik Latar</span>
+                      <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>{musicOn ? 'Sedang diputar' : 'Nonaktif'}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onToggleMusic}
+                    className="w-12 h-6 rounded-full relative transition-all"
+                    style={{
+                      backgroundColor: musicOn ? '#4edea3' : '#152f1f',
+                      border: `1px solid ${musicOn ? '#4edea3' : '#203a29'}`,
+                    }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full absolute top-0.5 transition-all"
+                      style={{
+                        backgroundColor: musicOn ? '#fff' : '#7a9a7a',
+                        left: musicOn ? '26px' : '2px',
+                      }}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Sound Effects */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🔊</span>
+                    <div>
+                      <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>Efek Suara</span>
+                      <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Dadu, kartu, beli</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: '#4edea320', color: '#4edea3' }}>AKTIF</span>
+                </div>
+              </div>
+
+              {/* Room Info */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Info Kamar</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px]" style={{ color: '#93c5a7' }}>Kode Kamar</span>
+                    <span className="font-mono text-xs font-bold" style={{ color: '#ffd56d' }}>#{roomCode}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px]" style={{ color: '#93c5a7' }}>Jumlah Pemain</span>
+                    <span className="text-xs font-bold" style={{ color: '#4edea3' }}>{players.length}/8</span>
+                  </div>
                 </div>
               </div>
             </div>

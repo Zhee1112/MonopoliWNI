@@ -54,6 +54,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not your turn' }, { status: 400 });
     }
 
+    // Prevent double-roll using status_effects
+    const statusEffects = (player.statusEffects as Array<{ type: string; duration: number; effect: string }>) || [];
+    if (statusEffects.some(e => e.type === 'has_rolled')) {
+      return NextResponse.json({ error: 'Sudah roll giliran ini' }, { status: 400 });
+    }
+
     // Roll two dice
     const dice1 = rollDice(6);
     const dice2 = rollDice(6);
@@ -73,13 +79,15 @@ export async function POST(request: NextRequest) {
       moneyChange += 200000;
     }
 
-    // Update player
+    // Update player + set has_rolled flag
+    const updatedEffects = [...statusEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }];
     const { error: updateError } = await supabaseAdmin
       .from('players')
       .update({
         position: newPosition,
         luck: newLuck,
         clean_money: player.cleanMoney + moneyChange,
+        status_effects: updatedEffects,
       })
       .eq('id', playerId);
 

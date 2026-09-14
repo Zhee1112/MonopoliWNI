@@ -12,7 +12,7 @@ import InfoModal from '@/components/Modal/InfoModal';
 import LoanModal from '@/components/Modal/LoanModal';
 import GameEventModal from '@/components/Modal/GameEventModal';
 import PostGameModal from '@/components/Modal/PostGameModal';
-import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat } from '@/hooks/useRealtime';
+import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat, useRealtimeAnnouncement } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
 import { drawRandomCard, getCardById, drawRandomCardExcluding } from '@/lib/game/takdir-cards';
@@ -82,8 +82,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   // Realtime hooks
   const { room, setRoom } = useRealtimeRoom(roomCode);
   const { players, setPlayers } = useRealtimePlayers(room?.id || '');
-  const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard();
+  const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard(roomCode);
   const { chatMessages, sendChatMessage } = useRealtimeChat(roomCode);
+  const { announcements, broadcastAnnouncement } = useRealtimeAnnouncement(roomCode);
   const { animatePion, getPionPosition } = usePionAnimation();
 
   // Load player from sessionStorage
@@ -268,6 +269,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     async (result: { dice1: number; dice2: number; total: number }) => {
       if (!currentPlayer || !room) return;
       setLastRoll(result);
+      SoundEffects.diceResult(result.total);
       try {
         const response = await fetch('/api/roll-dice', {
           method: 'POST',
@@ -1011,7 +1013,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           activePlayerName={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name}
           activePlayerTokenColor={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.tokenColor}
           potMoney={room.potMoney || 0}
-          round={(room.currentTurn || 0) + 1}
+          round={Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}
           totalRounds={room.totalRounds || 20}
           onCellClick={handleCellClick}
         />
@@ -1057,27 +1059,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               <span className="text-lg">&#x1F3E6;</span>
               <span className="hidden md:inline text-xs font-bold">Pinjam</span>
             </button>
-            <button
-              onClick={() => {
-                if (musicOn) {
-                  BackgroundMusic.stop();
-                  setMusicOn(false);
-                } else {
-                  BackgroundMusic.start();
-                  setMusicOn(true);
-                }
-              }}
-              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
-              style={{
-                backgroundColor: musicOn ? '#1a3d2a' : '#152f1f',
-                border: musicOn ? '1px solid #4edea3' : '1px solid #203a29',
-                color: musicOn ? '#4edea3' : '#9a907c',
-              }}
-              title={musicOn ? 'Matikan Musik' : 'Nyalakan Musik'}
-            >
-              <span className="text-lg">{musicOn ? '&#x1F3B5;' : '&#x1F507;'}</span>
-              <span className="hidden md:inline text-xs font-bold">{musicOn ? 'Musik' : 'Musik'}</span>
-            </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-[#d1c5af]">
@@ -1116,16 +1097,23 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       <footer className="w-full py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.5)] hidden md:block fixed bottom-14 left-0 z-30" style={{ backgroundColor: '#001206' }}>
         <div className="w-full px-5 flex flex-col md:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="px-2 py-0.5 rounded font-bold text-[11px] tracking-wider uppercase shrink-0" style={{ backgroundColor: '#152f1f', color: '#ffd56d', fontFamily: "'Syne', sans-serif" }}>WARTA MEJA</span>
+            <span className="px-2 py-0.5 rounded font-bold text-[11px] tracking-wider uppercase shrink-0" style={{ backgroundColor: '#152f1f', color: '#ffd56d' }}>WARTA MEJA</span>
             <p className="text-[#d1c5af] truncate text-xs">
-              <span className="text-[#4edea3] font-bold">{players[1]?.name || 'Pemain 2'}</span> membeli <span className="text-[#ffd56d] font-medium">Menteng VIP</span> seharga <span className="font-mono text-[#cbead1]">Rp 3.500.000</span> &bull; Bank menyalurkan dividen Kas Keliling
+              {announcements.length > 0 ? (
+                <>
+                  <span className="text-[#4edea3] font-bold">{announcements[announcements.length - 1].playerName}</span>
+                  {' '}{announcements[announcements.length - 1].message}
+                  {announcements[announcements.length - 1].detail && (
+                    <span className="text-[#ffd56d] font-medium"> {announcements[announcements.length - 1].detail}</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-[#588568]">Menunggu aksi pertama pemain...</span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-5 text-[#d1c5af] shrink-0 text-xs">
-            <span className="flex items-center gap-1">
-              <span className="text-[#4edea3] text-sm">&#x1F4F6;</span> Stabil (18ms)
-            </span>
-            <span>Babak {(room.currentTurn || 0) + 1} / {room.totalRounds || 20}</span>
+            <span>Babak {Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1} / {room.totalRounds || 20}</span>
             <span>Pool Dana Kas: <strong className="text-[#ffd56d] font-mono">Rp {(room.potMoney || 0).toLocaleString('id-ID')}</strong></span>
           </div>
         </div>
@@ -1143,6 +1131,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         onSendChat={(text) => {
           if (currentPlayer) {
             sendChatMessage(currentPlayer.name, text);
+          }
+        }}
+        musicOn={musicOn}
+        onToggleMusic={() => {
+          if (musicOn) {
+            BackgroundMusic.stop();
+            setMusicOn(false);
+          } else {
+            BackgroundMusic.start();
+            setMusicOn(true);
           }
         }}
       />

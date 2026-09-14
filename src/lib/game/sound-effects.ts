@@ -1,5 +1,5 @@
 // ============================================================
-// SOUND EFFECTS - Web Audio API (no external files needed)
+// SOUND EFFECTS - Web Audio API + Voice Synthesis
 // ============================================================
 
 let audioCtx: AudioContext | null = null;
@@ -54,6 +54,34 @@ function playNoise(duration: number, volume = 0.1) {
   } catch { /* silent */ }
 }
 
+// Voice names for dice results (Indonesian)
+const DICE_VOICE_WORDS: Record<number, string> = {
+  1: 'satu',
+  2: 'dua',
+  3: 'tiga',
+  4: 'empat',
+  5: 'lima',
+  6: 'enam',
+  7: 'tujuh',
+  8: 'delapan',
+  9: 'sembilan',
+  10: 'sepuluh',
+  11: 'sebelas',
+  12: 'dua belas',
+};
+
+function speakNumber(num: number) {
+  try {
+    const utterance = new SpeechSynthesisUtterance();
+    utterance.text = DICE_VOICE_WORDS[num] || num.toString();
+    utterance.lang = 'id-ID';
+    utterance.rate = 0.85;
+    utterance.pitch = 0.7;
+    utterance.volume = 0.9;
+    window.speechSynthesis.speak(utterance);
+  } catch { /* silent */ }
+}
+
 export const SoundEffects = {
   diceRoll() {
     // Shaky rattle sound
@@ -64,9 +92,12 @@ export const SoundEffects = {
     setTimeout(() => playTone(120, 0.15, 'sine', 0.25), 400);
   },
 
-  diceHit() {
+  diceResult(total: number) {
+    // Play thud + voice the number
     playTone(200, 0.08, 'square', 0.15);
     setTimeout(() => playTone(150, 0.1, 'sine', 0.2), 30);
+    // Speak the number after a short delay
+    setTimeout(() => speakNumber(total), 200);
   },
 
   cardDraw() {
@@ -88,7 +119,6 @@ export const SoundEffects = {
   },
 
   achievementUnlock() {
-    // Triumphant ascending notes
     const notes = [523, 659, 784, 1047];
     notes.forEach((freq, i) => {
       setTimeout(() => playTone(freq, 0.2, 'sine', 0.2), i * 120);
@@ -96,7 +126,6 @@ export const SoundEffects = {
   },
 
   gameOver() {
-    // Dramatic descending
     const notes = [784, 659, 523, 392];
     notes.forEach((freq, i) => {
       setTimeout(() => playTone(freq, 0.3, 'sine', 0.2), i * 200);
@@ -123,7 +152,6 @@ export const SoundEffects = {
   },
 };
 
-// Volume control
 let masterVolume = 1;
 
 export function setMasterVolume(vol: number) {
