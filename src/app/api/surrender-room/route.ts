@@ -223,10 +223,28 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', playerId);
 
+    // Release surrendered player's properties (clear owner_id)
+    await supabaseAdmin
+      .from('properties')
+      .update({ owner_id: null, house_level: 0, is_landmark: false })
+      .eq('room_id', roomId)
+      .eq('owner_id', playerId);
+
     // Remove player from turn_order
     const turnOrder = (dbRoom.turn_order as string[]) || [];
     const newTurnOrder = turnOrder.filter((id: string) => id !== playerId);
-    const currentTurn = Math.min(room.currentTurn, Math.max(0, newTurnOrder.length - 1));
+    const removedIndex = turnOrder.indexOf(playerId);
+    const oldCurrentTurn = room.currentTurn;
+    // If the removed player was before current turn, decrement; if at or after, keep same
+    let currentTurn = oldCurrentTurn;
+    if (removedIndex !== -1 && removedIndex < oldCurrentTurn) {
+      currentTurn = Math.max(0, oldCurrentTurn - 1);
+    } else if (removedIndex === oldCurrentTurn) {
+      // If it was the current player's turn, keep the same index (next player takes over)
+      currentTurn = Math.min(oldCurrentTurn, Math.max(0, newTurnOrder.length - 1));
+    } else {
+      currentTurn = Math.min(oldCurrentTurn, Math.max(0, newTurnOrder.length - 1));
+    }
 
     await supabaseAdmin
       .from('rooms')

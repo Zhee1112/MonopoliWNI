@@ -62,17 +62,9 @@ export function usePionAnimation() {
         step++;
       } else {
         clearInterval(interval);
-        setAnimatedPions(prev => {
-          const next = new Map(prev);
-          const pion = next.get(playerId);
-          if (pion) {
-            next.set(playerId, {
-              ...pion,
-              isAnimating: false,
-            });
-          }
-          return next;
-        });
+        animationRef.current.delete(playerId);
+        // Keep the pion in the map at its final position
+        // so getPionPosition returns the correct value until realtime catches up
         onComplete?.();
       }
     }, 200);
@@ -82,7 +74,7 @@ export function usePionAnimation() {
 
   const getPionPosition = useCallback((playerId: string, defaultPosition: number) => {
     const pion = animatedPions.get(playerId);
-    if (pion && pion.isAnimating) {
+    if (pion) {
       return pion.currentPosition;
     }
     return defaultPosition;
@@ -91,6 +83,7 @@ export function usePionAnimation() {
   useEffect(() => {
     return () => {
       animationRef.current.forEach(interval => clearInterval(interval));
+      animationRef.current.clear();
     };
   }, []);
 

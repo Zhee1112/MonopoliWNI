@@ -348,11 +348,19 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           return;
         }
         
+        // Close dice modal BEFORE animation starts so user can see the board
+        setShowDiceModal(false);
+        
         // Animate pion step by step
         const oldPosition = currentPlayer.position;
         const newPosition = data.newPosition;
+        const rolledDice = { dice1: result.dice1, dice2: result.dice2 };
         
         animatePion(currentPlayer.id, oldPosition, newPosition, () => {
+          // Use refs inside callback to avoid stale closures
+          const player = currentPlayerRef.current;
+          if (!player) return;
+          
           // After animation completes, update state
           setCurrentPlayer((prev) =>
             prev ? { ...prev, position: newPosition, luck: data.newLuck, cleanMoney: prev.cleanMoney + data.moneyChange } : null
@@ -403,19 +411,21 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setDrawnKegiatanCard(undefined);
             }
 
-            // Store the effect to apply after gacha
+            // Store the effect to apply after gacha (use refs to avoid stale closures)
             const cellForGacha = cell;
-            const playerForGacha = currentPlayer;
 
             setPendingGachaEffect(() => (gachaRoll: number) => {
+              const freshPlayer = currentPlayerRef.current;
+              if (!freshPlayer) return;
+              
               // Store gacha roll and position for onCardContinue
               setLastGachaRoll(gachaRoll);
               setLastCellPosition(newPosition);
 
               // Apply gacha modifier to the event
               const statBonus = gachaRoll; // gacha dice value IS the stat bonus
-              const luckBonus = playerForGacha.luck ? Math.floor(playerForGacha.luck * 0.45) : 0;
-              const baseDice = result.dice1 + result.dice2;
+              const luckBonus = freshPlayer.luck ? Math.floor(freshPlayer.luck * 0.45) : 0;
+              const baseDice = rolledDice.dice1 + rolledDice.dice2;
               const totalScore = baseDice + statBonus + luckBonus;
               const dcTarget = 10;
               const passed = totalScore >= dcTarget;
@@ -438,12 +448,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           } else if (cell.type === 'event') {
             // Event cells — show gacha first, then apply effect
             setGameEventCell(cell);
-            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+            setGameEventDice({ dice1: rolledDice.dice1, dice2: rolledDice.dice2, total: rolledDice.dice1 + rolledDice.dice2 });
 
-            const playerForGacha = currentPlayer;
             const newPos = newPosition;
 
             setPendingGachaEffect(() => (gachaRoll: number) => {
+              const freshPlayer = currentPlayerRef.current;
+              if (!freshPlayer) return;
               let moneyChange = 0;
               let skipTurns = 0;
               let eventDescription = '';
@@ -488,8 +499,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               }
 
               // Apply event effect
-              const newMoney = Math.max(0, (playerForGacha.cleanMoney || 0) + moneyChange);
-              const newEffects = [...(playerForGacha.statusEffects || [])];
+              const newMoney = Math.max(0, (freshPlayer.cleanMoney || 0) + moneyChange);
+              const newEffects = [...(freshPlayer.statusEffects || [])];
               if (skipTurns > 0) {
                 newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
               }
@@ -536,21 +547,24 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             }
 
             if (skipTurns > 0 || moneyChange !== 0) {
-              const newMoney = Math.max(0, (currentPlayer.cleanMoney || 0) + moneyChange);
-              const newEffects = [...(currentPlayer.statusEffects || [])];
-              if (skipTurns > 0) {
-                newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
+              const freshPlayer = currentPlayerRef.current;
+              if (freshPlayer) {
+                const newMoney = Math.max(0, (freshPlayer.cleanMoney || 0) + moneyChange);
+                const newEffects = [...(freshPlayer.statusEffects || [])];
+                if (skipTurns > 0) {
+                  newEffects.push({ type: 'skip_turn', duration: skipTurns, effect: eventDescription });
+                }
+                setCurrentPlayer((prev) => prev ? {
+                  ...prev,
+                  cleanMoney: newMoney,
+                  statusEffects: newEffects,
+                } : null);
               }
-              setCurrentPlayer((prev) => prev ? {
-                ...prev,
-                cleanMoney: newMoney,
-                statusEffects: newEffects,
-              } : null);
             }
 
             // Show GameEventModal with corner info
             setGameEventCell(cell);
-            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+            setGameEventDice({ dice1: rolledDice.dice1, dice2: rolledDice.dice2, total: rolledDice.dice1 + rolledDice.dice2 });
             setGameEventRollResult({
               baseDice: 0, statBonus: 0, luckBonus: 0, evidenceBonus: 0,
               totalScore: 0, dcTarget: 0, passed: true, margin: 0,
@@ -570,7 +584,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               // Unowned — show buy modal
               setSelectedCell(property);
               setShowBuyModal(true);
-            } else if (dbProp.owner_id === currentPlayer.id) {
+            } else if (dbProp.owner_id === currentPlayerRef.current?.id) {
               // Owned by self — show upgrade modal
               setUpgradeModalCell(property);
               setUpgradeModalIsOwn(true);
@@ -579,7 +593,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               // Owned by another player — pay rent first, then offer takeover
               const rentPayload = {
                 roomId: room.id,
-                payerId: currentPlayer.id,
+                payerId: currentPlayerRef.current?.id,
                 propertyId: dbProp.id,
               };
               fetch('/api/buy-property', {
@@ -594,7 +608,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: rentData.newPayerBalance } : null);
                   broadcastAnnouncement({
                     type: 'rent',
-                    playerName: currentPlayer.name,
+                    playerName: currentPlayerRef.current?.name || 'Pemain',
                     message: `membayar sewa ke ${rentData.ownerName}`,
                     detail: `-Rp ${rentData.rent.toLocaleString('id-ID')}`,
                   });
@@ -737,9 +751,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     } catch (err) { console.error('End turn error:', err); }
   }, [currentPlayer, room]);
 
+  const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false);
+
   const handleSurrender = useCallback(async () => {
     if (!currentPlayer || !room) return;
-    if (!confirm('Yakin menyerah? Kamu akan keluar dari permainan ini.')) return;
+    setShowSurrenderConfirm(true);
+  }, [currentPlayer, room]);
+
+  const confirmSurrender = useCallback(async () => {
+    if (!currentPlayer || !room) return;
+    setShowSurrenderConfirm(false);
     try {
       const response = await fetch('/api/surrender-room', {
         method: 'POST',
@@ -751,6 +772,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         }),
       });
       const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || 'Gagal menyerah');
+        return;
+      }
       sessionStorage.removeItem('player');
       sessionStorage.removeItem('room');
       if (data.gameOver) {
@@ -767,7 +792,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       } else {
         router.push('/');
       }
-    } catch (err) { console.error('Surrender error:', err); }
+    } catch (err) {
+      console.error('Surrender error:', err);
+      alert('Terjadi kesalahan jaringan');
+    }
   }, [currentPlayer, room, user, router]);
 
   const handleReaction = useCallback(
@@ -1185,7 +1213,36 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         )}
 
         {/* Info Modal */}
-        {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+      {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+
+      {/* SURRENDER CONFIRMATION MODAL */}
+      {showSurrenderConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
+          <div className="rounded-xl p-6 sm:p-8 max-w-sm w-full mx-4 shadow-2xl border" style={{ backgroundColor: '#0a2014', borderColor: '#203a29' }}>
+            <div className="text-center mb-6">
+              <span className="text-4xl block mb-3">&#x1F6AA;</span>
+              <h3 className="text-lg font-bold text-[#f87171] mb-2">Menyerah dari Permainan?</h3>
+              <p className="text-sm text-[#9a907c]">Kamu akan keluar dari permainan ini. Tindakan ini tidak dapat dibatalkan.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSurrenderConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: '#152f1f', color: '#4edea3', border: '1px solid #203a29' }}
+              >
+                Batalkan
+              </button>
+              <button
+                onClick={confirmSurrender}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: '#3d1111', color: '#f87171', border: '1px solid #5c2020' }}
+              >
+                Ya, Menyerah
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     );
   }
@@ -1437,6 +1494,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             setMusicOn(true);
           }
         }}
+        onLeaveRoom={handleSurrender}
       />
 
       {/* OTHER MODALS */}
