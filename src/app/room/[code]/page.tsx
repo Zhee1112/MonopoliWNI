@@ -805,6 +805,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const response = await fetch('/api/surrender-room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           roomId: room.id,
           playerId: currentPlayer.id,
