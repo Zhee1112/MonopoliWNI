@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
-import { ACHIEVEMENTS, AchievementDef } from '@/lib/game/achievements';
+
 
 const RANKS: Record<number, { name: string; emoji: string; color: string; dotColor: string; ability: string; subtitle: string }> = {
   1: { name: 'Magang', emoji: '🟢', color: 'text-[#4edea3]', dotColor: 'bg-[#4edea3]', ability: 'Hoki +5 saat pegang bukti kas', subtitle: 'Pangkat Pemula Sipil Republik' },
@@ -37,7 +37,6 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
-  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
   const [gameHistory, setGameHistory] = useState<Array<{
     game_room_id: string; placement: number; final_total_assets: number;
     xp_earned: number; is_winner: boolean; game_mode: string; created_at: string;
@@ -57,12 +56,6 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
     async function fetchUserData() {
-      const { data: achData } = await supabase
-        .from('player_achievements')
-        .select('achievement_id')
-        .eq('user_id', user.id);
-      if (achData) setUnlockedAchievements(achData.map(a => a.achievement_id));
-
       const { data: histData } = await supabase
         .from('game_results')
         .select('game_room_id, placement, final_total_assets, xp_earned, is_winner, game_mode, created_at')
@@ -431,47 +424,6 @@ export default function ProfilePage() {
                   </div>
                 );
               })}
-            </div>
-
-            {/* Achievements Section */}
-            <div className="rounded-2xl bg-[#0d281a] border border-[#1d4b30] p-5 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#ffd56d] text-lg">&#x1F3C5;</span>
-                  <h3 className="font-bold text-base text-[#d1fae5]">Pencapaian</h3>
-                </div>
-                <span className="text-[11px] text-[#588568] uppercase font-medium">
-                  {unlockedAchievements.length} / {ACHIEVEMENTS.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {ACHIEVEMENTS.map((ach) => {
-                  const unlocked = unlockedAchievements.includes(ach.id);
-                  return (
-                    <div
-                      key={ach.id}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
-                        unlocked
-                          ? `${ach.bgColor} ${ach.borderColor}`
-                          : 'bg-[#082013] border-[#143722] opacity-40'
-                      }`}
-                    >
-                      <div className={`text-xl shrink-0 ${unlocked ? '' : 'grayscale'}`}>
-                        {ach.emoji}
-                      </div>
-                      <div className="min-w-0">
-                        <div className={`text-xs font-semibold truncate ${unlocked ? ach.color : 'text-[#588568]'}`}>
-                          {ach.name}
-                        </div>
-                        <div className="text-[10px] text-[#588568] truncate">{ach.description}</div>
-                      </div>
-                      {unlocked && (
-                        <div className="text-[10px] font-bold text-[#ffd56d] shrink-0">+{ach.xp}</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
             {/* Game History Section */}

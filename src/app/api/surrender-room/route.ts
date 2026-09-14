@@ -164,11 +164,20 @@ async function awardPostGameRewards(
       const currentGames = profile?.total_games || 0;
       const currentWins = profile?.total_wins || 0;
 
+      // Get XP from achievements for this game
+      const { data: achievements } = await supabaseAdmin
+        .from('player_achievements')
+        .select('xp_granted')
+        .eq('game_room_id', roomId)
+        .eq('player_id', p.id);
+
+      const gameXp = achievements?.reduce((sum, a) => sum + (a.xp_granted || 0), 0) || 0;
+
       await supabaseAdmin.from('user_profiles').upsert({
         user_id: p.user_id,
         total_games: currentGames + 1,
         total_wins: p.placement === 1 ? currentWins + 1 : currentWins,
-        xp: currentXp + placementXp,
+        xp: currentXp + gameXp + placementXp,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
     }
