@@ -23,6 +23,7 @@ import { NORMAL_ROLES } from '@/lib/game/role-data';
 import { Loan } from '@/lib/game/loan-system';
 import { SoundEffects } from '@/lib/game/sound-effects';
 import { BackgroundMusic } from '@/lib/game/background-music';
+import { processCardEffect, processKegiatanEffect, CardEffectResult, KegiatanEffectResult } from '@/lib/game/game-logic';
 import { Player, Room, BoardCell, GameMode, GAME_MODES, Card, KegiatanCard } from '@/lib/types';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
@@ -82,6 +83,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [gachaCellName, setGachaCellName] = useState('');
   const [gachaCellEmoji, setGachaCellEmoji] = useState('');
   const [pendingGachaEffect, setPendingGachaEffect] = useState<((gachaRoll: number) => void) | null>(null);
+  const [lastGachaRoll, setLastGachaRoll] = useState<number>(0);
+  const [lastCellPosition, setLastCellPosition] = useState<number>(0);
 
   // Global event state
   const [showGlobalEventModal, setShowGlobalEventModal] = useState(false);
@@ -346,12 +349,14 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setDrawnTakdirCard(card);
               setDrawnKegiatanCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
+              SoundEffects.cardDraw();
             } else if (cell.type === 'draw_kegiatan') {
               const card = drawRandomKegiatanExcluding(drawnCardIds);
               drawnKegiatan = card;
               setDrawnKegiatanCard(card);
               setDrawnTakdirCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
+              SoundEffects.cardDraw();
             } else if (cell.type === 'tax') {
               // Flat tax or percentage-based tax depending on cell
               if (cell.taxAmount) {
@@ -376,6 +381,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             const playerForGacha = currentPlayer;
 
             setPendingGachaEffect(() => (gachaRoll: number) => {
+              // Store gacha roll and position for onCardContinue
+              setLastGachaRoll(gachaRoll);
+              setLastCellPosition(newPosition);
+
               // Apply gacha modifier to the event
               const statBonus = gachaRoll; // gacha dice value IS the stat bonus
               const luckBonus = playerForGacha.luck ? Math.floor(playerForGacha.luck * 0.45) : 0;
@@ -1406,20 +1415,114 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           onClose={() => setShowGameEventModal(false)}
           onContinue={() => {
             setShowGameEventModal(false);
-            // Deduct PPN if tax and failed the roll
-            if (gameEventCell.type === 'tax' && ppnAmount > 0 && gameEventRollResult && !gameEventRollResult.passed) {
-              setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: Math.max(0, prev.cleanMoney - ppnAmount) } : null);
+            if (!currentPlayer || !room) return;
+
+            // Apply card effects
+            let effectApplied = false;
+            let updatedPlayerData: Player | null = null;
+
+            if (gameEventCell?.type === 'draw_takdir' && drawnTakdirCard) {
+              SoundEffects.cardDraw();
+              const result = processCardEffect(drawnTakdirCard, currentPlayer, lastGachaRoll, players);
+              updatedPlayerData = result.updatedPlayer;
+              setCurrentPlayer(result.updatedPlayer);
+              broadcastAnnouncement({
+                type: 'card',
+                playerName: currentPlayer.name,
+                message: `menarik kartu ${drawnTakdirCard.name}`,
+                detail: result.statusMessages.join(', '),
+              });
+              // Apply money changes to other players via API
+              for (const change of result.moneyChanges) {
+                if (change.playerId !== currentPlayer.id) {
+                  fetch('/api/update-player', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId: room.id, playerId: change.playerId, cleanMoneyDelta: change.amount }),
+                  }).catch(() => {});
+                }
+              }
+              effectApplied = true;
+            } else if (gameEventCell?.type === 'draw_kegiatan' && drawnKegiatanCard) {
+              SoundEffects.cardDraw();
+              const result = processKegiatanEffect(drawnKegiatanCard, currentPlayer, lastGachaRoll);
+              updatedPlayerData = result.updatedPlayer;
+              setCurrentPlayer(result.updatedPlayer);
+              broadcastAnnouncement({
+                type: 'card',
+                playerName: currentPlayer.name,
+                message: `menarik kartu ${drawnKegiatanCard.name}`,
+                detail: result.statusMessage,
+              });
+              effectApplied = true;
+            } else if (gameEventCell?.type === 'tax' && ppnAmount > 0 && gameEventRollResult && !gameEventRollResult.passed) {
+              SoundEffects.payRent();
+              const newMoney = Math.max(0, currentPlayer.cleanMoney - ppnAmount);
+              updatedPlayerData = { ...currentPlayer, cleanMoney: newMoney };
+              setCurrentPlayer(updatedPlayerData);
+              broadcastAnnouncement({
+                type: 'tax',
+                playerName: currentPlayer.name,
+                message: 'gagal menghindari pajak',
+                detail: `-Rp ${ppnAmount.toLocaleString('id-ID')}`,
+              });
+              effectApplied = true;
             }
+
+            // Sync card effects to DB
+            if (effectApplied && updatedPlayerData) {
+              fetch('/api/update-player', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  roomId: room.id,
+                  playerId: currentPlayer.id,
+                  cleanMoneyDelta: updatedPlayerData.cleanMoney - currentPlayer.cleanMoney,
+                  properties: updatedPlayerData.properties,
+                  statusEffects: updatedPlayerData.statusEffects,
+                  luck: updatedPlayerData.luck,
+                  isBankrupt: updatedPlayerData.isBankrupt,
+                }),
+              }).catch(() => {});
+            }
+
+            // Check bankruptcy after card effects
+            if (updatedPlayerData && updatedPlayerData.cleanMoney <= 0 && updatedPlayerData.dirtyMoney <= 0 && !updatedPlayerData.isBankrupt) {
+              const bankruptPlayer = { ...updatedPlayerData, isBankrupt: true, cleanMoney: 0, dirtyMoney: 0, properties: [] };
+              setCurrentPlayer(bankruptPlayer);
+              SoundEffects.gameOver();
+              broadcastAnnouncement({
+                type: 'bankrupt',
+                playerName: updatedPlayerData.name,
+                message: 'BANKRUP! Semua properti disita bank.',
+                detail: '',
+              });
+              fetch('/api/update-player', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  roomId: room.id,
+                  playerId: currentPlayer.id,
+                  cleanMoneyDelta: -updatedPlayerData.cleanMoney,
+                  dirtyMoneyDelta: -updatedPlayerData.dirtyMoney,
+                  properties: [],
+                  isBankrupt: true,
+                }),
+              }).catch(() => {});
+            }
+
             // Broadcast the SAME card that was drawn (no second draw!)
-            if (gameEventCell.type === 'draw_takdir' && drawnTakdirCard) {
+            if (gameEventCell?.type === 'draw_takdir' && drawnTakdirCard) {
               broadcastCard({ cardId: drawnTakdirCard.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
-            } else if (gameEventCell.type === 'draw_kegiatan' && drawnKegiatanCard) {
+            } else if (gameEventCell?.type === 'draw_kegiatan' && drawnKegiatanCard) {
               broadcastCard({ cardId: drawnKegiatanCard.id, drawnBy: currentPlayer.id, playerName: currentPlayer.name });
             }
+
             // Clear drawn card state
             setDrawnTakdirCard(undefined);
             setDrawnKegiatanCard(undefined);
             setPpnAmount(0);
+            setLastGachaRoll(0);
           }}
           cell={gameEventCell}
           diceResult={gameEventDice}

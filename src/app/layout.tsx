@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: "Monopoly Indonesia dengan meme culture - Multiplayer Online",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${plusJakarta.variable} ${syne.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-on-background font-sans">
