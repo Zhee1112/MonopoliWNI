@@ -29,94 +29,33 @@ interface GameEventModalProps {
 }
 
 const EVIDENCE_OPTIONS = [
-  {
-    id: 'kwitansi',
-    name: 'Kwitansi Setoran Pajak Resmi',
-    effect: '+1 Pertahanan DC / Pembuktian Sah',
-    unlocked: true,
-  },
-  {
-    id: 'rekaman',
-    name: 'Rekaman Obrolan Oknum',
-    effect: '+2 Persuasi (Membutuhkan Pengacara)',
-    unlocked: false,
-  },
-  {
-    id: 'mutasi',
-    name: 'Mutasi Rekening Bersih',
-    effect: '+1 Skor Kelicinan',
-    unlocked: false,
-  },
+  { id: 'kwitansi', name: 'Kwitansi Setoran Pajak Resmi', effect: '+1 Pertahanan DC / Pembuktian Sah', unlocked: true },
+  { id: 'rekaman', name: 'Rekaman Obrolan Oknum', effect: '+2 Persuasi (Membutuhkan Pengacara)', unlocked: false },
+  { id: 'mutasi', name: 'Mutasi Rekening Bersih', effect: '+1 Skor Kelicinan', unlocked: false },
 ];
 
-const TIER_LABELS: Record<string, string> = {
-  ringan: 'Kelas Ringan',
-  sedang: 'Kelas Sedang',
-  berat: 'Kelas Berat',
-  legendary: 'Kelas Legendaris',
-};
+const TIER_LABELS: Record<string, string> = { ringan: 'Kelas Ringan', sedang: 'Kelas Sedang', berat: 'Kelas Berat', legendary: 'Kelas Legendaris' };
+const TIER_COLORS: Record<string, string> = { ringan: 'bg-[#4edea3] text-[#003824]', sedang: 'bg-[#ffd56d] text-[#3e2e00]', berat: 'bg-[#f87171] text-[#450a0a]', legendary: 'bg-[#a855f7] text-[#fff]' };
+const CATEGORY_ICONS: Record<string, string> = { event_normal: '📋', event_meme: '😂', interaksi: '🤝', koruptor: '🚨', audit: '🔍', legendary: '👑', usaha: '💼', kerja_sampingan: '🔨', investasi: '📈', sosial: '🤝', tantangan: '🎯' };
 
-const TIER_COLORS: Record<string, string> = {
-  ringan: 'bg-[#4edea3] text-[#003824]',
-  sedang: 'bg-[#ffd56d] text-[#3e2e00]',
-  berat: 'bg-[#f87171] text-[#450a0a]',
-  legendary: 'bg-[#a855f7] text-[#fff]',
-};
-
-const CATEGORY_ICONS: Record<string, string> = {
-  event_normal: '📋',
-  event_meme: '😂',
-  interaksi: '🤝',
-  koruptor: '🚨',
-  audit: '🔍',
-  legendary: '👑',
-  usaha: '💼',
-  kerja_sampingan: '🔨',
-  investasi: '📈',
-  sosial: '🤝',
-  tantangan: '🎯',
-};
-
-function DiceDot({ row, col }: { row: number; col: number }) {
-  return (
-    <div
-      className={`w-3 h-3 rounded-full bg-[#07190F] shadow-[inset_0_1px_1px_rgba(0,0,0,0.8)] ${
-        row === 1 && col === 1 ? 'col-start-1 row-start-1' :
-        row === 1 && col === 2 ? 'col-start-2 row-start-1' :
-        row === 1 && col === 3 ? 'col-start-3 row-start-1' :
-        row === 2 && col === 1 ? 'col-start-1 row-start-2' :
-        row === 2 && col === 2 ? 'col-start-2 row-start-2' :
-        row === 2 && col === 3 ? 'col-start-3 row-start-2' :
-        row === 3 && col === 1 ? 'col-start-1 row-start-3' :
-        row === 3 && col === 2 ? 'col-start-2 row-start-3' :
-        'col-start-3 row-start-3'
-      }`}
-    />
-  );
-}
-
-function getDiceDots(value: number): { row: number; col: number }[] {
-  const patterns: Record<number, { row: number; col: number }[]> = {
-    1: [{ row: 2, col: 2 }],
-    2: [{ row: 1, col: 3 }, { row: 3, col: 1 }],
-    3: [{ row: 1, col: 3 }, { row: 2, col: 2 }, { row: 3, col: 1 }],
-    4: [{ row: 1, col: 1 }, { row: 1, col: 3 }, { row: 3, col: 1 }, { row: 3, col: 3 }],
-    5: [{ row: 1, col: 1 }, { row: 1, col: 3 }, { row: 2, col: 2 }, { row: 3, col: 1 }, { row: 3, col: 3 }],
-    6: [{ row: 1, col: 1 }, { row: 1, col: 3 }, { row: 2, col: 1 }, { row: 2, col: 3 }, { row: 3, col: 1 }, { row: 3, col: 3 }],
+function DiceFace({ value }: { value: number }) {
+  const posMap: Record<string, string> = {
+    'top-left': 'col-start-1 row-start-1', 'top-right': 'col-start-3 row-start-1',
+    'center-left': 'col-start-1 row-start-2', 'center-center': 'col-start-2 row-start-2', 'center-right': 'col-start-3 row-start-2',
+    'bottom-left': 'col-start-1 row-start-3', 'bottom-right': 'col-start-3 row-start-3',
   };
-  return patterns[value] || patterns[1];
-}
-
-function Dice3D({ value, rotation }: { value: number; rotation: string }) {
-  const dots = getDiceDots(value);
+  const positions: Record<number, string[]> = {
+    1: ['center-center'], 2: ['top-right', 'bottom-left'], 3: ['top-right', 'center-center', 'bottom-left'],
+    4: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+    5: ['top-left', 'top-right', 'center-center', 'bottom-left', 'bottom-right'],
+    6: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
+  };
+  const dots = positions[value] || positions[1];
   return (
-    <div
-      className="relative w-20 h-20 rounded-xl bg-[#FBF8EE] text-[#07190F] p-3 shadow-[0_12px_24px_rgba(0,0,0,0.7),inset_0_2px_4px_rgba(255,255,255,0.9),inset_0_-3px_5px_rgba(0,0,0,0.2)] hover:rotate-0 transition-transform duration-200"
-      style={{ transform: rotation }}
-    >
-      <div className="w-full h-full grid grid-cols-3 grid-rows-3 items-center justify-items-center">
-        {dots.map((dot, i) => (
-          <DiceDot key={i} row={dot.row} col={dot.col} />
+    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 p-3 sm:p-4 shadow-[0_8px_18px_rgba(0,0,0,0.45),inset_0_2px_4px_rgba(255,255,255,0.8),inset_0_-3px_6px_rgba(0,0,0,0.15)]">
+      <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+        {dots.map((pos, i) => (
+          <div key={i} className={posMap[pos] + ' w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gray-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.7)]'} />
         ))}
       </div>
     </div>
@@ -124,22 +63,10 @@ function Dice3D({ value, rotation }: { value: number; rotation: string }) {
 }
 
 export default function GameEventModal({
-  isOpen,
-  onClose,
-  onContinue,
-  cell,
-  diceResult,
-  playerName,
-  playerLevel = 1,
-  playerRank = 'Magang',
-  rollResult,
-  takdirCard,
-  kegiatanCard,
-  ppnAmount = 0,
-  turnNumber = 1,
+  isOpen, onClose, onContinue, cell, diceResult, playerName, playerLevel = 1,
+  playerRank = 'Magang', rollResult, takdirCard, kegiatanCard, ppnAmount = 0, turnNumber = 1,
 }: GameEventModalProps) {
   const [selectedEvidence, setSelectedEvidence] = useState<string | null>(null);
-
   if (!isOpen) return null;
 
   const d1 = diceResult?.dice1 || 3;
@@ -152,374 +79,326 @@ export default function GameEventModal({
   const dcTarget = rollResult?.dcTarget || 10;
   const passed = rollResult?.passed || totalScore >= dcTarget;
   const margin = rollResult?.margin || totalScore - dcTarget;
-
   const cellName = cell.name || 'Petak Misterius';
   const isTax = cell.type === 'tax';
-  const isDrawTakdir = cell.type === 'draw_takdir';
-  const isDrawKegiatan = cell.type === 'draw_kegiatan';
-  const isDraw = isDrawTakdir || isDrawKegiatan;
-
   const isKegiatan = !!kegiatanCard;
+  const isEventOrCorner = cell.type === 'event' || cell.type === 'corner';
+  const showEventCard = isEventOrCorner && !takdirCard && !kegiatanCard;
+
+  const headerLabel = isKegiatan ? 'KEGIATAN WNI' : takdirCard ? 'TAKDIR WNI' : 'AKSI';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#001809]/90 backdrop-blur-md">
-      {/* Background Board Atmosphere */}
-      <div className="absolute inset-0 opacity-25 pointer-events-none select-none">
-        <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-2 p-6">
-          {Array.from({ length: 24 }).map((_, i) => (
-            <div key={i} className="bg-[#152f1f] rounded-lg p-3 flex flex-col justify-between">
-              <span className="text-[11px] font-bold text-[#ffd56d]">PETAK {i + 1}</span>
-              <span className="text-xs text-[#cbead1]">...</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Dark Scrim */}
-      <div className="absolute inset-0 bg-[#001809]/80 backdrop-blur-sm z-10" />
-
-      {/* Main Modal */}
-      <div className="relative z-20 w-full max-w-5xl mx-4 bg-[#0a1a11] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,213,109,0.25)] flex flex-col overflow-hidden max-h-[90vh]">
-        {/* Header */}
-        <div className="bg-[#092515] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-lg bg-[#152f1f] flex items-center justify-center text-[#ffd56d] shadow-[inset_0_1px_1px_rgba(255,213,109,0.4)]">
-              <span className="text-[28px]">🎲</span>
-            </div>
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#05140b] text-slate-100 antialiased overflow-hidden">
+      {/* Header */}
+      <header className="w-full bg-[#071e11]/90 backdrop-blur-md border-b border-[#1c452e] shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#123e25] to-[#0a2617] border border-[#2a5e40] flex items-center justify-center text-2xl shadow-inner select-none">🎲</div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Uji Stat &amp; Manuver Meja</span>
-                <span className="px-2 py-0.5 rounded bg-[#00a572]/30 text-[#4edea3] text-[11px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>FASE AKSI</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#ffd56d]">Uji Stat &amp; Manuver Meja</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-950/80 text-[#4edea3] border border-emerald-700/60">FASE AKSI: {headerLabel}</span>
               </div>
-              <h1 className="text-lg font-bold text-[#cbead1] tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{cellName}</h1>
-              <p className="text-xs text-[#d1c5af]">Petak {cell.index} &bull; {isTax ? `PPN 12% dari total harta${ppnAmount > 0 ? ` (Rp ${ppnAmount.toLocaleString('id-ID')})` : ''}` : isDraw ? 'Ambil Kartu' : cell.description || 'Event Khusus'}</p>
+              <p className="text-sm font-semibold text-emerald-200/90 flex items-center gap-1.5 mt-0.5">
+                <span>{cellName}</span>
+                <span className="text-emerald-500">•</span>
+                <span className="text-slate-300">Petak {cell.index}</span>
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#001206]">
-              <div className="w-6 h-6 rounded-full bg-[#e5b842] flex items-center justify-center">
-                <span className="text-[#614900] text-[14px]">🪪</span>
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-semibold text-[#cbead1]">{playerName}</span>
-                <span className="text-[10px] text-[#ffd56d] font-bold">Lv {playerLevel} {playerRank}</span>
+          <div className="flex items-center space-x-3">
+            <div className="hidden sm:flex bg-[#0c2718] border border-[#204a32] rounded-xl pl-2.5 pr-4 py-1.5 items-center space-x-3 shadow-md">
+              <div className="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-base">🪪</div>
+              <div className="text-left leading-tight">
+                <span className="text-xs font-bold text-white tracking-wide block">{playerName}</span>
+                <span className="text-[11px] font-medium text-[#ffd56d]/90">Lv {playerLevel} {playerRank}</span>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-lg bg-[#152f1f] text-[#d1c5af] hover:text-[#ffd56d] hover:bg-[#203a29] transition-colors flex items-center justify-center"
-            >
-              <span className="text-[20px]">✕</span>
-            </button>
+            <button onClick={onClose} className="w-10 h-10 rounded-xl bg-[#0e2c1c] border border-[#204a32] text-slate-300 hover:text-white hover:border-[#4edea3]/60 transition-all flex items-center justify-center text-sm active:scale-95">✕</button>
           </div>
         </div>
+      </header>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-[#0a1a11]">
-          {/* LEFT: Dice + Evidence */}
-          <div className="lg:col-span-5 p-6 flex flex-col gap-6 bg-[#092515]/60">
-            {/* Dice Display */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Hasil Lemparan Dadu</span>
-                <span className="px-2.5 py-0.5 rounded bg-[#00a572]/20 text-[#4edea3] text-xs font-semibold flex items-center gap-1">
-                  <span className="text-[14px]">✅</span> Sukses Bergulir
-                </span>
-              </div>
-              <div className="relative w-full h-44 rounded-xl bg-[#001206] flex items-center justify-center gap-6 overflow-hidden p-4 shadow-[inset_0_4px_12px_rgba(0,0,0,0.8)]">
-                <div className="absolute w-40 h-40 rounded-full bg-[#ffd56d]/10 blur-xl pointer-events-none" />
-                <div className="relative">
-                  <Dice3D value={d1} rotation="rotate(-6deg)" />
-                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded bg-[#ffd56d] text-[#3e2e00] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>D1: {d1}</span>
+      {/* Scrollable Content */}
+      <main className="flex-1 overflow-y-auto w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* LEFT COLUMN */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              {/* Dice Result Card */}
+              <section className="bg-[#0c2718] border border-[#1c452e] rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#4edea3]/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xs font-bold tracking-wider text-slate-300 uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#4edea3]" /> Hasil Lemparan Dadu
+                  </h2>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#4edea3]/15 text-[#4edea3] border border-[#4edea3]/30">✅ Sukses Bergulir</span>
                 </div>
-                <div className="text-[#ffd56d] text-lg font-bold select-none" style={{ fontFamily: "'Syne', sans-serif" }}>+</div>
-                <div className="relative">
-                  <Dice3D value={d2} rotation="rotate(12deg)" />
-                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded bg-[#ffd56d] text-[#3e2e00] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>D2: {d2}</span>
+                <div className="bg-[#07190f] border border-[#173d28] rounded-xl p-6 flex flex-col items-center justify-center relative shadow-inner">
+                  <div className="flex items-center justify-center gap-6 my-2">
+                    <div className="relative group">
+                      <div className="absolute -top-2.5 right-2 bg-[#f59e0b] text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow z-10">D1: {d1}</div>
+                      <div className="rotate-[-3deg] transition-transform duration-300 hover:rotate-0"><DiceFace value={d1} /></div>
+                    </div>
+                    <div className="text-[#ffd56d] font-bold text-2xl select-none">+</div>
+                    <div className="relative group">
+                      <div className="absolute -top-2.5 right-2 bg-[#f59e0b] text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow z-10">D2: {d2}</div>
+                      <div className="rotate-[4deg] transition-transform duration-300 hover:rotate-0"><DiceFace value={d2} /></div>
+                    </div>
+                  </div>
+                  <div className="w-full mt-4 bg-[#0c2718]/90 border border-[#204a32] py-2.5 px-4 rounded-lg flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-slate-400 font-medium">Langkah Alami:</span>
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <span className="text-white">{d1} + {d2} =</span>
+                      <span className="text-[#ffd56d] text-base">{d1 + d2} Langkah</span>
+                      <span className="text-slate-500 font-normal ml-1 text-xs">• {d1 === d2 ? 'GANDA!' : 'Non-Ganda'}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="px-4 py-2.5 rounded-lg bg-[#152f1f] flex items-center justify-between">
-                <span className="text-xs text-[#d1c5af]">Langkah Alami:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#ffd56d]" style={{ fontFamily: "'Syne', sans-serif" }}>{d1} + {d2} = {d1 + d2} Langkah</span>
-                  <span className="text-[#9a907c] text-xs">&bull; {d1 === d2 ? 'GANDA!' : 'Non-Ganda'}</span>
+              </section>
+
+              {/* Buff Inventory Card */}
+              <section className="bg-[#0c2718] border border-[#1c452e] rounded-2xl p-5 shadow-lg flex-grow flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div>
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#ffd56d] flex items-center gap-1.5">
+                        <span>Sisipkan Bukti Warga</span>
+                        <span className="text-slate-400 font-normal">(Slot 1/1)</span>
+                      </h2>
+                      <p className="text-xs text-slate-400 mt-0.5">Pilih inventaris legal untuk meningkatkan probabilitas lolos</p>
+                    </div>
+                    <span className="text-xs font-bold text-[#4edea3] bg-[#4edea3]/10 px-2.5 py-1 rounded-md border border-[#4edea3]/20">Terapkan Buff</span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {EVIDENCE_OPTIONS.map((evidence) => {
+                      const isActive = selectedEvidence === evidence.id;
+                      const boxClass = isActive
+                        ? 'relative rounded-xl p-3 flex items-center justify-between transition-all bg-gradient-to-r from-[#123b24] to-[#0c2919] border-2 border-[#4edea3]/80 shadow-[0_0_20px_rgba(78,222,163,0.25)] cursor-pointer'
+                        : evidence.unlocked
+                          ? 'relative rounded-xl p-3 flex items-center justify-between transition-all bg-[#081b11]/70 border border-[#163623] hover:bg-[#0c2919] cursor-pointer'
+                          : 'relative rounded-xl p-3 flex items-center justify-between transition-all bg-[#081b11]/70 border border-[#163623] opacity-65 cursor-not-allowed';
+                      const iconClass = isActive
+                        ? 'w-6 h-6 rounded flex items-center justify-center text-xs bg-[#4edea3] text-slate-950 font-black'
+                        : 'w-6 h-6 rounded flex items-center justify-center text-xs bg-black/40 border border-slate-700 text-slate-400';
+                      return (
+                        <div key={evidence.id} onClick={() => evidence.unlocked && setSelectedEvidence(isActive ? null : evidence.id)} className={boxClass}>
+                          <div className="flex items-center space-x-3">
+                            <div className={iconClass}>{isActive ? '✓' : evidence.unlocked ? '' : '🔒'}</div>
+                            <div>
+                              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                                {evidence.name}
+                                {isActive && <span className="bg-emerald-800 text-[10px] text-[#4edea3] font-semibold px-1.5 py-0.2 rounded">Aktif</span>}
+                              </h3>
+                              <p className="text-xs text-[#4edea3] font-medium mt-0.5">{evidence.effect}</p>
+                            </div>
+                          </div>
+                          {!evidence.unlocked && <span className="text-xs text-[#ffd56d]/70 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">Terkunci</span>}
+                          {isActive && <span className="text-xs font-bold text-slate-300 px-2 py-1 bg-black/25 rounded">Tier 1</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+                <p className="text-[11px] text-slate-400 mt-3 italic text-center">*Slot dokumen dapat dibuka lebih banyak di Pengadilan Negeri (Petak 14)</p>
+              </section>
             </div>
 
-            {/* Evidence Selector */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Sisipkan Bukti Warga (Slot 1/1)</span>
-                <span className="text-xs text-[#4edea3]">Terapkan Buff</span>
-              </div>
-              {EVIDENCE_OPTIONS.map((evidence) => (
-                <div
-                  key={evidence.id}
-                  onClick={() => evidence.unlocked && setSelectedEvidence(selectedEvidence === evidence.id ? null : evidence.id)}
-                  className={`p-3 rounded-lg flex items-center justify-between gap-3 transition-all ${
-                    selectedEvidence === evidence.id
-                      ? 'bg-[#203a29] cursor-pointer shadow-[0_2px_0_0_#4edea3]'
-                      : evidence.unlocked
-                        ? 'bg-[#092515] hover:bg-[#152f1f] cursor-pointer'
-                        : 'bg-[#092515] opacity-60 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
-                      selectedEvidence === evidence.id
-                        ? 'bg-[#4edea3] text-[#003824]'
-                        : 'bg-[#001206] text-[#9a907c]'
-                    }`}>
-                      {selectedEvidence === evidence.id ? (
-                        <span className="text-[18px]">✓</span>
-                      ) : null}
+            {/* RIGHT COLUMN */}
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              {/* RPG Calculation Card */}
+              <section className="bg-[#0c2718] border border-[#1c452e] rounded-2xl p-5 sm:p-6 shadow-lg">
+                <div className="flex items-center justify-between border-b border-[#183d28] pb-3 mb-4">
+                  <h2 className="text-xs font-bold tracking-wider text-slate-200 uppercase flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#ffd56d] rotate-45" /> Kalkulasi Roll RPG (D&amp;D Format)
+                  </h2>
+                  <span className="text-xs font-semibold text-[#ffd56d] uppercase tracking-wider">Aturan Babak #{turnNumber}</span>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between bg-[#081c11] border border-[#1b422a] rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🎲</span>
+                      <div>
+                        <div className="text-xs font-semibold text-slate-200">Nilai Dadu Dasar (D1 + D2)</div>
+                        <div className="text-[11px] text-slate-400">Lemparan alami pemain</div>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-[#cbead1]">{evidence.name}</span>
-                      <span className="text-xs text-[#4edea3]">{evidence.effect}</span>
-                    </div>
+                    <span className="font-bold text-[#4edea3] text-sm font-mono">+{baseDice}</span>
                   </div>
-                  {!evidence.unlocked && <span className="text-[#9a907c] text-[18px]">🔒</span>}
-                  {selectedEvidence === evidence.id && <span className="px-2 py-0.5 rounded bg-[#001206] text-[#ffd56d] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>AKTIF</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* RIGHT: RPG Calculation + Event Card */}
-          <div className="lg:col-span-7 p-6 flex flex-col gap-6">
-            {/* RPG Ledger */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Kalkulasi Roll RPG (D&amp;D Format)</span>
-                <span className="text-[11px] text-[#9a907c] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>ATURAN BABAK #{turnNumber}</span>
-              </div>
-              <div className="rounded-xl bg-[#152f1f] p-4 flex flex-col gap-2.5">
-                {/* Base Dice */}
-                <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#ffd56d] text-[18px]">🎲</span>
-                    <span className="text-sm text-[#cbead1]">Nilai Dadu Dasar (D1 + D2)</span>
-                  </div>
-                  <span className="text-sm font-bold text-[#ffd56d] font-mono">+{baseDice}</span>
-                </div>
-
-                {/* Stat Bonus */}
-                <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#4edea3] text-[18px]">🧠</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-[#cbead1]">Stat Negosiasi Warga (Lv {playerLevel})</span>
-                      <div className="w-16 h-2 rounded bg-[#152f1f] overflow-hidden hidden sm:block">
-                        <div className="h-full bg-[#4edea3] rounded" style={{ width: `${Math.min(100, (statBonus / 5) * 100)}%` }} />
-            {/* Event/Corner Cell Effect Card */}
-            {!takdirCard && !kegiatanCard && (cell.type === 'event' || cell.type === 'corner') && (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Efek Petak</span>
-                  <span className="text-[11px] text-[#4edea3] font-mono">{cell.emoji}</span>
-                </div>
-                <div className="rounded-xl bg-[#152f1f] p-4 flex flex-col gap-2.5 relative overflow-hidden border border-[#203a29]">
-                  <div className="flex gap-3 items-start">
-                    <div className="w-12 h-12 rounded-lg bg-[#001206] flex items-center justify-center shrink-0">
-                      <span className="text-[26px]">{cell.emoji}</span>
+                  <div className="flex items-center justify-between bg-[#081c11] border border-[#1b422a] rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🧠</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-200">Stat Negosiasi Warga (Lv {playerLevel})</span>
+                          <div className="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden inline-block">
+                            <div className="h-full bg-[#4edea3] rounded" style={{ width: Math.min(100, (statBonus / 5) * 100) + '%' }} />
+                          </div>
+                        </div>
+                        <div className="text-[11px] text-slate-400">Profisiensi kelas {playerRank}</div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h2 className="text-sm font-bold text-[#cbead1] mb-1">{cell.name}</h2>
-                      <p className="text-xs text-[#d1c5af] leading-snug">{cell.description}</p>
+                    <span className="font-bold text-slate-300 text-sm font-mono">+{statBonus}</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-[#081c11] border border-[#1b422a] rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">⭐</span>
+                      <div>
+                        <div className="text-xs font-semibold text-slate-200">Modifikator Hoki Netizen (Rasio 45%)</div>
+                        <div className="text-[11px] text-slate-400">Sentimen positif media sosial</div>
+                      </div>
+                    </div>
+                    <span className="font-bold text-[#ffd56d] text-sm font-mono">+{luckBonus}</span>
+                  </div>
+                  {selectedEvidence && (
+                    <div className="flex items-center justify-between bg-[#081c11] border border-[#1b422a] rounded-xl px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">📄</span>
+                        <div>
+                          <div className="text-xs font-semibold text-slate-200">Bukti Dilampirkan: Kwitansi Sah</div>
+                          <div className="text-[11px] text-slate-400">Pembuktian dokumen resmi</div>
+                        </div>
+                      </div>
+                      <span className="font-bold text-[#4edea3] text-sm font-mono">+{evidenceBonus}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3.5 mt-5">
+                  <div className="bg-gradient-to-br from-[#0e2d1c] to-[#07180f] border border-[#4edea3]/50 rounded-xl p-3.5 text-center flex flex-col justify-center">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Skor Roll</div>
+                    <div className="text-3xl sm:text-4xl font-black text-[#ffd56d] my-0.5 tracking-tight flex items-baseline justify-center gap-1.5">
+                      {totalScore} <span className="text-xs font-bold text-[#4edea3] uppercase">Poin</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">Formula: {baseDice} + {statBonus} + {luckBonus} + {evidenceBonus}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-[#0e2d1c] to-[#07180f] border border-[#235035] rounded-xl p-3.5 text-center flex flex-col justify-center">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ambang Target (DC)</div>
+                    <div className="text-3xl sm:text-4xl font-black text-white my-0.5 tracking-tight flex items-baseline justify-center gap-1.5">
+                      {dcTarget} <span className="text-xs font-bold text-slate-400 uppercase">DC</span>
+                    </div>
+                    <div className={"text-[11px] font-bold mt-0.5 " + (passed ? 'text-[#4edea3]' : 'text-[#f87171]')}>
+                      {passed ? '+' + margin + ' Di Atas Ambang' : Math.abs(margin) + ' Di Bawah Ambang'}
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-                  </div>
-                  <span className="text-sm font-bold text-[#4edea3] font-mono">+{statBonus}</span>
-                </div>
-
-                {/* Luck Bonus */}
-                <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#ffd56d] text-[18px]">⭐</span>
-                    <span className="text-sm text-[#cbead1]">Modifikator Hoki Netizen (Rasio 45%)</span>
-                  </div>
-                  <span className="text-sm font-bold text-[#ffd56d] font-mono">+{luckBonus}</span>
-                </div>
-
-                {/* Evidence Bonus */}
-                {selectedEvidence && (
-                  <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#4edea3] text-[18px]">📄</span>
-                      <span className="text-sm text-[#cbead1]">Bukti Dilampirkan: Kwitansi Sah</span>
+                <div className={"mt-4 border-2 rounded-xl p-3 sm:px-4 flex flex-wrap items-center justify-between gap-3 shadow-lg " + (passed ? 'bg-[#0a351e] border-[#4edea3]/70' : 'bg-[#3b0a0a] border-[#f87171]/70')}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={"w-6 h-6 rounded flex items-center justify-center font-bold text-sm " + (passed ? 'bg-[#4edea3] text-black' : 'bg-[#f87171] text-white')}>
+                      {passed ? '✓' : '✕'}
                     </div>
-                    <span className="text-sm font-bold text-[#4edea3] font-mono">+{evidenceBonus}</span>
-                  </div>
-                )}
-
-                {/* Divider */}
-                <div className="h-0.5 w-full bg-[#4e4635]/40 my-1" />
-
-                {/* Score Grid */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-3 rounded-lg bg-[#092515] flex flex-col items-center justify-center text-center">
-                    <span className="text-[11px] text-[#d1c5af] uppercase font-semibold tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>TOTAL SKOR ROLL</span>
-                    <div className="flex items-baseline justify-center gap-1.5 my-1">
-                      <span className="text-[28px] leading-tight font-extrabold text-[#ffd56d] tracking-normal">{totalScore}</span>
-                      <span className="text-xs text-[#4edea3] font-bold">POIN</span>
-                    </div>
-                    <span className="text-xs text-[#d1c5af]">Formula: {baseDice} + {statBonus} + {luckBonus} + {evidenceBonus}</span>
-                  </div>
-                  <div className="p-3 rounded-lg bg-[#092515] flex flex-col items-center justify-center text-center">
-                    <span className="text-[11px] text-[#d1c5af] uppercase font-semibold tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>AMBANG TARGET (DC)</span>
-                    <div className="flex items-baseline justify-center gap-1.5 my-1">
-                      <span className="text-[28px] leading-tight font-extrabold text-[#cbead1] tracking-normal">{dcTarget}</span>
-                      <span className="text-xs text-[#9a907c] font-bold">DC</span>
-                    </div>
-                    <span className={`text-xs font-bold ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`}>
-                      {passed ? `+${margin} Di Atas Ambang` : `${Math.abs(margin)} Di Bawah Ambang`}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Result Strip */}
-                <div className={`mt-1 p-2.5 rounded-lg flex items-center justify-between ${
-                  passed ? 'bg-[#00a572]/20' : 'bg-[#93000a]/30'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[22px] ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`}>
-                      {passed ? '✅' : '❌'}
-                    </span>
-                    <span className={`text-sm font-bold ${passed ? 'text-[#4edea3]' : 'text-[#f87171]'}`} style={{ fontFamily: "'Syne', sans-serif" }}>
+                    <span className="text-sm sm:text-base font-extrabold text-white tracking-wide">
                       UJI {isTax ? 'PPN 12%' : 'TIPIRING'}: {passed ? 'LOLOS SEPENUHNYA!' : 'GAGAL!'}
                     </span>
                   </div>
-                  <span className="text-xs text-[#cbead1] bg-[#152f1f] px-2 py-0.5 rounded">
-                    {passed ? `Bebas PPN Rp ${ppnAmount.toLocaleString('id-ID')}` : `Bayar PPN Rp ${ppnAmount.toLocaleString('id-ID')}`}
+                  <span className="bg-black/30 border border-current text-xs font-bold px-3 py-1 rounded-full text-slate-300">
+                    {passed ? 'Bebas PPN Rp ' + ppnAmount.toLocaleString('id-ID') : 'Bayar PPN Rp ' + ppnAmount.toLocaleString('id-ID')}
                   </span>
                 </div>
-              </div>
+              </section>
+
+              {/* Event/Corner Cell Card */}
+              {showEventCard && (
+                <section className="bg-[#0c2718] border border-[#1c452e] rounded-2xl p-5 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-xs font-bold tracking-wider text-[#ffd56d] uppercase flex items-center gap-2">
+                      <span>{cell.emoji || '📋'}</span> Efek Petak
+                    </h2>
+                    <span className="text-xs font-mono font-bold text-slate-400">{cell.emoji}</span>
+                  </div>
+                  <div className="bg-white text-slate-900 rounded-xl p-4 sm:p-5 shadow-md border-t-4 border-emerald-600">
+                    <h3 className="text-lg font-black text-slate-950 flex items-center gap-2">{cell.emoji} {cell.name}</h3>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed font-medium">{cell.description}</p>
+                    <div className="mt-4 pt-3 border-t border-slate-200">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 w-fit">
+                        <span>Efek Petak Aktif</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Takdir Card */}
+              {takdirCard && (
+                <section className="bg-[#0c2718] border border-[#1c452e] rounded-2xl p-5 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-xs font-bold tracking-wider text-[#ffd56d] uppercase flex items-center gap-2"><span>🃏</span> Kartu Takdir Terbuka</h2>
+                    <span className="text-xs font-mono font-bold text-slate-400">{takdirCard.id.toUpperCase()}</span>
+                  </div>
+                  <div className="bg-white text-slate-900 rounded-xl p-4 sm:p-5 shadow-md border-t-4 border-amber-500">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#E5B842] text-white text-[11px] font-extrabold px-2.5 py-1 rounded tracking-wide uppercase">TAKDIR WNI</span>
+                        <span className={"px-2 py-0.5 rounded text-[11px] font-bold " + (TIER_COLORS[takdirCard.tier] || '')}>{TIER_LABELS[takdirCard.tier]}</span>
+                      </div>
+                      <span className="text-2xl">{CATEGORY_ICONS[takdirCard.category] || '📋'}</span>
+                    </div>
+                    <h3 className="text-lg font-black text-slate-950">{CATEGORY_ICONS[takdirCard.category] || '📋'} {takdirCard.name}</h3>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed font-medium">&ldquo;{takdirCard.flavorText}&rdquo;</p>
+                    <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        {takdirCard.effect.value !== undefined && takdirCard.effect.value !== 0 && (
+                          <span className={"text-xs font-bold flex items-center gap-1 px-2.5 py-1 rounded border " + (takdirCard.effect.value > 0 ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-red-800 bg-red-50 border-red-200')}>
+                            {takdirCard.effect.value > 0 ? '💵 Efek:' : '💸 Efek:'} {takdirCard.effect.value > 0 ? '+' : ''}Rp {Math.abs(takdirCard.effect.value).toLocaleString('id-ID')}
+                          </span>
+                        )}
+                        {takdirCard.effect.special && (
+                          <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">✨ {takdirCard.effect.special.replace(/_/g, ' ')}</span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-medium">Monopoli WNI</span>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Kegiatan Card */}
+              {kegiatanCard && (
+                <section className="bg-[#0c2718] border border-[#1c452e] rounded-2xl p-5 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-xs font-bold tracking-wider text-[#ffd56d] uppercase flex items-center gap-2"><span>🃏</span> Kartu Kegiatan Terbuka</h2>
+                    <span className="text-xs font-mono font-bold text-slate-400">{kegiatanCard.id.toUpperCase()}</span>
+                  </div>
+                  <div className="bg-white text-slate-900 rounded-xl p-4 sm:p-5 shadow-md border-t-4 border-emerald-600">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-emerald-800 text-white text-[11px] font-extrabold px-2.5 py-1 rounded tracking-wide uppercase">Kegiatan WNI</span>
+                        <span className="bg-slate-100 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2 py-0.5 rounded capitalize">{kegiatanCard.category.replace(/_/g, ' ')}</span>
+                      </div>
+                      <span className="text-2xl">{CATEGORY_ICONS[kegiatanCard.category] || '💼'}</span>
+                    </div>
+                    <h3 className="text-lg font-black text-slate-950">{CATEGORY_ICONS[kegiatanCard.category] || '💼'} {kegiatanCard.name}</h3>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed font-medium">&ldquo;{kegiatanCard.flavorText}&rdquo;</p>
+                    <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">✅ +Rp {kegiatanCard.positive.money.toLocaleString('id-ID')}</span>
+                        <span className="text-xs font-semibold text-red-800 bg-red-50 px-2.5 py-1 rounded border border-red-200">❌ {kegiatanCard.negative.money < 0 ? '-' : '+'}Rp {Math.abs(kegiatanCard.negative.money).toLocaleString('id-ID')}</span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-medium">Monopoli WNI</span>
+                    </div>
+                  </div>
+                </section>
+              )}
             </div>
-
-            {/* Takdir Card */}
-            {takdirCard && (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Kartu Takdir Terbuka</span>
-                  <span className="text-[11px] text-[#4edea3] font-mono">{takdirCard.id.toUpperCase()}</span>
-                </div>
-                <div className="rounded-xl bg-[#FBF8EE] text-[#07190F] p-4 shadow-[4px_4px_0_0_#001206] flex flex-col gap-2.5 relative overflow-hidden">
-                  {/* Card Header */}
-                  <div className="flex items-center justify-between pb-2 border-b border-[#07190F]/20">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-[#E5B842] text-[#07190F] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>TAKDIR WNI</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${TIER_COLORS[takdirCard.tier]}`}>
-                        {TIER_LABELS[takdirCard.tier]}
-                      </span>
-                    </div>
-                    <span className="text-[20px]">{CATEGORY_ICONS[takdirCard.category] || '📋'}</span>
-                  </div>
-                  {/* Card Body */}
-                  <div className="flex gap-3 items-start">
-                    <div className="w-12 h-12 rounded-lg bg-[#07190F]/10 flex items-center justify-center shrink-0">
-                      <span className="text-[26px]">{CATEGORY_ICONS[takdirCard.category] || '📋'}</span>
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-sm font-bold text-[#07190F] mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>{takdirCard.name}</h2>
-                      <p className="text-xs text-[#07190F]/80 leading-snug">{takdirCard.flavorText}</p>
-                    </div>
-                  </div>
-                  {/* Card Rewards */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#07190F]/20">
-                    <div className="flex items-center gap-3">
-                      {takdirCard.effect.value !== undefined && takdirCard.effect.value !== 0 && (
-                        <span className={`text-xs font-bold flex items-center gap-1 ${takdirCard.effect.value > 0 ? 'text-[#00603b]' : 'text-[#93000a]'}`}>
-                          {takdirCard.effect.value > 0 ? '💵' : '💸'} {takdirCard.effect.value > 0 ? '+' : ''}Rp {Math.abs(takdirCard.effect.value).toLocaleString('id-ID')}
-                        </span>
-                      )}
-                      {takdirCard.effect.special && (
-                        <span className="text-xs font-bold text-[#b45309] flex items-center gap-1">
-                          ✨ {takdirCard.effect.special.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-[#07190F]/40 font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>MONOPOLI WNI</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Kegiatan Card */}
-            {kegiatanCard && (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>Kartu Kegiatan Terbuka</span>
-                  <span className="text-[11px] text-[#4edea3] font-mono">{kegiatanCard.id.toUpperCase()}</span>
-                </div>
-                <div className="rounded-xl bg-[#FBF8EE] text-[#07190F] p-4 shadow-[4px_4px_0_0_#001206] flex flex-col gap-2.5 relative overflow-hidden">
-                  {/* Card Header */}
-                  <div className="flex items-center justify-between pb-2 border-b border-[#07190F]/20">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-[#00a572] text-[#fff] text-[10px] font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>KEGIATAN WNI</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#07190F]/10 text-[#07190F] text-[10px] font-bold capitalize">
-                        {kegiatanCard.category.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <span className="text-[20px]">{CATEGORY_ICONS[kegiatanCard.category] || '💼'}</span>
-                  </div>
-                  {/* Card Body */}
-                  <div className="flex gap-3 items-start">
-                    <div className="w-12 h-12 rounded-lg bg-[#07190F]/10 flex items-center justify-center shrink-0">
-                      <span className="text-[26px]">{CATEGORY_ICONS[kegiatanCard.category] || '💼'}</span>
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-sm font-bold text-[#07190F] mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>{kegiatanCard.name}</h2>
-                      <p className="text-xs text-[#07190F]/80 leading-snug">{kegiatanCard.flavorText}</p>
-                    </div>
-                  </div>
-                  {/* Card Rewards - show positive (pass) vs negative (fail) */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#07190F]/20">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-[#00603b] flex items-center gap-1">
-                        ✅ +Rp {kegiatanCard.positive.money.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-xs font-bold text-[#93000a] flex items-center gap-1">
-                        ❌ {kegiatanCard.negative.money < 0 ? '-' : '+'}Rp {Math.abs(kegiatanCard.negative.money).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-[#07190F]/40 font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>MONOPOLI WNI</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
+      </main>
 
-        {/* Bottom Action Bar */}
-        <div className="bg-[#092515] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#203a29]">
-          <div className="flex items-center gap-2 text-[#d1c5af] text-xs">
-            <span className="text-[#4edea3] text-[18px] animate-spin">🔄</span>
-            <span>Eksekusi bidak otomatis dalam <strong className="text-[#ffd56d] font-mono font-bold">14 detik</strong></span>
+      {/* Footer Action Bar */}
+      <footer className="w-full bg-[#071e11] border-t border-[#1c452e] py-4 px-4 sm:px-6 lg:px-8 shadow-2xl shrink-0">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-[#4edea3] animate-pulse" />
+            <span>Eksekusi bidak otomatis</span>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-lg bg-[#152f1f] text-[#cbead1] hover:bg-[#203a29] transition-colors text-sm font-semibold flex items-center gap-1.5"
-            >
-              📜 Audit Log Meja
-            </button>
-            <button
-              onClick={onContinue}
-              className="px-6 py-2.5 rounded-lg bg-[#ffd56d] text-[#3e2e00] hover:bg-[#e5b842] transition-all transform active:scale-95 text-sm font-bold shadow-[2px_2px_0_0_#000] flex items-center gap-2"
-            >
-              Lanjut Langkah ({d1 + d2} Petak)
-              <span className="text-[20px]">➡️</span>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button onClick={onClose} className="w-1/2 sm:w-auto px-4 py-2.5 bg-[#0d2a1a] hover:bg-[#133824] border border-[#245337] rounded-xl text-xs sm:text-sm font-bold text-slate-200 hover:text-white transition-all shadow-sm">📜 Audit Log Meja</button>
+            <button onClick={onContinue} className="w-1/2 sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#4edea3] via-emerald-400 to-[#ffd56d] hover:from-[#4edea3] hover:to-amber-300 text-slate-950 rounded-xl text-xs sm:text-sm font-extrabold shadow-lg hover:shadow-[#4edea3]/25 active:scale-98 transition-all flex items-center justify-center gap-2">
+              <span>Lanjutkan Langkah ({d1 + d2} Petak)</span>
+              <span className="text-base leading-none">➔</span>
             </button>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
