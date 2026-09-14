@@ -116,7 +116,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   // Check if all players have selected roles
   const allRolesSelected = players.every((p) => p.selectedRole);
   const allReady = players.every((p) => p.isReady);
-  const canStart = isHost && players.length >= 2 && allRolesSelected;
+  const notReadyPlayers = players.filter((p) => !p.isReady);
+  const canStart = isHost && players.length >= 2 && allRolesSelected && allReady;
 
   // Get role info for a player
   const getRoleInfo = (roleId: string | null) => {
@@ -169,6 +170,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleStartGame = useCallback(async () => {
     if (!room || !currentPlayer) return;
+    const notReady = players.filter((p) => !p.isReady);
+    if (notReady.length > 0) {
+      setError(`Masih ada ${notReady.length} pemain yang belum siap: ${notReady.map((p) => p.name).join(', ')}`);
+      return;
+    }
     setStarting(true);
     setError('');
     try {
@@ -188,7 +194,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setError('Gagal memulai game');
       setStarting(false);
     }
-  }, [room, currentPlayer]);
+  }, [room, currentPlayer, players]);
 
   const handleSendChat = useCallback(() => {
     if (!chatInput.trim() || !currentPlayer) return;
@@ -593,7 +599,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         {player.isBot && <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(168,85,247,0.1)', color: '#a855f7' }}>BOT</span>}
-                        {player.isReady && <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(78,222,163,0.1)', color: '#4edea3' }}>✓</span>}
+                        {player.isReady
+                          ? <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(78,222,163,0.1)', color: '#4edea3' }}>✓ SIAP</span>
+                          : <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,71,87,0.1)', color: '#ff4757' }}>• BELUM</span>
+                        }
                       </div>
                     </div>
                   );
@@ -784,7 +793,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 className="w-full py-3 bg-gradient-to-r from-[#e5b842] via-[#ffd56d] to-[#e5b842] text-[#3e2e00] font-bold text-sm rounded-xl transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ boxShadow: '0 4px 16px rgba(255,213,109,0.3)' }}
               >
-                {starting ? 'MEMULAI...' : canStart ? 'MULAI GAME' : 'Belum semua siap'}
+                {starting ? 'MEMULAI...' : canStart ? 'MULAI GAME' : notReadyPlayers.length > 0 ? `${notReadyPlayers.length} Pemain Belum Siap` : 'Belum semua siap'}
               </button>
             )}
 
