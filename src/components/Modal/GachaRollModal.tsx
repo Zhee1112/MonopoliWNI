@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { rollDice } from '@/lib/game/game-logic';
 
 interface GachaRollModalProps {
@@ -60,26 +60,38 @@ export default function GachaRollModal({ isOpen, cellName, cellEmoji, onRollComp
   const [isRolling, setIsRolling] = useState(false);
   const [gachaValue, setGachaValue] = useState(1);
   const [showResult, setShowResult] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const completedRef = useRef(false);
+
+  const cleanup = useCallback(() => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
+      cleanup();
       setIsRolling(false);
       setGachaValue(1);
       setShowResult(false);
+      completedRef.current = false;
     }
-  }, [isOpen]);
+    return cleanup;
+  }, [isOpen, cleanup]);
 
   const handleRoll = () => {
+    cleanup();
+    completedRef.current = false;
     setIsRolling(true);
     setShowResult(false);
 
     let count = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setGachaValue(rollDice(6));
       count++;
 
       if (count >= 18) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
         const finalValue = rollDice(6);
         setGachaValue(finalValue);
         setIsRolling(false);
@@ -89,7 +101,10 @@ export default function GachaRollModal({ isOpen, cellName, cellEmoji, onRollComp
   };
 
   const handleContinue = () => {
-    onRollComplete(gachaValue);
+    if (!completedRef.current) {
+      completedRef.current = true;
+      onRollComplete(gachaValue);
+    }
   };
 
   if (!isOpen) return null;
@@ -118,7 +133,6 @@ export default function GachaRollModal({ isOpen, cellName, cellEmoji, onRollComp
             <GachaDice value={gachaValue} rolling={isRolling} />
           </div>
 
-          {/* Result Info */}
           {showResult && (
             <div className="w-full rounded-xl bg-[#152f1f] p-4 flex flex-col items-center gap-2 border border-[#203a29]">
               <div className="flex items-center gap-2">

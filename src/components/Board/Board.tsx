@@ -144,7 +144,9 @@ function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: Bo
       {cell.price ? (
         <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d]">Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
-        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5]">-Rp 150k</span>
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5]">
+          {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
+        </span>
       ) : isDraw ? (
         <span className="text-[8px] text-[#9a907c]">ACAK</span>
       ) : null}
@@ -168,7 +170,9 @@ function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell:
       {cell.price ? (
         <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d]">Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
-        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5]">-Rp 50k</span>
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5]">
+          {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
+        </span>
       ) : isDraw ? (
         <span className="text-[8px] text-[#9a907c]">ACAK</span>
       ) : null}
@@ -213,7 +217,9 @@ function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: B
       {cell.price ? (
         <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d] shrink-0">Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
-        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">-Rp 200k</span>
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">
+          {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
+        </span>
       ) : isDraw ? (
         <span className="text-[8px] text-[#9a907c] shrink-0">Ambil Kartu</span>
       ) : null}
@@ -248,7 +254,9 @@ function RightColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: 
       {cell.price ? (
         <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d] shrink-0">Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
-        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">-Rp 150k</span>
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">
+          {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
+        </span>
       ) : isDraw ? (
         <span className="text-[8px] text-[#9a907c] shrink-0">Ambil Kartu</span>
       ) : null}

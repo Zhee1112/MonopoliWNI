@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { mapRoomFromDB, mapPlayerFromDB } from '@/lib/types';
+import { validatePlayerName } from '@/lib/validation';
 
 // ============================================================
 // CREATE ROOM API - With user auth binding
@@ -11,8 +12,9 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin();
     const { playerName, userId } = await request.json();
 
-    if (!playerName) {
-      return NextResponse.json({ error: 'Player name is required' }, { status: 400 });
+    const nameValidation = validatePlayerName(playerName);
+    if (!nameValidation.valid) {
+      return NextResponse.json({ error: nameValidation.error }, { status: 400 });
     }
 
     // Check if user already has an active room
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
         code: roomCode,
         host_id: '',
         status: 'waiting',
+        last_activity_at: new Date().toISOString(),
       })
       .select()
       .single();

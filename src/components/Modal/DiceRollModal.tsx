@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { rollDice } from '@/lib/game/game-logic';
 
 interface DiceRollModalProps {
@@ -60,28 +60,42 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
   const [dice1, setDice1] = useState(1);
   const [dice2, setDice2] = useState(1);
   const [showResult, setShowResult] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const completedRef = useRef(false);
+
+  const cleanup = useCallback(() => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
+      cleanup();
       setIsRolling(false);
       setDice1(1);
       setDice2(1);
       setShowResult(false);
+      completedRef.current = false;
     }
-  }, [isOpen]);
+    return cleanup;
+  }, [isOpen, cleanup]);
 
   const handleRoll = () => {
+    cleanup();
+    completedRef.current = false;
     setIsRolling(true);
     setShowResult(false);
 
     let count = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setDice1(rollDice(6));
       setDice2(rollDice(6));
       count++;
 
       if (count >= 15) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
         const finalDice1 = rollDice(6);
         const finalDice2 = rollDice(6);
         setDice1(finalDice1);
@@ -89,15 +103,31 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
         setIsRolling(false);
         setShowResult(true);
 
-        setTimeout(() => {
-          onRollComplete({
-            dice1: finalDice1,
-            dice2: finalDice2,
-            total: finalDice1 + finalDice2,
-          });
+        timeoutRef.current = setTimeout(() => {
+          timeoutRef.current = null;
+          if (!completedRef.current) {
+            completedRef.current = true;
+            onRollComplete({
+              dice1: finalDice1,
+              dice2: finalDice2,
+              total: finalDice1 + finalDice2,
+            });
+          }
         }, 2000);
       }
     }, 100);
+  };
+
+  const handleClose = () => {
+    cleanup();
+    if (!completedRef.current) {
+      completedRef.current = true;
+      const total = dice1 + dice2;
+      if (showResult) {
+        onRollComplete({ dice1, dice2, total });
+      }
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -118,12 +148,12 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
                 <span className="text-[11px] font-bold text-[#ffd56d] uppercase tracking-wider">Uji Stat &amp; Manuver Meja</span>
                 <span className="px-2 py-0.5 rounded bg-[#00a572]/30 text-[#4edea3] text-[11px] font-bold">FASE AKSI</span>
               </div>
-              <h1 className="text-lg font-bold text-[#cbead1] tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>Lempar Dadu Nasib!</h1>
+              <h1 className="text-lg font-bold text-[#cbead1] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Lempar Dadu Nasib!</h1>
               <p className="text-xs text-[#d1c5af]">Kocok dadu untuk menentukan langkahmu di peta</p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-9 h-9 rounded-lg bg-[#152f1f] text-[#d1c5af] hover:text-[#ffd56d] hover:bg-[#203a29] transition-colors flex items-center justify-center"
           >
             &#x2715;
@@ -134,7 +164,6 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           {/* LEFT: Dice Display */}
           <div className="p-5 flex flex-col gap-4 bg-[#0a1a11]/60">
-            {/* Dice Stage */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-[#d1c5af] uppercase tracking-wider">Hasil Lemparan Dadu</span>
@@ -146,18 +175,10 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
               </div>
               <div className="relative w-full h-44 rounded-xl bg-[#001206] flex items-center justify-center gap-6 overflow-hidden p-4 shadow-[inset_0_4px_12px_rgba(0,0,0,0.8)]">
                 <div className="absolute w-40 h-40 rounded-full bg-[#ffd56d]/10 blur-xl pointer-events-none" />
-                <Dice3D
-                  value={dice1}
-                  rotation={isRolling ? 'rotate(45deg)' : '-rotate-6'}
-                />
+                <Dice3D value={dice1} rotation={isRolling ? 'rotate(45deg)' : '-rotate-6'} />
                 <div className="text-[#ffd56d] text-xl font-bold select-none">+</div>
-                <Dice3D
-                  value={dice2}
-                  rotation={isRolling ? 'rotate(-30deg)' : 'rotate(12deg)'
-                }
-                />
+                <Dice3D value={dice2} rotation={isRolling ? 'rotate(-30deg)' : 'rotate(12deg)'} />
               </div>
-              {/* Roll Summary */}
               <div className="px-4 py-2.5 rounded-lg bg-[#152f1f] flex items-center justify-between">
                 <span className="text-xs text-[#d1c5af]">Langkah Alami:</span>
                 <div className="flex items-center gap-2">
@@ -175,7 +196,6 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
               <span className="text-[11px] text-[#9a907c] font-mono">D&amp;D Format</span>
             </div>
             <div className="rounded-xl bg-[#152f1f] p-4 flex flex-col gap-2">
-              {/* Base Dice */}
               <div className="flex items-center justify-between py-1.5 px-2 rounded bg-[#001206]">
                 <div className="flex items-center gap-2">
                   <span className="text-[#ffd56d]">&#x1F3B2;</span>
@@ -183,7 +203,6 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
                 </div>
                 <span className="text-sm font-bold text-[#ffd56d] font-mono">+{total}</span>
               </div>
-              {/* Total Score */}
               <div className="h-0.5 w-full bg-[#4e4635]/40 my-1" />
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div className="p-3 rounded-lg bg-[#092515] flex flex-col items-center justify-center text-center">
@@ -242,7 +261,7 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
               </button>
             ) : (
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-6 py-2.5 rounded-lg bg-[#4edea3] text-[#002b18] font-bold text-sm hover:bg-[#6ffbbe] active:scale-95 shadow-[2px_2px_0_0_#000] transition-all flex items-center gap-2"
               >
                 Lanjut Langkah ({total} Petak)

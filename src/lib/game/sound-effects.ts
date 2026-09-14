@@ -21,7 +21,7 @@ function playTone(frequency: number, duration: number, type: OscillatorType = 's
     const gain = ctx.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.setValueAtTime(volume * masterVolume, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -42,7 +42,7 @@ function playNoise(duration: number, volume = 0.1) {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.setValueAtTime(volume * masterVolume, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
     const filter = ctx.createBiquadFilter();
     filter.type = 'highpass';

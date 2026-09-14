@@ -71,12 +71,18 @@ export default function PostGameModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-[#05140b] border border-[#1c452e] rounded-2xl shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-[#05140b] border border-[#1c452e] rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="relative px-6 pt-8 pb-6 text-center border-b border-[#1c452e]">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center text-[#7a9a7a] hover:text-[#ffd56d] hover:bg-[#1c452e]/50 transition-colors"
+          >
+            &#x2715;
+          </button>
           <div className="text-5xl mb-3">{isWinner ? '🏆' : '📋'}</div>
-          <h2 className="text-2xl font-bold text-white mb-1">
+          <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             {isWinner ? 'KAMU MENANG!' : `Peringkat #${currentPlayerResult?.placement || '?'}`}
           </h2>
           <p className="text-sm text-emerald-400/70">

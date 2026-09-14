@@ -13,13 +13,30 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [checkingActive, setCheckingActive] = useState(true);
+
+  // Check for active room on load — redirect if found
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
+    if (authLoading || !user) return;
+    async function checkActiveRoom() {
+      try {
+        // Auto-dissolve idle waiting rooms first
+        await fetch('/api/auto-dissolve', { method: 'POST' });
+
+        const res = await fetch(`/api/active-room?userId=${user.id}`);
+        const data = await res.json();
+        if (data.activeRoom) {
+          sessionStorage.setItem('player', JSON.stringify(data.activeRoom.player));
+          window.location.href = `/room/${data.activeRoom.code}`;
+          return;
+        }
+      } catch { /* ignore */ }
+      setCheckingActive(false);
     }
+    checkActiveRoom();
   }, [user, authLoading, router]);
 
-  if (authLoading) {
+  if (authLoading || !user || checkingActive) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -111,10 +128,18 @@ export default function Home() {
               <span className="text-[10px] text-on-surface-variant block tracking-wide">Arena Meja Nusantara</span>
             </div>
           </div>
-          <button
-            onClick={() => router.push('/profile')}
-            className="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant rounded-full px-3 py-1.5 transition-all"
-          >
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/achievements')}
+              className="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant rounded-full px-3 py-1.5 transition-all"
+            >
+              <span className="text-primary text-sm">🏆</span>
+              <span className="text-on-surface text-xs font-semibold hidden sm:block">Pencapaian</span>
+            </button>
+            <button
+              onClick={() => router.push('/profile')}
+              className="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant rounded-full px-3 py-1.5 transition-all"
+            >
             {profile?.avatarUrl ? (
               <img src={profile.avatarUrl} alt={profile.displayName} className="w-7 h-7 rounded-full border border-outline-variant" />
             ) : (
@@ -127,6 +152,7 @@ export default function Home() {
               <p className="text-secondary text-[10px] leading-tight">Lv.{profile?.level}</p>
             </div>
           </button>
+          </div>
         </div>
       </div>
 

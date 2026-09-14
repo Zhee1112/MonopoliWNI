@@ -148,9 +148,12 @@ export default function InfoModal({ onClose }: InfoModalProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-xs text-[#888] hover:border-[#4edea3] hover:text-[#4edea3]">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-xs text-[#888] hover:border-[#4edea3] hover:text-[#4edea3]"
+            >
               <span className="text-sm">📥</span>
-              Download PDF
+              Print / PDF
             </button>
             <button
               onClick={onClose}

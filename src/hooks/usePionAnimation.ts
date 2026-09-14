@@ -41,6 +41,10 @@ export function usePionAnimation() {
       return next;
     });
 
+    // Clear any existing animation for this player
+    const oldInterval = animationRef.current.get(playerId);
+    if (oldInterval) clearInterval(oldInterval);
+
     let step = 0;
     const interval = setInterval(() => {
       if (step < path.length) {

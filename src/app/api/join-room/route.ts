@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { mapRoomFromDB, mapPlayerFromDB } from '@/lib/types';
+import { validatePlayerName, validateRoomCode } from '@/lib/validation';
 
 // ============================================================
 // JOIN ROOM API - With user auth binding + race condition fix
@@ -16,6 +17,16 @@ export async function POST(request: NextRequest) {
         { error: 'Room code and player name are required' },
         { status: 400 }
       );
+    }
+
+    const nameValidation = validatePlayerName(playerName);
+    if (!nameValidation.valid) {
+      return NextResponse.json({ error: nameValidation.error }, { status: 400 });
+    }
+
+    const codeValidation = validateRoomCode(roomCode);
+    if (!codeValidation.valid) {
+      return NextResponse.json({ error: codeValidation.error }, { status: 400 });
     }
 
     // Check if user already in ANY active room
@@ -121,7 +132,10 @@ export async function POST(request: NextRequest) {
     const currentTurnOrder = (roomState.turn_order as string[]) || [];
     await supabaseAdmin
       .from('rooms')
-      .update({ turn_order: [...currentTurnOrder, player.id] })
+      .update({
+        turn_order: [...currentTurnOrder, player.id],
+        last_activity_at: new Date().toISOString(),
+      })
       .eq('id', room.id);
 
     return NextResponse.json({

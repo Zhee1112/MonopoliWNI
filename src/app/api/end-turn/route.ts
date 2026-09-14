@@ -254,9 +254,9 @@ async function syncUserProfiles(
 
     const currentHighestCash = profile?.highest_cash || 0;
     const currentPropertiesOwned = profile?.properties_owned || 0;
-    const currentGamesPlayed = profile?.games_played || 0;
-    const currentWins = profile?.wins || 0;
-    const currentTotalXp = profile?.total_xp || 0;
+    const currentGamesPlayed = profile?.total_games || 0;
+    const currentWins = profile?.total_wins || 0;
+    const currentTotalXp = profile?.xp || 0;
 
     const newHighestCash = Math.max(currentHighestCash, p.clean_money);
     const newPropertiesOwned = Math.max(currentPropertiesOwned, (p.properties || []).length);
@@ -282,9 +282,9 @@ async function syncUserProfiles(
         display_name: p.name || profile?.display_name || 'Player',
         highest_cash: newHighestCash,
         properties_owned: newPropertiesOwned,
-        games_played: currentGamesPlayed + 1,
-        wins: newWins,
-        total_xp: currentTotalXp + gameXp + placementXp,
+        total_games: currentGamesPlayed + 1,
+        total_wins: newWins,
+        xp: currentTotalXp + gameXp + placementXp,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
   }
@@ -406,7 +406,7 @@ export async function POST(request: NextRequest) {
       const nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
       await supabaseAdmin
         .from('rooms')
-        .update({ current_turn: nextTurn })
+        .update({ current_turn: nextTurn, last_activity_at: new Date().toISOString() })
         .eq('id', roomId);
 
       return NextResponse.json({
@@ -448,7 +448,7 @@ export async function POST(request: NextRequest) {
 
     await supabaseAdmin
       .from('rooms')
-      .update({ current_turn: nextTurn })
+      .update({ current_turn: nextTurn, last_activity_at: new Date().toISOString() })
       .eq('id', roomId);
 
     // Check if new round started (all players have had a turn)

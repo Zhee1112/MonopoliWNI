@@ -94,6 +94,7 @@ export default function GameModal({
                 {activeTab === 'players' && 'Pemain Meja'}
                 {activeTab === 'status' && 'Status & Aset'}
                 {activeTab === 'chat' && 'Log Chat Meja'}
+                {activeTab === 'settings' && 'Pengaturan'}
               </h2>
               <span className="text-[10px]" style={{ color: '#7a9a7a' }}>#{roomCode} &bull; {players.length}/8 Pemain</span>
             </div>
@@ -189,18 +190,27 @@ export default function GameModal({
               <div>
                 <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Kavling Dikuasai</span>
                 <div className="space-y-1.5">
-                  {getPropertyCells().slice(0, 3).map((cell) => (
-                    <div key={cell.index} className="p-2.5 rounded-lg flex items-center justify-between" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-5 rounded-sm" style={{ backgroundColor: cell.groupColor }} />
-                        <div>
-                          <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>{cell.name}</span>
-                          <span className="text-[10px]" style={{ color: '#7a9a7a' }}>Sewa Rp {((cell.rent || 0) / 1000).toFixed(0)}k</span>
-                        </div>
-                      </div>
-                      <span className="font-mono text-xs font-bold" style={{ color: '#4edea3' }}>Rp {(cell.price || 0) / 1000}k</span>
+                  {(currentPlayer.properties || []).length === 0 ? (
+                    <div className="p-3 rounded-lg text-center" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                      <span className="text-xs" style={{ color: '#7a9a7a' }}>Belum ada properti</span>
                     </div>
-                  ))}
+                  ) : (
+                    (currentPlayer.properties || []).map((propName) => {
+                      const cell = getPropertyCells().find(c => c.name === propName);
+                      return cell ? (
+                        <div key={cell.index} className="p-2.5 rounded-lg flex items-center justify-between" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-5 rounded-sm" style={{ backgroundColor: cell.groupColor }} />
+                            <div>
+                              <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>{cell.name}</span>
+                              <span className="text-[10px]" style={{ color: '#7a9a7a' }}>Sewa Rp {((cell.rent || 0) / 1000).toFixed(0)}k</span>
+                            </div>
+                          </div>
+                          <span className="font-mono text-xs font-bold" style={{ color: '#4edea3' }}>Rp {(cell.price || 0) / 1000}k</span>
+                        </div>
+                      ) : null;
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -278,7 +288,7 @@ export default function GameModal({
                     </div>
                   </div>
                   <button
-                    onClick={onToggleMusic}
+                    onClick={() => onToggleMusic?.()}
                     className="w-12 h-6 rounded-full relative transition-all"
                     style={{
                       backgroundColor: musicOn ? '#4edea3' : '#152f1f',

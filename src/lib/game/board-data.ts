@@ -25,6 +25,7 @@ export const BOARD_CELLS: BoardCell[] = [
   {
     index: 2, name: 'PBB Jakarta', subtitle: 'Pajak Bumi', type: 'tax', group: null,
     price: null, rent: null, buildingCost: null, description: 'Bayar PBB tahunan -Rp 100.000',
+    taxAmount: 100000,
     color: '#052011', groupColor: '#ff6b6b', emoji: '📋',
   },
   // Cell 3 - Kos Gambir (Brown)
@@ -175,6 +176,7 @@ export const BOARD_CELLS: BoardCell[] = [
   {
     index: 26, name: 'Uji Emisi DKI', subtitle: 'Tilang', type: 'tax', group: null,
     price: null, rent: null, buildingCost: null, description: 'Kena tilang uji emisi -Rp 150.000',
+    taxAmount: 150000,
     color: '#052011', groupColor: '#ff6b6b', emoji: '💨',
   },
   // Cell 27 - Kemang Village (Red)

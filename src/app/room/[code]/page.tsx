@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import Board from '@/components/Board/Board';
-import PlayerPanel from '@/components/Player/PlayerPanel';
 import DiceRollModal from '@/components/Modal/DiceRollModal';
 import EventCardModal from '@/components/Modal/EventCardModal';
 import BuyPropertyModal from '@/components/Modal/BuyPropertyModal';
@@ -29,6 +29,7 @@ const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#0
 
 export default function GameRoom({ params }: { params: Promise<{ code: string }> }) {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const { code: roomCode } = use(params);
 
   // State
@@ -102,8 +103,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const { properties: dbProperties } = useRealtimeProperties(room?.id || '');
   const { animatePion, getPionPosition } = usePionAnimation();
 
-  // Load player from sessionStorage
+  // Load player from sessionStorage, fallback to DB relog
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) { router.push('/login'); return; }
+
     const storedPlayer = sessionStorage.getItem('player');
     const storedRoom = sessionStorage.getItem('room');
 
@@ -111,9 +115,29 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const player = JSON.parse(storedPlayer);
       setCurrentPlayer(player);
     } else {
-      router.push('/login');
+      // Relog from DB
+      async function relogFromDB() {
+        try {
+          const res = await fetch(`/api/active-room?userId=${user.id}`);
+          const data = await res.json();
+          if (data.activeRoom && data.activeRoom.code === roomCode && data.activeRoom.player) {
+            const player = data.activeRoom.player;
+            setCurrentPlayer(player);
+            sessionStorage.setItem('player', JSON.stringify(player));
+          } else if (data.activeRoom) {
+            // User has a different active room, redirect there
+            window.location.href = `/room/${data.activeRoom.code}`;
+          } else {
+            // No active room, back to lobby
+            router.push('/');
+          }
+        } catch {
+          router.push('/');
+        }
+      }
+      relogFromDB();
     }
-  }, [router]);
+  }, [router, roomCode, user, authLoading]);
 
   // Sync currentPlayer with realtime players
   useEffect(() => {
@@ -329,13 +353,19 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               setDrawnTakdirCard(undefined);
               setDrawnCardIds((prev) => [...prev, card.id]);
             } else if (cell.type === 'tax') {
-              const propPrices = getPropertyCells();
-              const ownedPropTotal = (currentPlayer.properties || []).reduce((sum, propName) => {
-                const prop = propPrices.find(p => p.name === propName);
-                return sum + (prop?.price || 0);
-              }, 0);
-              const totalHarta = (currentPlayer.cleanMoney || 0) + ownedPropTotal;
-              ppnAmt = Math.floor(totalHarta * 0.12);
+              // Flat tax or percentage-based tax depending on cell
+              if (cell.taxAmount) {
+                ppnAmt = cell.taxAmount;
+              } else {
+                // PPN 12%: percentage of total assets
+                const propPrices = getPropertyCells();
+                const ownedPropTotal = (currentPlayer.properties || []).reduce((sum, propName) => {
+                  const prop = propPrices.find(p => p.name === propName);
+                  return sum + (prop?.price || 0);
+                }, 0);
+                const totalHarta = (currentPlayer.cleanMoney || 0) + ownedPropTotal;
+                ppnAmt = Math.floor(totalHarta * 0.12);
+              }
               setPpnAmount(ppnAmt);
               setDrawnTakdirCard(undefined);
               setDrawnKegiatanCard(undefined);
@@ -620,6 +650,32 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       }
     } catch (err) { console.error('End turn error:', err); }
   }, [currentPlayer, room]);
+
+  const handleSurrender = useCallback(async () => {
+    if (!currentPlayer || !room) return;
+    if (!confirm('Yakin menyerah? Kamu akan keluar dari permainan ini.')) return;
+    try {
+      const response = await fetch('/api/surrender-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: room.id,
+          playerId: currentPlayer.id,
+          userId: user?.id || null,
+        }),
+      });
+      const data = await response.json();
+      sessionStorage.removeItem('player');
+      sessionStorage.removeItem('room');
+      if (data.gameOver) {
+        SoundEffects.gameOver();
+        setGameOver(true);
+        setWinnerName(data.winnerName || 'Tidak ada');
+      } else {
+        router.push('/');
+      }
+    } catch (err) { console.error('Surrender error:', err); }
+  }, [currentPlayer, room, user, router]);
 
   const handleReaction = useCallback(
     (reaction: string) => { if (currentPlayer) broadcastReaction(currentPlayer.id, reaction); },
@@ -1054,8 +1110,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           gameMode={room.gameMode || 'bundir'}
           winnerId={gameRankings.find(p => p.placement === 1)?.playerId}
           winnerName={winnerName}
-          onPlayAgain={() => window.location.reload()}
-          onBackToLobby={() => router.push('/')}
+          onPlayAgain={() => { sessionStorage.removeItem('player'); sessionStorage.removeItem('room'); window.location.reload(); }}
+          onBackToLobby={() => { sessionStorage.removeItem('player'); sessionStorage.removeItem('room'); router.push('/'); }}
         />
         <div className="min-h-screen bg-[#001809]" />
       </>
@@ -1226,6 +1282,14 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             >
               Selesai
             </button>
+            <button
+              onClick={handleSurrender}
+              className="h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold transition-colors"
+              style={{ backgroundColor: '#2a0f0f', border: '1px solid #5c2020', color: '#f87171' }}
+              title="Menyerah & keluar dari permainan"
+            >
+              &#x1F6AA; Menyerah
+            </button>
           </div>
         </div>
       </aside>
@@ -1369,6 +1433,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           turnNumber={(room.currentTurn || 0) + 1}
         />
       )}
+
+      {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
     </div>
   );
 }

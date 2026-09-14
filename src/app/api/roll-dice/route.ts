@@ -95,6 +95,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
     }
 
+    // Update room last_activity_at
+    await supabaseAdmin
+      .from('rooms')
+      .update({ last_activity_at: new Date().toISOString() })
+      .eq('id', roomId);
+
     // Log the action
     await supabaseAdmin.from('game_log').insert({
       room_id: roomId,

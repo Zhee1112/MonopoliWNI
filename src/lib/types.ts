@@ -16,6 +16,7 @@ export interface BoardCell {
   price: number | null;
   rent: number | null;
   buildingCost: number | null;
+  taxAmount?: number | null;
   description: string;
   color: string;
   groupColor: string;
