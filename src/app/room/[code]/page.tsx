@@ -562,9 +562,31 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               skipTurns = 2;
               eventDescription = 'Kena OTT KPK! Kamu ditahan selama 2 putaran.';
             } else if (newPosition === 20) {
-              // BEBAS PARKIR — istirahat, dapat bonus
+              // BEBAS PARKIR — collect pot money from pool
               moneyChange = 100000;
               eventDescription = 'Bebas Parkir! Istirahat sejenak, dapat Rp 100.000 dari parkir liar.';
+              fetch('/api/update-player', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: room.id, playerId: 'pot_collect', potCollect: true }),
+              }).then(res => res.json()).then(potData => {
+                const potAmount = potData.potAmount || 0;
+                if (potAmount > 0) {
+                  const totalBonus = 100000 + potAmount;
+                  setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: prev.cleanMoney + potAmount } : null);
+                  fetch('/api/update-player', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId: room.id, playerId: currentPlayerRef.current?.id, cleanMoneyDelta: potAmount }),
+                  }).catch(() => {});
+                  broadcastAnnouncement({
+                    type: 'system',
+                    playerName: currentPlayerRef.current?.name || 'Pemain',
+                    message: `mengambil pool dana Rp ${potAmount.toLocaleString('id-ID')} dari Bebas Parkir!`,
+                    detail: `Total: Rp ${totalBonus.toLocaleString('id-ID')}`,
+                  });
+                }
+              }).catch(() => {});
             } else if (newPosition === 30) {
               // MASUK SEL — skip 3 turns
               skipTurns = 3;
@@ -1682,6 +1704,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   statusEffects: updatedPlayerData.statusEffects,
                   luck: updatedPlayerData.luck,
                   isBankrupt: updatedPlayerData.isBankrupt,
+                  evidence: updatedPlayerData.evidence,
                 }),
               }).catch(() => {});
             }
@@ -1729,6 +1752,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           playerName={currentPlayer.name}
           playerLevel={currentPlayer.roleLevel || 1}
           playerRank={currentPlayer.selectedRole || 'Magang'}
+          playerEvidence={currentPlayer.evidence || []}
           rollResult={gameEventRollResult}
           takdirCard={drawnTakdirCard}
           kegiatanCard={drawnKegiatanCard}

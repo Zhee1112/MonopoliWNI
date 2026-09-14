@@ -247,6 +247,22 @@ export async function PUT(request: NextRequest) {
     await supabaseAdmin.from('players').update({ clean_money: newPayerBalance }).eq('id', payerId);
     await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + rent }).eq('id', owner.id);
 
+    // Free Parking Pot: 10% of rent goes to pot
+    const potAmount = Math.floor(rent * 0.10);
+    if (potAmount > 0) {
+      const { data: room } = await supabaseAdmin
+        .from('rooms')
+        .select('pot_money')
+        .eq('id', roomId)
+        .maybeSingle();
+      if (room) {
+        await supabaseAdmin
+          .from('rooms')
+          .update({ pot_money: (room.pot_money || 0) + potAmount })
+          .eq('id', roomId);
+      }
+    }
+
     // If payer goes bankrupt, award bankrupt_maker to owner
     if (isPayerBankrupt) {
       await supabaseAdmin

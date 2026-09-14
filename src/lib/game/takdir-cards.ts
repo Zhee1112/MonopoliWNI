@@ -137,10 +137,10 @@ export const KORUPTOR_CARDS: Card[] = [
 // ============================================================
 
 export const AUDIT_CARDS: Card[] = [
-  { id: 'audit_01', name: 'Audit Mendadak', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'random_1_pemain_sita_50_duit_kotor' }, frequency: 1, flavorText: 'Audit mendadak, semua kaget.' },
+  { id: 'audit_01', name: 'Audit Mendadak', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'random_1_pemain_sita_50_duit_kotor' }, evidenceGrant: 'screenshot_viral', evidenceBonus: 2, frequency: 1, flavorText: 'Audit mendadak, semua kaget.' },
   { id: 'audit_02', name: 'Tax Audit', tier: 'berat', category: 'audit', effect: { type: 'special', special: 'semua_pemain_bayar_10_saldo' }, frequency: 1, flavorText: 'Tax audit, semua harus bayar.' },
   { id: 'audit_03', name: 'KPK Datang', tier: 'berat', category: 'audit', effect: { type: 'special', special: 'pemain_duit_kotor_terbanyak_sita_semua' }, frequency: 1, flavorText: 'KPK datang, semua panik.' },
-  { id: 'audit_04', name: 'Sidak BPK', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'random_2_pemain_sita_75_duit_kotor' }, frequency: 1, flavorText: 'Sidak BPK, semua diawasi.' },
+  { id: 'audit_04', name: 'Sidak BPK', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'random_2_pemain_sita_75_duit_kotor' }, evidenceGrant: 'dokumen_resmi', evidenceBonus: 4, frequency: 1, flavorText: 'Sidak BPK, semua diawasi.' },
   { id: 'audit_05', name: 'Inspeksi Dadakan', tier: 'ringan', category: 'audit', effect: { type: 'special', special: 'random_1_pemain_bayar_20_duit_kotor' }, frequency: 1, flavorText: 'Inspeksi dadakan, semua harus siap.' },
 ];
 
@@ -162,7 +162,7 @@ export const SABOTASE_CARDS: Card[] = [
   { id: 'sab_08', name: 'Lapor Pak RT', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target mundur 3 langkah' }, frequency: 1, flavorText: 'Lapor Pak RT! Pilih pemain, paksa mundur 3 langkah ke belakang.' },
   { id: 'sab_09', name: 'Intervensi Buzzer', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_rent_freeze_2_babak' }, frequency: 1, flavorText: 'Buzzer intervensi! Pilih pemain, propertinya sewa gratis 2 babak.' },
   { id: 'sab_10', name: 'Calo Tiket Konser', tier: 'sedang', category: 'event_normal', effect: { type: 'money', value: -300000 }, frequency: 1, flavorText: 'Beli tiket konser lewat calo. Bayar Rp 300.000 ke Bank.' },
-  { id: 'sab_11', name: 'Surat Cinta Bea Cukai', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'bayar_30_persen_duit_kotor' }, frequency: 1, flavorText: 'Bea Cukai datang! Lapor semua uang kotor, bayar 30% pajak.' },
+  { id: 'sab_11', name: 'Surat Cinta Bea Cukai', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'bayar_30_persen_duit_kotor' }, evidenceGrant: 'rekening_koran', evidenceBonus: 5, frequency: 1, flavorText: 'Bea Cukai datang! Lapor semua uang kotor, bayar 30% pajak.' },
   { id: 'sab_12', name: 'Hack Rekening', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'curi_30_persen_kas_target' }, frequency: 1, flavorText: 'Hack rekening! Curi 30% kas dari target.' },
   { id: 'sab_13', name: 'Debt Collector', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_50_persen_kas_ke_kamu' }, frequency: 1, flavorText: 'Debt collector datang! Paksa target bayar 50% kas ke kamu.' },
 

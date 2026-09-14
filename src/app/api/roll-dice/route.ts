@@ -110,6 +110,19 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', playerId);
 
+      // Free Parking Pot: fine goes to pot
+      const { data: potRoom } = await supabaseAdmin
+        .from('rooms')
+        .select('pot_money')
+        .eq('id', roomId)
+        .maybeSingle();
+      if (potRoom) {
+        await supabaseAdmin
+          .from('rooms')
+          .update({ pot_money: (potRoom.pot_money || 0) + fine })
+          .eq('id', roomId);
+      }
+
       return NextResponse.json({
         success: true,
         dice1,

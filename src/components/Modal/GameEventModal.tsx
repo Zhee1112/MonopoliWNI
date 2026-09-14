@@ -7,11 +7,13 @@ interface GameEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContinue: () => void;
+  onEvidenceSelect?: (bonus: number) => void;
   cell: BoardCell;
   diceResult?: { dice1: number; dice2: number; total: number };
   playerName: string;
   playerLevel?: number;
   playerRank?: string;
+  playerEvidence?: Array<{ id?: string; bonusModifier?: number }>;
   rollResult?: {
     baseDice: number;
     statBonus: number;
@@ -28,11 +30,16 @@ interface GameEventModalProps {
   turnNumber?: number;
 }
 
-const EVIDENCE_OPTIONS = [
-  { id: 'kwitansi', name: 'Kwitansi Setoran Pajak Resmi', effect: '+1 Pertahanan DC / Pembuktian Sah', unlocked: true },
-  { id: 'rekaman', name: 'Rekaman Obrolan Oknum', effect: '+2 Persuasi (Membutuhkan Pengacara)', unlocked: false },
-  { id: 'mutasi', name: 'Mutasi Rekening Bersih', effect: '+1 Skor Kelicinan', unlocked: false },
-];
+const EVIDENCE_LABELS: Record<string, { name: string; effect: string; emoji: string }> = {
+  kwitansi_pajak: { name: 'Kwitansi Pajak Resmi', effect: '+1 Pertahanan DC', emoji: '🧾' },
+  rekaman_oknum: { name: 'Rekaman Oknum', effect: '+2 Persuasi', emoji: '🎙️' },
+  mutasi_rekening: { name: 'Mutasi Rekening', effect: '+1 Kelicinan', emoji: '💳' },
+  screenshot_viral: { name: 'Screenshot Viral', effect: '+2 Pertahanan DC', emoji: '📸' },
+  saksi_mata: { name: 'Saksi Mata', effect: '+3 Persuasi', emoji: '👁️' },
+  dokumen_resmi: { name: 'Dokumen Resmi', effect: '+4 Pertahanan DC', emoji: '📋' },
+  rekening_koran: { name: 'Rekening Koran', effect: '+5 Kelicinan', emoji: '🏦' },
+  bukti_viral: { name: 'Bukti Viral', effect: '+3 Pertahanan DC', emoji: '📱' },
+};
 
 const TIER_LABELS: Record<string, string> = { ringan: 'Kelas Ringan', sedang: 'Kelas Sedang', berat: 'Kelas Berat', legendary: 'Kelas Legendaris' };
 const TIER_COLORS: Record<string, string> = { ringan: 'bg-[#4edea3] text-[#003824]', sedang: 'bg-[#ffd56d] text-[#3e2e00]', berat: 'bg-[#f87171] text-[#450a0a]', legendary: 'bg-[#a855f7] text-[#fff]' };
@@ -63,22 +70,22 @@ function DiceFace({ value }: { value: number }) {
 }
 
 export default function GameEventModal({
-  isOpen, onClose, onContinue, cell, diceResult, playerName, playerLevel = 1,
-  playerRank = 'Magang', rollResult, takdirCard, kegiatanCard, ppnAmount = 0, turnNumber = 1,
+  isOpen, onClose, onContinue, onEvidenceSelect, cell, diceResult, playerName, playerLevel = 1,
+  playerRank = 'Magang', playerEvidence = [], rollResult, takdirCard, kegiatanCard, ppnAmount = 0, turnNumber = 1,
 }: GameEventModalProps) {
   const [selectedEvidence, setSelectedEvidence] = useState<string | null>(null);
   if (!isOpen) return null;
 
-  const d1 = diceResult?.dice1 || 3;
-  const d2 = diceResult?.dice2 || 4;
-  const baseDice = rollResult?.baseDice || d1 + d2;
-  const statBonus = rollResult?.statBonus || 0;
-  const luckBonus = rollResult?.luckBonus || 0;
-  const evidenceBonus = rollResult?.evidenceBonus || (selectedEvidence ? 1 : 0);
-  const totalScore = rollResult?.totalScore || baseDice + statBonus + luckBonus + evidenceBonus;
-  const dcTarget = rollResult?.dcTarget || 10;
-  const passed = rollResult?.passed || totalScore >= dcTarget;
-  const margin = rollResult?.margin || totalScore - dcTarget;
+  const d1 = diceResult?.dice1 ?? 3;
+  const d2 = diceResult?.dice2 ?? 4;
+  const baseDice = rollResult?.baseDice ?? (d1 + d2);
+  const statBonus = rollResult?.statBonus ?? 0;
+  const luckBonus = rollResult?.luckBonus ?? 0;
+  const evidenceBonus = rollResult?.evidenceBonus ?? (selectedEvidence ? (playerEvidence.find(e => e.id === selectedEvidence)?.bonusModifier || 1) : 0);
+  const totalScore = rollResult?.totalScore ?? (baseDice + statBonus + luckBonus + evidenceBonus);
+  const dcTarget = rollResult?.dcTarget ?? 10;
+  const passed = rollResult?.passed ?? (totalScore >= dcTarget);
+  const margin = rollResult?.margin ?? (totalScore - dcTarget);
   const cellName = cell.name || 'Petak Misterius';
   const isTax = cell.type === 'tax';
   const isKegiatan = !!kegiatanCard;
@@ -164,43 +171,47 @@ export default function GameEventModal({
                     <div>
                       <h2 className="text-xs font-bold uppercase tracking-wider text-[#ffd56d] flex items-center gap-1.5">
                         <span>Sisipkan Bukti Warga</span>
-                        <span className="text-slate-400 font-normal">(Slot 1/1)</span>
+                        <span className="text-slate-400 font-normal">(Slot {playerEvidence.length > 0 ? 1 : 0}/{Math.max(1, playerEvidence.length)})</span>
                       </h2>
                       <p className="text-xs text-slate-400 mt-0.5">Pilih inventaris legal untuk meningkatkan probabilitas lolos</p>
                     </div>
                     <span className="text-xs font-bold text-[#4edea3] bg-[#4edea3]/10 px-2.5 py-1 rounded-md border border-[#4edea3]/20">Terapkan Buff</span>
                   </div>
                   <div className="space-y-2.5">
-                    {EVIDENCE_OPTIONS.map((evidence) => {
-                      const isActive = selectedEvidence === evidence.id;
-                      const boxClass = isActive
-                        ? 'relative rounded-xl p-3 flex items-center justify-between transition-all bg-gradient-to-r from-[#123b24] to-[#0c2919] border-2 border-[#4edea3]/80 shadow-[0_0_20px_rgba(78,222,163,0.25)] cursor-pointer'
-                        : evidence.unlocked
-                          ? 'relative rounded-xl p-3 flex items-center justify-between transition-all bg-[#081b11]/70 border border-[#163623] hover:bg-[#0c2919] cursor-pointer'
-                          : 'relative rounded-xl p-3 flex items-center justify-between transition-all bg-[#081b11]/70 border border-[#163623] opacity-65 cursor-not-allowed';
-                      const iconClass = isActive
-                        ? 'w-6 h-6 rounded flex items-center justify-center text-xs bg-[#4edea3] text-slate-950 font-black'
-                        : 'w-6 h-6 rounded flex items-center justify-center text-xs bg-black/40 border border-slate-700 text-slate-400';
-                      return (
-                        <div key={evidence.id} onClick={() => evidence.unlocked && setSelectedEvidence(isActive ? null : evidence.id)} className={boxClass}>
-                          <div className="flex items-center space-x-3">
-                            <div className={iconClass}>{isActive ? '✓' : evidence.unlocked ? '' : '🔒'}</div>
-                            <div>
-                              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                                {evidence.name}
-                                {isActive && <span className="bg-emerald-800 text-[10px] text-[#4edea3] font-semibold px-1.5 py-0.2 rounded">Aktif</span>}
-                              </h3>
-                              <p className="text-xs text-[#4edea3] font-medium mt-0.5">{evidence.effect}</p>
+                    {playerEvidence.length === 0 ? (
+                      <div className="text-center py-6 text-[#588568]">
+                        <div className="text-2xl mb-2">📦</div>
+                        <div className="text-xs">Belum ada bukti. Dapatkan dari kartu Takdir!</div>
+                      </div>
+                    ) : (
+                      playerEvidence.map((ev, idx) => {
+                        const evId = ev.id || `ev_${idx}`;
+                        const label = EVIDENCE_LABELS[evId] || { name: evId, effect: `+${ev.bonusModifier || 1}`, emoji: '📄' };
+                        const isActive = selectedEvidence === evId;
+                        return (
+                          <div key={evId} onClick={() => setSelectedEvidence(isActive ? null : evId)} className={`relative rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-gradient-to-r from-[#123b24] to-[#0c2919] border-2 border-[#4edea3]/80 shadow-[0_0_20px_rgba(78,222,163,0.25)]'
+                              : 'bg-[#081b11]/70 border border-[#163623] hover:bg-[#0c2919]'
+                          }`}>
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-8 h-8 rounded flex items-center justify-center text-lg ${isActive ? 'bg-[#4edea3] text-slate-950' : 'bg-black/40 border border-slate-700'}`}>{label.emoji}</div>
+                              <div>
+                                <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                                  {label.name}
+                                  {isActive && <span className="bg-emerald-800 text-[10px] text-[#4edea3] font-semibold px-1.5 py-0.2 rounded">Aktif</span>}
+                                </h3>
+                                <p className="text-xs text-[#4edea3] font-medium mt-0.5">{label.effect}</p>
+                              </div>
                             </div>
+                            {isActive && <span className="text-xs font-bold text-[#ffd56d] px-2 py-1 bg-black/25 rounded">+{ev.bonusModifier || 1}</span>}
                           </div>
-                          {!evidence.unlocked && <span className="text-xs text-[#ffd56d]/70 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">Terkunci</span>}
-                          {isActive && <span className="text-xs font-bold text-slate-300 px-2 py-1 bg-black/25 rounded">Tier 1</span>}
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-3 italic text-center">*Slot dokumen dapat dibuka lebih banyak di Pengadilan Negeri (Petak 14)</p>
+                <p className="text-[11px] text-slate-400 mt-3 italic text-center">*Bukti diperoleh dari kartu Takdir. Pilih sebelum roll untuk bonus.</p>
               </section>
             </div>
 

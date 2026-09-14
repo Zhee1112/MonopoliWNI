@@ -598,6 +598,17 @@ export async function POST(request: NextRequest) {
               .from('players')
               .update({ clean_money: newMoney, status_effects: newStatusEffects })
               .eq('id', p.id);
+
+            // Free Parking Pot: add 10% of fines to pot
+            if (moneyChange < 0) {
+              const potAmount = Math.abs(Math.floor(moneyChange * 0.10));
+              if (potAmount > 0) {
+                const potRoom = await supabaseAdmin.from('rooms').select('pot_money').eq('id', roomId).maybeSingle();
+                if (potRoom.data) {
+                  await supabaseAdmin.from('rooms').update({ pot_money: (potRoom.data.pot_money || 0) + potAmount }).eq('id', roomId);
+                }
+              }
+            }
           }
           } // end else (non-swap)
         }

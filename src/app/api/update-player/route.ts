@@ -8,10 +8,27 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { roomId, playerId, cleanMoneyDelta, dirtyMoneyDelta, properties, statusEffects, luck, isBankrupt } = await request.json();
+    const { roomId, playerId, cleanMoneyDelta, dirtyMoneyDelta, properties, statusEffects, luck, isBankrupt, potCollect, evidence } = await request.json();
 
     if (!roomId || !playerId) {
       return NextResponse.json({ error: 'Room ID and Player ID are required' }, { status: 400 });
+    }
+
+    // Free Parking Pot: collect pot money and reset to 0
+    if (potCollect) {
+      const { data: room } = await supabaseAdmin
+        .from('rooms')
+        .select('pot_money')
+        .eq('id', roomId)
+        .maybeSingle();
+      const potAmount = room?.pot_money || 0;
+      if (potAmount > 0) {
+        await supabaseAdmin
+          .from('rooms')
+          .update({ pot_money: 0 })
+          .eq('id', roomId);
+      }
+      return NextResponse.json({ success: true, potAmount });
     }
 
     // Get current player
@@ -31,6 +48,23 @@ export async function POST(request: NextRequest) {
 
     if (cleanMoneyDelta !== undefined) {
       update.clean_money = Math.max(0, (dbPlayer.clean_money || 0) + cleanMoneyDelta);
+      // Free Parking Pot: add 10% of negative money changes to pot
+      if (cleanMoneyDelta < 0) {
+        const potAmount = Math.abs(Math.floor(cleanMoneyDelta * 0.10));
+        if (potAmount > 0) {
+          const { data: room } = await supabaseAdmin
+            .from('rooms')
+            .select('pot_money')
+            .eq('id', roomId)
+            .maybeSingle();
+          if (room) {
+            await supabaseAdmin
+              .from('rooms')
+              .update({ pot_money: (room.pot_money || 0) + potAmount })
+              .eq('id', roomId);
+          }
+        }
+      }
     }
     if (dirtyMoneyDelta !== undefined) {
       update.dirty_money = Math.max(0, (dbPlayer.dirty_money || 0) + dirtyMoneyDelta);
@@ -46,6 +80,9 @@ export async function POST(request: NextRequest) {
     }
     if (isBankrupt !== undefined) {
       update.is_bankrupt = isBankrupt;
+    }
+    if (evidence !== undefined) {
+      update.evidence = evidence;
     }
 
     if (Object.keys(update).length === 0) {

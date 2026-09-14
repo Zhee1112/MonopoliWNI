@@ -103,6 +103,8 @@ export interface Card {
   category: CardCategory;
   effect: CardEffect;
   luckModifier?: LuckModifier;
+  evidenceGrant?: string;
+  evidenceBonus?: number;
   frequency: number;
   flavorText: string;
 }

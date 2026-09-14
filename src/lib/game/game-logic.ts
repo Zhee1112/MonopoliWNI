@@ -366,6 +366,13 @@ export function processCardEffect(
     }
   }
 
+  // Evidence grants from certain cards
+  if (card.evidenceGrant && gachaRoll >= 3) {
+    const evidence = { id: card.evidenceGrant, type: 'document' as const, bonusModifier: card.evidenceBonus || 1, description: card.name, obtainedAt: Date.now() };
+    p.evidence = [...(p.evidence || []), evidence];
+    result.statusMessages.push(`Bukti diperoleh: ${card.evidenceGrant}`);
+  }
+
   return result;
 }
 
