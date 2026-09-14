@@ -404,6 +404,25 @@ export async function POST(request: NextRequest) {
         .update({ current_turn: nextTurn, last_activity_at: new Date().toISOString() })
         .eq('id', roomId);
 
+      // Clear has_rolled for the next player (same as normal path)
+      const nextPlayerId = room.turnOrder[nextTurn];
+      const { data: nextPlayer } = await supabaseAdmin
+        .from('players')
+        .select('status_effects')
+        .eq('id', nextPlayerId)
+        .maybeSingle();
+
+      if (nextPlayer) {
+        const nextEffects = ((nextPlayer.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
+          .filter(e => e.type !== 'has_rolled')
+          .map(e => ({ ...e, duration: e.duration - 1 }))
+          .filter(e => e.duration > 0);
+        await supabaseAdmin
+          .from('players')
+          .update({ status_effects: nextEffects })
+          .eq('id', nextPlayerId);
+      }
+
       return NextResponse.json({
         success: true,
         income: 0,

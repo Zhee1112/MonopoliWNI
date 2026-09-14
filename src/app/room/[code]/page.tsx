@@ -168,10 +168,17 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
   useEffect(() => { drawnCardIdsRef.current = drawnCardIds; }, [drawnCardIds]);
 
-  // Reset dice roll tracking when turn changes
+  // Reset dice roll tracking when turn changes — but check server status_effects for accuracy
   useEffect(() => {
-    setHasRolledThisTurn(false);
-  }, [room?.currentTurn]);
+    if (currentPlayer) {
+      const hasRolled = (currentPlayer.statusEffects || []).some(
+        (e: { type: string; duration: number }) => e.type === 'has_rolled'
+      );
+      setHasRolledThisTurn(hasRolled);
+    } else {
+      setHasRolledThisTurn(false);
+    }
+  }, [room?.currentTurn, currentPlayer?.statusEffects]);
 
   // Play sound when it's my turn
   useEffect(() => {
@@ -657,7 +664,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             }
           }
         });
-      } catch (err) { console.error('Roll dice error:', err); }
+      } catch (err) {
+        console.error('Roll dice error:', err);
+        setShowDiceModal(false);
+        setHasRolledThisTurn(true);
+      }
     },
     [room, broadcastCard, animatePion]
   );
@@ -862,6 +873,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
       // Step 1: Roll dice (with delay for visual)
       await new Promise((r) => setTimeout(r, 1200));
+      let rollSuccess = false;
       try {
         const rollRes = await fetch('/api/roll-dice', {
           method: 'POST',
@@ -869,25 +881,31 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           body: JSON.stringify({ roomId: room.id, playerId: activePlayerId }),
         });
         const rollData = await rollRes.json();
-        if (!rollRes.ok) { botPlayLock.current = false; return; }
-
-        // Step 2: Check if landed on property
-        const cell = getCellByIndex(rollData.newPosition);
-        if (cell.type === 'property') {
-          const property = getPropertyCells().find((p) => p.index === rollData.newPosition);
-          // Bot decision: buy if has enough money and price < 40% of cleanMoney
-          const botMoney = (activePlayer.cleanMoney || 0) + (rollData.moneyChange || 0);
-          if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
-            await new Promise((r) => setTimeout(r, 800));
-            await fetch('/api/buy-property', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
-            });
+        if (!rollRes.ok) {
+          console.error('Bot roll failed:', rollData.error);
+        } else {
+          rollSuccess = true;
+          // Step 2: Check if landed on property
+          const cell = getCellByIndex(rollData.newPosition);
+          if (cell.type === 'property') {
+            const property = getPropertyCells().find((p) => p.index === rollData.newPosition);
+            const botMoney = (activePlayer.cleanMoney || 0) + (rollData.moneyChange || 0);
+            if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
+              await new Promise((r) => setTimeout(r, 800));
+              await fetch('/api/buy-property', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
+              });
+            }
           }
         }
+      } catch (e) {
+        console.error('Bot roll/buy error:', e);
+      }
 
-        // Step 3: End turn (with delay)
+      // Step 3: Always try to end turn (even if roll failed, to unblock the game)
+      try {
         await new Promise((r) => setTimeout(r, 1000));
         await fetch('/api/end-turn', {
           method: 'POST',
@@ -895,7 +913,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           body: JSON.stringify({ roomId: room.id, playerId: activePlayerId }),
         });
       } catch (e) {
-        console.error('Bot play error:', e);
+        console.error('Bot end-turn error:', e);
       }
 
       botPlayLock.current = false;
@@ -1247,34 +1265,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         {/* Info Modal */}
       {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
 
-      {/* SURRENDER CONFIRMATION MODAL */}
-      {showSurrenderConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
-          <div className="rounded-xl p-6 sm:p-8 max-w-sm w-full mx-4 shadow-2xl border" style={{ backgroundColor: '#0a2014', borderColor: '#203a29' }}>
-            <div className="text-center mb-6">
-              <span className="text-4xl block mb-3">&#x1F6AA;</span>
-              <h3 className="text-lg font-bold text-[#f87171] mb-2">Menyerah dari Permainan?</h3>
-              <p className="text-sm text-[#9a907c]">Kamu akan keluar dari permainan ini. Tindakan ini tidak dapat dibatalkan.</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowSurrenderConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-                style={{ backgroundColor: '#152f1f', color: '#4edea3', border: '1px solid #203a29' }}
-              >
-                Batalkan
-              </button>
-              <button
-                onClick={confirmSurrender}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-                style={{ backgroundColor: '#3d1111', color: '#f87171', border: '1px solid #5c2020' }}
-              >
-                Ya, Menyerah
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     );
   }
@@ -1747,6 +1737,35 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       )}
 
       {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+
+      {/* SURRENDER CONFIRMATION MODAL */}
+      {showSurrenderConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
+          <div className="rounded-xl p-6 sm:p-8 max-w-sm w-full mx-4 shadow-2xl border" style={{ backgroundColor: '#0a2014', borderColor: '#203a29' }}>
+            <div className="text-center mb-6">
+              <span className="text-4xl block mb-3">&#x1F6AA;</span>
+              <h3 className="text-lg font-bold text-[#f87171] mb-2">Menyerah dari Permainan?</h3>
+              <p className="text-sm text-[#9a907c]">Kamu akan keluar dari permainan ini. Tindakan ini tidak dapat dibatalkan.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSurrenderConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: '#152f1f', color: '#4edea3', border: '1px solid #203a29' }}
+              >
+                Batalkan
+              </button>
+              <button
+                onClick={confirmSurrender}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: '#3d1111', color: '#f87171', border: '1px solid #5c2020' }}
+              >
+                Ya, Menyerah
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
