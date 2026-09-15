@@ -347,8 +347,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const handleDiceRollComplete = useCallback(
     async (result: { dice1: number; dice2: number; total: number }) => {
       if (!currentPlayerRef.current || !room) return;
-      setLastRoll(result);
-      SoundEffects.diceResult(result.total);
       try {
         const response = await fetch('/api/roll-dice', {
           method: 'POST',
@@ -357,6 +355,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
+
+        // Use SERVER dice as source of truth for everything
+        setLastRoll({ dice1: data.dice1, dice2: data.dice2, total: data.total });
+        SoundEffects.diceResult(data.total);
 
         // Handle skip turn (ganjil-genap or skip_turn status)
         if (data.skipTurn) {
@@ -375,13 +377,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         // Close dice modal BEFORE animation starts so user can see the board
         setShowDiceModal(false);
         
-        // Animate pion step by step — use ref for fresh position
+        // Animate pion step by step — use SERVER dice (data) as source of truth
         const freshPlayer = currentPlayerRef.current;
         if (!freshPlayer) return;
         const oldPosition = freshPlayer.position;
         const newPosition = data.newPosition;
         const playerId = freshPlayer.id;
-        const rolledDice = { dice1: result.dice1, dice2: result.dice2 };
+        const rolledDice = { dice1: data.dice1, dice2: data.dice2 };
         
         animatePion(playerId, oldPosition, newPosition, () => {
           // Use refs inside callback to avoid stale closures
@@ -398,7 +400,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           // Trigger GachaRollModal for special petaks (tax, takdir, kegiatan)
           if (cell.type === 'tax' || cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
             setGameEventCell(cell);
-            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+            setGameEventDice({ dice1: data.dice1, dice2: data.dice2, total: data.total });
 
             // Set event card for draw types (drawn but not yet shown)
             let drawnTakdir = drawnTakdirCard;
