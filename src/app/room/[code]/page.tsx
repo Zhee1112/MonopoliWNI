@@ -292,7 +292,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setError('Gagal memulai game');
       setStarting(false);
     }
-  }, [room, currentPlayer, players]);
+  }, [room, currentPlayer, players, selectedGameMode]);
 
   const handleSendChat = useCallback(() => {
     if (!chatInput.trim() || !currentPlayer) return;
@@ -1269,7 +1269,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       <>
         <PostGameModal
           isOpen={true}
-          onClose={() => {}}
+          onClose={() => { sessionStorage.removeItem('player'); sessionStorage.removeItem('room'); router.push('/'); }}
           rankings={gameRankings}
           achievements={gameAchievements}
           currentPlayerId={currentPlayer?.id || ''}
@@ -1481,13 +1481,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 <span className="tracking-wide">SUDAH ROLL</span>
               </span>
             )}
-            <button
-              onClick={handleEndTurn}
-              className="h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold transition-colors"
-              style={{ backgroundColor: '#052011', border: '1px solid #203a29', color: '#d1c5af' }}
-            >
-              Selesai
-            </button>
+            {isMyTurn && hasRolledThisTurn && (
+              <button
+                onClick={handleEndTurn}
+                className="h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold transition-colors"
+                style={{ backgroundColor: '#052011', border: '1px solid #203a29', color: '#d1c5af' }}
+              >
+                Selesai
+              </button>
+            )}
             <button
               onClick={handleSurrender}
               className="h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold transition-colors"
@@ -1628,9 +1630,22 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         <GameEventModal
           isOpen={showGameEventModal}
           onClose={() => setShowGameEventModal(false)}
+          onEvidenceSelect={(bonus) => {
+            // Recalculate DnD score with evidence bonus
+            setGameEventRollResult(prev => {
+              if (!prev) return prev;
+              const newTotal = prev.baseDice + prev.statBonus + prev.luckBonus + bonus;
+              const passed = newTotal >= prev.dcTarget;
+              return { ...prev, evidenceBonus: bonus, totalScore: newTotal, passed, margin: newTotal - prev.dcTarget };
+            });
+          }}
           onBribe={() => {
             const bribeCost = Math.max(50000, Math.floor((currentPlayer.cleanMoney || 0) * 0.15));
-            if ((currentPlayer.cleanMoney || 0) < bribeCost) return;
+            if ((currentPlayer.cleanMoney || 0) < bribeCost) {
+              SoundEffects.error();
+              broadcastAnnouncement({ type: 'system', playerName: currentPlayer.name, message: 'gagal sogok — uang tidak cukup!', detail: `Butuh Rp ${bribeCost.toLocaleString('id-ID')}, punya Rp ${(currentPlayer.cleanMoney || 0).toLocaleString('id-ID')}` });
+              return;
+            }
             const newMoney = Math.max(0, currentPlayer.cleanMoney - bribeCost);
             setCurrentPlayer(prev => prev ? { ...prev, cleanMoney: newMoney } : null);
             setBribedThisEvent(true);

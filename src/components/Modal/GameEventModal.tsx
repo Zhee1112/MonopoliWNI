@@ -197,7 +197,11 @@ export default function GameEventModal({
                         const label = EVIDENCE_LABELS[evId] || { name: evId, effect: `+${ev.bonusModifier || 1}`, emoji: '📄' };
                         const isActive = selectedEvidence === evId;
                         return (
-                          <div key={evId} onClick={() => setSelectedEvidence(isActive ? null : evId)} className={`relative rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer ${
+                          <div key={evId} onClick={() => {
+                            const newSelected = isActive ? null : evId;
+                            setSelectedEvidence(newSelected);
+                            onEvidenceSelect?.(newSelected ? (playerEvidence.find(e => (e.id || `ev_${playerEvidence.indexOf(e)}`) === newSelected)?.bonusModifier || 0) : 0);
+                          }} className={`relative rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer ${
                             isActive
                               ? 'bg-gradient-to-r from-[#123b24] to-[#0c2919] border-2 border-[#4edea3]/80 shadow-[0_0_20px_rgba(78,222,163,0.25)]'
                               : 'bg-[#081b11]/70 border border-[#163623] hover:bg-[#0c2919]'
