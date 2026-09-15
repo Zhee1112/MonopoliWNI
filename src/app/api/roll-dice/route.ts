@@ -63,8 +63,11 @@ export async function POST(request: NextRequest) {
     // Check skip_turn: auto-skip without rolling
     if (statusEffects.some(e => e.type === 'skip_turn')) {
       const skipEffect = statusEffects.find(e => e.type === 'skip_turn');
-      // Mark has_rolled so they can end turn
-      const updatedEffects = [...statusEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }];
+      // Decrement skip_turn and mark has_rolled so they can end turn
+      const updatedEffects = statusEffects
+        .map(e => e.type === 'skip_turn' ? { ...e, duration: e.duration - 1 } : e)
+        .filter(e => e.duration > 0)
+        .concat([{ type: 'has_rolled', duration: 999, effect: 'already_rolled' }]);
       await supabaseAdmin
         .from('players')
         .update({ status_effects: updatedEffects })

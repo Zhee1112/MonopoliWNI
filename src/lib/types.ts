@@ -229,6 +229,7 @@ export interface Room {
   potMoney: number;
   gameMode: GameMode;
   totalRounds: number;
+  roundNumber: number;
   createdAt: string;
 }
 
@@ -271,6 +272,7 @@ export function mapRoomFromDB(dbRoom: Record<string, unknown>): Room {
     potMoney: (dbRoom.pot_money as number) || 0,
     gameMode: (dbRoom.game_mode as GameMode) || 'bundir',
     totalRounds: (dbRoom.total_rounds as number) || 20,
+    roundNumber: (dbRoom.round_number as number) || 1,
     createdAt: dbRoom.created_at as string,
   };
 }

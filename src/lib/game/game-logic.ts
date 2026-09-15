@@ -1028,27 +1028,67 @@ export interface KegiatanEffectResult {
   outcome: 'positive' | 'negative';
   statusMessage: string;
   shouldCheckBankruptcy: boolean;
+  specialEffect?: { type: string; value: number };
 }
 
 export function processKegiatanEffect(
   card: KegiatanCard,
   player: Player,
-  gachaRoll: number
+  gachaRoll: number,
+  passed: boolean
 ): KegiatanEffectResult {
-  // Gacha roll determines positive or negative outcome
-  // Roll >= 7 = positive, < 7 = negative (weighted by player luck)
-  const luckBonus = Math.floor(player.luck / 20);
-  const adjustedRoll = gachaRoll + luckBonus;
-  const isPositive = adjustedRoll >= 7;
+  const isPositive = passed;
 
   const outcome = isPositive ? card.positive : card.negative;
   const roleBonus = card.roleBonus[player.selectedRole || player.role] || 0;
-  const moneyWithRole = Math.floor(outcome.money * (1 + roleBonus));
 
   const updatedPlayer = { ...player };
-  updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyWithRole);
 
+  let moneyChange = 0;
   let luckChange = 0;
+  let specialEffect: { type: string; value: number } | undefined;
+
+  if (outcome.special) {
+    if (outcome.special === 'hasil_x3') {
+      const roll1 = Math.floor(Math.random() * 6) + 1;
+      const roll2 = Math.floor(Math.random() * 6) + 1;
+      const roll3 = Math.floor(Math.random() * 6) + 1;
+      const best = Math.max(roll1, roll2, roll3);
+      moneyChange = best * 100000;
+      updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+      specialEffect = { type: 'hasil_x3', value: moneyChange };
+    } else if (outcome.special === 'hasil_div3') {
+      const roll1 = Math.floor(Math.random() * 6) + 1;
+      const roll2 = Math.floor(Math.random() * 6) + 1;
+      const roll3 = Math.floor(Math.random() * 6) + 1;
+      const worst = Math.min(roll1, roll2, roll3);
+      moneyChange = -(worst * 50000);
+      updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+      specialEffect = { type: 'hasil_div3', value: moneyChange };
+    } else if (outcome.special === 'spin_hadiah') {
+      const prizes = [100000, 200000, 300000, 500000, 750000, 1000000];
+      moneyChange = prizes[Math.floor(Math.random() * prizes.length)];
+      updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+      specialEffect = { type: 'spin_hadiah', value: moneyChange };
+    } else if (outcome.special === 'spin_denda') {
+      const fines = [50000, 100000, 150000, 200000, 300000, 500000];
+      moneyChange = -(fines[Math.floor(Math.random() * fines.length)]);
+      updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+      specialEffect = { type: 'spin_denda', value: moneyChange };
+    } else if (outcome.special === 'random_500rb_5jt') {
+      moneyChange = Math.floor(Math.random() * 4500000) + 500000;
+      updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+      specialEffect = { type: 'random_500rb_5jt', value: moneyChange };
+    } else if (outcome.special === 'random_200rb_2jt') {
+      moneyChange = -(Math.floor(Math.random() * 1800000) + 200000);
+      updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+      specialEffect = { type: 'random_200rb_2jt', value: moneyChange };
+    }
+  } else {
+    moneyChange = Math.floor(outcome.money * (1 + roleBonus));
+    updatedPlayer.cleanMoney = Math.max(0, updatedPlayer.cleanMoney + moneyChange);
+  }
+
   if (isPositive && card.positive.luckBonus) {
     luckChange = card.positive.luckBonus;
     updatedPlayer.luck = Math.max(0, Math.min(100, updatedPlayer.luck + luckChange));
@@ -1057,16 +1097,23 @@ export function processKegiatanEffect(
     updatedPlayer.luck = Math.max(0, Math.min(100, updatedPlayer.luck + luckChange));
   }
 
-  const msg = isPositive
-    ? `${card.name}: +Rp ${Math.abs(moneyWithRole).toLocaleString('id-ID')}`
-    : `${card.name}: -Rp ${Math.abs(moneyWithRole).toLocaleString('id-ID')}`;
+  let msg: string;
+  if (specialEffect) {
+    const prefix = isPositive ? 'WIN' : 'LOSE';
+    msg = `${card.name} [${prefix}]: ${specialEffect.type.replace(/_/g, ' ')} = Rp ${Math.abs(specialEffect.value).toLocaleString('id-ID')}`;
+  } else {
+    msg = isPositive
+      ? `${card.name}: +Rp ${Math.abs(moneyChange).toLocaleString('id-ID')}`
+      : `${card.name}: -Rp ${Math.abs(moneyChange).toLocaleString('id-ID')}`;
+  }
 
   return {
     updatedPlayer,
-    moneyChange: moneyWithRole,
+    moneyChange,
     luckChange,
     outcome: isPositive ? 'positive' : 'negative',
     statusMessage: msg,
-    shouldCheckBankruptcy: !isPositive && moneyWithRole < 0,
+    shouldCheckBankruptcy: !isPositive && moneyChange < 0,
+    specialEffect,
   };
 }

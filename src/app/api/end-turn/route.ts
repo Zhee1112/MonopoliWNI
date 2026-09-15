@@ -386,55 +386,6 @@ export async function POST(request: NextRequest) {
     }
 
     const statusEffects = (player.statusEffects as Array<{ type: string; duration: number; effect: string }>) || [];
-    const skipEffect = statusEffects.find(e => e.type === 'skip_turn' && e.duration > 0);
-
-    if (skipEffect) {
-      const updatedEffects = statusEffects.map(e =>
-        e.type === 'skip_turn' ? { ...e, duration: e.duration - 1 } : e
-      ).filter(e => e.duration > 0);
-
-      await supabaseAdmin
-        .from('players')
-        .update({ status_effects: updatedEffects })
-        .eq('id', playerId);
-
-      const nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
-      await supabaseAdmin
-        .from('rooms')
-        .update({ current_turn: nextTurn, last_activity_at: new Date().toISOString() })
-        .eq('id', roomId);
-
-      // Clear has_rolled for the next player (same as normal path)
-      const nextPlayerId = room.turnOrder[nextTurn];
-      const { data: nextPlayer } = await supabaseAdmin
-        .from('players')
-        .select('status_effects')
-        .eq('id', nextPlayerId)
-        .maybeSingle();
-
-      if (nextPlayer) {
-        const nextEffects = ((nextPlayer.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
-          .filter(e => e.type !== 'has_rolled')
-          .map(e => ({ ...e, duration: e.duration - 1 }))
-          .filter(e => e.duration > 0);
-        await supabaseAdmin
-          .from('players')
-          .update({ status_effects: nextEffects })
-          .eq('id', nextPlayerId);
-      }
-
-      return NextResponse.json({
-        success: true,
-        income: 0,
-        skipped: true,
-        skipReason: skipEffect.effect,
-        nextPlayerId: room.turnOrder[nextTurn],
-        nextTurn,
-        newBalance: player.cleanMoney,
-        gameOver: false,
-        gameMode: room.gameMode,
-      });
-    }
 
     const role = getNormalRoleById(player.role);
     let income = 0;
@@ -459,10 +410,20 @@ export async function POST(request: NextRequest) {
       .eq('id', playerId);
 
     const nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
+    const isNewRound = nextTurn === 0;
+    const currentRoundNumber = (dbRoom.round_number as number) || 1;
+
+    const roomUpdate: Record<string, unknown> = {
+      current_turn: nextTurn,
+      last_activity_at: new Date().toISOString(),
+    };
+    if (isNewRound) {
+      roomUpdate.round_number = currentRoundNumber + 1;
+    }
 
     await supabaseAdmin
       .from('rooms')
-      .update({ current_turn: nextTurn, last_activity_at: new Date().toISOString() })
+      .update(roomUpdate)
       .eq('id', roomId);
 
     // Check if new round started (all players have had a turn)
@@ -471,9 +432,9 @@ export async function POST(request: NextRequest) {
     let globalEventEmoji = '';
     let globalEventDescription = '';
 
-    if (nextTurn === 0) {
+    if (isNewRound) {
       // New round! Check for global events
-      const newRound = Math.floor(room.currentTurn / room.turnOrder.length) + 1;
+      const newRound = currentRoundNumber + 1;
       const { getGlobalEventsForRound } = await import('@/lib/game/global-events');
       const triggeredEvents = getGlobalEventsForRound(newRound);
 
@@ -651,7 +612,7 @@ export async function POST(request: NextRequest) {
     });
 
     const updatedRoom = { ...room, currentTurn: nextTurn };
-    const completedRound = Math.floor(room.currentTurn / room.turnOrder.length) + 1;
+    const completedRound = isNewRound ? currentRoundNumber + 1 : currentRoundNumber;
     const gameOverResult = await checkGameOver(supabaseAdmin, roomId, updatedRoom, completedRound);
 
     if (gameOverResult.gameOver) {
@@ -730,7 +691,7 @@ export async function POST(request: NextRequest) {
       newBalance: player.cleanMoney + income,
       gameOver: false,
       gameMode: room.gameMode,
-      currentRound: Math.floor(nextTurn / room.turnOrder.length) + 1,
+      currentRound: isNewRound ? currentRoundNumber + 1 : currentRoundNumber,
       totalRounds: room.totalRounds,
       globalEventTriggered,
       globalEventName,

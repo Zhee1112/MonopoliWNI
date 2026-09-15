@@ -1392,7 +1392,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           activePlayerName={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name}
           activePlayerTokenColor={players.find((p) => p.id === room.turnOrder[room.currentTurn])?.tokenColor}
           potMoney={room.potMoney || 0}
-          round={Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}
+          round={room.roundNumber || 1}
           totalRounds={room.totalRounds || 20}
           propertyInfo={dbProperties.map((dp) => {
             const owner = players.find(p => p.id === dp.owner_id);
@@ -1507,7 +1507,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       <footer className="w-full py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.5)] hidden md:block fixed bottom-14 left-0 z-30" style={{ backgroundColor: '#001206' }}>
         <div className="w-full px-5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4 text-[#d1c5af] text-xs">
-            <span>Babak <strong className="text-[#ffd56d]">{Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}</strong> / {room.totalRounds || 20}</span>
+            <span>Babak <strong className="text-[#ffd56d]">{room.roundNumber || 1}</strong> / {room.totalRounds || 20}</span>
             <span>|</span>
             <span>Giliran: <strong className="text-[#4edea3]">{players.find((p) => p.id === room.turnOrder[room.currentTurn])?.name || '...'}</strong></span>
           </div>
@@ -1714,13 +1714,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               }
             } else if (gameEventCell?.type === 'draw_kegiatan' && drawnKegiatanCard) {
               SoundEffects.cardDraw();
-              const result = processKegiatanEffect(drawnKegiatanCard, currentPlayer, lastGachaRoll);
+              const rollResult = gameEventRollResult;
+              const passed = rollResult?.passed ?? true;
+              const result = processKegiatanEffect(drawnKegiatanCard, currentPlayer, lastGachaRoll, passed);
               updatedPlayerData = result.updatedPlayer;
               setCurrentPlayer(result.updatedPlayer);
               broadcastAnnouncement({
                 type: 'card',
                 playerName: currentPlayer.name,
-                message: `menarik kartu ${drawnKegiatanCard.name}`,
+                message: `menarik kartu ${drawnKegiatanCard.name} — ${passed ? 'LOLOS!' : 'GAGAL!'}`,
                 detail: result.statusMessage,
               });
               effectApplied = true;
