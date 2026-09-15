@@ -10,7 +10,7 @@ import { mapPlayerFromDB, mapRoomFromDB } from '@/lib/types';
 export async function POST(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { roomId, playerId } = await request.json();
+    const { roomId, playerId, dice1: clientDice1, dice2: clientDice2 } = await request.json();
 
     if (!roomId || !playerId) {
       return NextResponse.json(
@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Roll two dice
-    const dice1 = rollDice(6);
-    const dice2 = rollDice(6);
+    // Use client dice values (same dice shown in animation)
+    const dice1 = Math.max(1, Math.min(6, Number(clientDice1) || rollDice(6)));
+    const dice2 = Math.max(1, Math.min(6, Number(clientDice2) || rollDice(6)));
     let total = dice1 + dice2;
 
     // Check dice_modifier (Ganjil Genap): odd dice = skip + fine
