@@ -15,6 +15,7 @@ import GachaRollModal from '@/components/Modal/GachaRollModal';
 import GlobalEventModal from '@/components/Modal/GlobalEventModal';
 import PostGameModal from '@/components/Modal/PostGameModal';
 import UpgradePropertyModal from '@/components/Modal/UpgradePropertyModal';
+import DefenseModal from '@/components/Modal/DefenseModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat, useRealtimeAnnouncement, useRealtimeProperties, PropertyRow } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
@@ -54,6 +55,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalCell, setUpgradeModalCell] = useState<BoardCell | null>(null);
   const [upgradeModalIsOwn, setUpgradeModalIsOwn] = useState(true);
+  const [showDefenseModal, setShowDefenseModal] = useState(false);
+  const [defenseAuditAmount, setDefenseAuditAmount] = useState(0);
+  const [defenseCallback, setDefenseCallback] = useState<((option: string, success: boolean) => void) | null>(null);
   const [showGameEventModal, setShowGameEventModal] = useState(false);
   const [gameEventCell, setGameEventCell] = useState<BoardCell | null>(null);
   const [gameEventDice, setGameEventDice] = useState<{ dice1: number; dice2: number; total: number } | undefined>(undefined);
@@ -879,18 +883,38 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           console.error('Bot roll failed:', rollData.error);
         } else {
           rollSuccess = true;
-          // Step 2: Check if landed on property
+          // Step 2: Handle property cells
           const cell = getCellByIndex(rollData.newPosition);
           if (cell.type === 'property') {
             const property = getPropertyCells().find((p) => p.index === rollData.newPosition);
             const botMoney = (activePlayer.cleanMoney || 0) + (rollData.moneyChange || 0);
-            if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
-              await new Promise((r) => setTimeout(r, 800));
-              await fetch('/api/buy-property', {
-                method: 'POST',
+
+            // First try to pay rent (property owned by another player)
+            try {
+              const rentRes = await fetch('/api/buy-property', {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
+                body: JSON.stringify({ roomId: room.id, payerId: activePlayerId, propertyId: rollData.newPosition }),
               });
+              if (rentRes.ok) {
+                // Rent paid successfully
+              } else if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
+                // Unowned — try to buy
+                await fetch('/api/buy-property', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
+                });
+              }
+            } catch {
+              // Rent failed (unowned or owned by self) — try to buy if affordable
+              if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
+                await fetch('/api/buy-property', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
+                });
+              }
             }
           }
         }
@@ -1625,6 +1649,21 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         onTakeover={handleTakeoverProperty}
         onClose={() => { setShowUpgradeModal(false); setUpgradeModalCell(null); }}
         isOwnProperty={upgradeModalIsOwn}
+      />
+      <DefenseModal
+        isOpen={showDefenseModal}
+        auditAmount={defenseAuditAmount}
+        playerStats={currentPlayer.stats}
+        playerMoney={currentPlayer.cleanMoney || 0}
+        dirtyMoney={currentPlayer.dirtyMoney || 0}
+        onDefense={(option, rollResult) => {
+          setShowDefenseModal(false);
+          defenseCallback?.(option.name, rollResult?.success ?? false);
+        }}
+        onClose={() => {
+          setShowDefenseModal(false);
+          defenseCallback?.('accept', false);
+        }}
       />
       {gameEventCell && (
         <GameEventModal

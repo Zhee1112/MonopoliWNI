@@ -384,6 +384,11 @@ export function useRealtimeAnnouncement(roomCode: string) {
         id: crypto.randomUUID(),
         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       };
+      // Add to local state immediately so sender sees its own announcements
+      setAnnouncements((prev) => {
+        const next = [...prev, full];
+        return next.length > 20 ? next.slice(-20) : next;
+      });
       await supabase.channel(`announcements:${roomCode}`).send({
         type: 'broadcast',
         event: 'game_announcement',

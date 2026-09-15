@@ -240,15 +240,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Not enough money to pay rent' }, { status: 400 });
     }
 
-    // Transfer money
+    // Transfer money: payer pays rent, owner gets 90%, pot gets 10%
+    const potAmount = Math.floor(rent * 0.10);
+    const ownerShare = rent - potAmount;
     const newPayerBalance = payer.cleanMoney - rent;
     const isPayerBankrupt = newPayerBalance < 0;
 
     await supabaseAdmin.from('players').update({ clean_money: newPayerBalance }).eq('id', payerId);
-    await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + rent }).eq('id', owner.id);
+    await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + ownerShare }).eq('id', owner.id);
 
     // Free Parking Pot: 10% of rent goes to pot
-    const potAmount = Math.floor(rent * 0.10);
     if (potAmount > 0) {
       const { data: room } = await supabaseAdmin
         .from('rooms')

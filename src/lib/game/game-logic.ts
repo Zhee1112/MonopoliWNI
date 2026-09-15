@@ -394,13 +394,19 @@ function processMoneyEffect(
   const value = card.effect.value || 0;
   const target = card.effect.target || 'self';
   const special = card.effect.special || '';
+  const isKoruptor = card.category === 'koruptor';
 
   if (target === 'self') {
-    // Direct money change to self
-    p.cleanMoney = Math.max(0, p.cleanMoney + value);
-    if (value > 0) {
-      result.statusMessages.push(`+Rp ${value.toLocaleString('id-ID')} dari ${card.name}`);
+    // Direct money change to self — koruptor cards add to dirtyMoney
+    if (isKoruptor && value > 0) {
+      p.dirtyMoney = Math.max(0, p.dirtyMoney + value);
+      result.statusMessages.push(`+Rp ${value.toLocaleString('id-ID')} duit kotor dari ${card.name}`);
     } else {
+      p.cleanMoney = Math.max(0, p.cleanMoney + value);
+    }
+    if (value > 0 && !isKoruptor) {
+      result.statusMessages.push(`+Rp ${value.toLocaleString('id-ID')} dari ${card.name}`);
+    } else if (value < 0) {
       result.statusMessages.push(`-Rp ${Math.abs(value).toLocaleString('id-ID')} untuk ${card.name}`);
       result.shouldCheckBankruptcy = true;
     }
@@ -445,6 +451,74 @@ function processMoneyEffect(
     result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Ditagih Invoice' });
     result.statusMessages.push(`Bayar 20% saldo: -Rp ${penalty.toLocaleString('id-ID')}`);
     result.shouldCheckBankruptcy = true;
+  } else if (special.startsWith('luck_') && isKoruptor) {
+    // Koruptor card specials — apply luck penalty and side effects
+    const luckMatch = special.match(/luck_(\d+)/);
+    const luckPenalty = luckMatch ? parseInt(luckMatch[1]) : 20;
+    p.luck = Math.max(0, p.luck - luckPenalty);
+    result.statusMessages.push(`Hoki -${luckPenalty} karena korupsi!`);
+
+    if (special.includes('semua_plus500rb')) {
+      for (const other of allPlayers) {
+        if (other.id !== p.id) {
+          other.cleanMoney = Math.max(0, other.cleanMoney + 500000);
+          result.moneyChanges.push({ playerId: other.id, amount: 500000, label: 'Korupsi sharing' });
+        }
+      }
+      result.statusMessages.push(`Semua pemain +Rp 500.000 (syaratWF)`);
+    } else if (special.includes('semua_plus300rb')) {
+      for (const other of allPlayers) {
+        if (other.id !== p.id) {
+          other.cleanMoney = Math.max(0, other.cleanMoney + 300000);
+          result.moneyChanges.push({ playerId: other.id, amount: 300000, label: 'Korupsi sharing' });
+        }
+      }
+      result.statusMessages.push(`Semua pemain +Rp 300.000`);
+    } else if (special.includes('semua_plus200rb')) {
+      for (const other of allPlayers) {
+        if (other.id !== p.id) {
+          other.cleanMoney = Math.max(0, other.cleanMoney + 200000);
+          result.moneyChanges.push({ playerId: other.id, amount: 200000, label: 'Korupsi sharing' });
+        }
+      }
+      result.statusMessages.push(`Semua pemain +Rp 200.000`);
+    } else if (special.includes('semua_plus1jt')) {
+      for (const other of allPlayers) {
+        if (other.id !== p.id) {
+          other.cleanMoney = Math.max(0, other.cleanMoney + 1000000);
+          result.moneyChanges.push({ playerId: other.id, amount: 1000000, label: 'Korupsi sharing' });
+        }
+      }
+      result.statusMessages.push(`Semua pemain +Rp 1.000.000`);
+    } else if (special.includes('semua_plus400rb')) {
+      for (const other of allPlayers) {
+        if (other.id !== p.id) {
+          other.cleanMoney = Math.max(0, other.cleanMoney + 400000);
+          result.moneyChanges.push({ playerId: other.id, amount: 400000, label: 'Korupsi sharing' });
+        }
+      }
+      result.statusMessages.push(`Semua pemain +Rp 400.000`);
+    }
+
+    if (special.includes('bayar_1jt')) {
+      const penalty = 1000000;
+      p.cleanMoney = Math.max(0, p.cleanMoney - penalty);
+      result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Denda korupsi' });
+      result.statusMessages.push(`Bayar denda: -Rp ${penalty.toLocaleString('id-ID')}`);
+      result.shouldCheckBankruptcy = true;
+    } else if (special.includes('bayar_2jt')) {
+      const penalty = 2000000;
+      p.cleanMoney = Math.max(0, p.cleanMoney - penalty);
+      result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Denda korupsi' });
+      result.statusMessages.push(`Bayar denda: -Rp ${penalty.toLocaleString('id-ID')}`);
+      result.shouldCheckBankruptcy = true;
+    } else if (special.includes('bayar_500rb')) {
+      const penalty = 500000;
+      p.cleanMoney = Math.max(0, p.cleanMoney - penalty);
+      result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Denda korupsi' });
+      result.statusMessages.push(`Bayar denda: -Rp ${penalty.toLocaleString('id-ID')}`);
+      result.shouldCheckBankruptcy = true;
+    }
   }
 }
 
