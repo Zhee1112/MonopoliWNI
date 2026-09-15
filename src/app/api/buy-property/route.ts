@@ -290,7 +290,7 @@ export async function PUT(request: NextRequest) {
       rent,
       ownerName: owner.name,
       newPayerBalance: payer.cleanMoney - rent,
-      newOwnerBalance: owner.cleanMoney + rent,
+      newOwnerBalance: owner.cleanMoney + ownerShare,
     });
   } catch (error) {
     console.error('Pay rent error:', error);

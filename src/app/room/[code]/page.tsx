@@ -398,6 +398,13 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           );
           setHasRolledThisTurn(true);
           const cell = getCellByIndex(newPosition);
+          const freshName = currentPlayerRef.current?.name || 'Pemain';
+          broadcastAnnouncement({
+            type: 'roll',
+            playerName: freshName,
+            message: `melempar dadu ${result.dice1} + ${result.dice2} = ${result.dice1 + result.dice2}`,
+            detail: `mendarat di ${cell.name} ${cell.emoji || ''}`,
+          });
           
           // Trigger GachaRollModal for special petaks (tax, takdir, kegiatan)
           if (cell.type === 'tax' || cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
@@ -588,6 +595,14 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               }
             }
 
+            // Announce corner cell effect
+            broadcastAnnouncement({
+              type: 'system',
+              playerName: currentPlayerRef.current?.name || 'Pemain',
+              message: eventDescription,
+              detail: '',
+            });
+
             // Show GameEventModal with corner info
             setGameEventCell(cell);
             setGameEventDice({ dice1: rolledDice.dice1, dice2: rolledDice.dice2, total: rolledDice.dice1 + rolledDice.dice2 });
@@ -766,10 +781,22 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       if (!response.ok) throw new Error(data.error);
       setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: data.newBalance } : null);
       setLastRoll(null);
+      broadcastAnnouncement({
+        type: 'turn',
+        playerName: currentPlayer.name,
+        message: `mengakhiri giliran`,
+        detail: `Gaji: +Rp ${(data.income || 0).toLocaleString('id-ID')}`,
+      });
       if (data.gameOver) {
         SoundEffects.gameOver();
         setGameOver(true);
         setWinnerName(data.winnerName || 'Tidak ada');
+        broadcastAnnouncement({
+          type: 'system',
+          playerName: 'SYSTEM',
+          message: `GAME OVER! Pemenang: ${data.winnerName || 'Tidak ada'}`,
+          detail: '',
+        });
         if (data.rankings) setGameRankings(data.rankings);
         if (data.achievements) {
           setGameAchievements(data.achievements);
@@ -784,6 +811,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         setGlobalEventEmoji(data.globalEventEmoji);
         setGlobalEventDescription(data.globalEventDescription);
         setShowGlobalEventModal(true);
+        broadcastAnnouncement({
+          type: 'event',
+          playerName: 'SYSTEM',
+          message: `${data.globalEventEmoji} Event Global: ${data.globalEventName}`,
+          detail: data.globalEventDescription,
+        });
       }
     } catch (err) { console.error('End turn error:', err); }
   }, [currentPlayer, room]);
@@ -891,13 +924,23 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
             // First try to pay rent (property owned by another player)
             try {
-              const rentRes = await fetch('/api/buy-property', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomId: room.id, payerId: activePlayerId, propertyId: rollData.newPosition }),
-              });
-              if (rentRes.ok) {
-                // Rent paid successfully
+              const dbProp = dbProperties.find((p) => p.board_index === rollData.newPosition);
+              if (dbProp && dbProp.owner_id && dbProp.owner_id !== activePlayerId) {
+                const rentRes = await fetch('/api/buy-property', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ roomId: room.id, payerId: activePlayerId, propertyId: dbProp.id }),
+                });
+                if (rentRes.ok) {
+                  // Rent paid successfully
+                } else if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
+                  // Unowned — try to buy
+                  await fetch('/api/buy-property', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
+                  });
+                }
               } else if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
                 // Unowned — try to buy
                 await fetch('/api/buy-property', {
@@ -907,7 +950,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 });
               }
             } catch {
-              // Rent failed (unowned or owned by self) — try to buy if affordable
+              // Rent failed — try to buy if affordable
               if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
                 await fetch('/api/buy-property', {
                   method: 'POST',
