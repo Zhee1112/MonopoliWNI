@@ -70,31 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authChecked = useRef(false);
 
   useEffect(() => {
-    console.log('[AuthProvider] useEffect mounted, fetching session...');
-
-    // Fallback: if auth never resolves, stop loading after 8s
-    const fallbackTimeout = setTimeout(() => {
-      if (!authChecked.current) {
-        console.warn('[AuthProvider] Fallback timeout reached — forcing loading=false');
-        setLoading(false);
-      }
-    }, 8000);
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
-      console.log('[AuthProvider] getSession result:', { hasSession: !!currentSession, error: error?.message });
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       if (currentSession) {
         setSession(currentSession);
         setUser(currentSession.user);
         fetchOrCreateProfile(currentSession.user);
       }
-    }).catch((err) => {
-      console.error('[AuthProvider] getSession error:', err);
-    });
+    }).catch(() => {});
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('[AuthProvider] onAuthStateChange:', event, { hasSession: !!newSession });
         if (event === 'INITIAL_SESSION') {
           if (newSession) {
             setSession(newSession);
@@ -131,10 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => {
-      clearTimeout(fallbackTimeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   async function fetchOrCreateProfile(userData: User) {

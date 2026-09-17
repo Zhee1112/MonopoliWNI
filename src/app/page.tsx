@@ -48,17 +48,6 @@ export default function Home() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-on-surface text-xl mb-4">Mengalihkan ke login...</div>
-          <div className="w-8 h-8 border-4 border-outline-variant border-t-primary rounded-full animate-spin mx-auto" />
-        </div>
-      </div>
-    );
-  }
-
   const handleCreateRoom = async () => {
     const name = playerName.trim() || profile?.displayName || 'Player';
     setLoading(true);
@@ -137,6 +126,7 @@ export default function Home() {
               <span className="text-primary text-sm">🏆</span>
               <span className="text-on-surface text-xs font-semibold hidden sm:block">Pencapaian</span>
             </button>
+            {user ? (
             <button
               onClick={() => router.push('/profile')}
               className="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant rounded-full px-3 py-1.5 transition-all"
@@ -153,6 +143,17 @@ export default function Home() {
               <p className="text-secondary text-[10px] leading-tight">Lv.{profile?.level}</p>
             </div>
           </button>
+            ) : (
+            <button
+              onClick={() => router.push('/login')}
+              className="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant rounded-full px-3 py-1.5 transition-all"
+            >
+              <div className="w-7 h-7 rounded-full bg-outline-variant flex items-center justify-center text-on-surface-variant text-xs font-bold">
+                ?
+              </div>
+              <span className="text-on-surface text-xs font-semibold hidden sm:block">Login</span>
+            </button>
+            )}
           </div>
         </div>
       </div>
