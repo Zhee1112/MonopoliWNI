@@ -395,7 +395,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     } catch {
       setError('Gagal menghapus bot');
     }
-  }, [room, currentPlayer]);
+  }, [room, currentPlayer, setPlayers]);
 
   // ---- GAME HANDLERS ----
 
