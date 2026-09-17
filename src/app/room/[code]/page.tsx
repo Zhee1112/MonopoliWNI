@@ -377,6 +377,24 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     }
   }, [room, currentPlayer]);
 
+  const handleRemoveBot = useCallback(async (playerId: string) => {
+    if (!room || !currentPlayer) return;
+    setError('');
+    try {
+      const response = await fetch('/api/remove-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, hostId: currentPlayer.id, playerId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Gagal menghapus bot');
+      }
+    } catch {
+      setError('Gagal menghapus bot');
+    }
+  }, [room, currentPlayer]);
+
   // ---- GAME HANDLERS ----
 
   const handleRollDice = useCallback(async () => {
@@ -1186,14 +1204,35 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                           ? <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(78,222,163,0.1)', color: '#4edea3' }}>✓ SIAP</span>
                           : <span className="text-[8px] px-1 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,71,87,0.1)', color: '#ff4757' }}>• BELUM</span>
                         }
+                        {isHost && player.isBot && (
+                          <button
+                            onClick={() => handleRemoveBot(player.id)}
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ml-0.5"
+                            style={{ backgroundColor: 'rgba(255,71,87,0.15)', color: '#ff4757', border: '1px solid rgba(255,71,87,0.3)' }}
+                            title="Hapus bot"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
                 })}
                 {Array.from({ length: 8 - players.length }).map((_, i) => (
-                  <div key={`empty-${i}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl opacity-50" style={{ backgroundColor: '#052011', border: '1px dashed rgba(32,58,41,0.3)' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152f1f', color: '#9a907c' }}>+</div>
-                    <p className="text-[10px] text-[#9a907c]">Menunggu...</p>
+                  <div key={`empty-${i}`} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${isHost ? 'opacity-100' : 'opacity-50'}`} style={{ backgroundColor: '#052011', border: '1px dashed rgba(32,58,41,0.3)' }}>
+                    {isHost ? (
+                      <button
+                        onClick={handleAddBot}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                        style={{ backgroundColor: 'rgba(168,85,247,0.15)', color: '#a855f7', border: '1px dashed rgba(168,85,247,0.3)' }}
+                        title="Tambah Bot"
+                      >
+                        +
+                      </button>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152f1f', color: '#9a907c' }}>+</div>
+                    )}
+                    <p className="text-[10px] text-[#9a907c]">{isHost ? 'Tambah Bot' : 'Menunggu...'}</p>
                   </div>
                 ))}
               </div>
