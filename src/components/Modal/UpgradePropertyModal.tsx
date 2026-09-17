@@ -23,6 +23,7 @@ interface UpgradePropertyModalProps {
   onTakeover?: (boardIndex: number) => void;
   onClose: () => void;
   isOwnProperty: boolean;
+  isLoading?: boolean;
 }
 
 function getUpgradeCost(cell: BoardCell, currentLevel: number): number {
@@ -46,6 +47,7 @@ export default function UpgradePropertyModal({
   onTakeover,
   onClose,
   isOwnProperty,
+  isLoading = false,
 }: UpgradePropertyModalProps) {
   if (!isOpen) return null;
 
@@ -61,7 +63,7 @@ export default function UpgradePropertyModal({
   const nextRent = Math.floor((cell.rent || 0) * rentMultipliers[nextLevel]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
         {/* Header */}
         <div
@@ -144,31 +146,32 @@ export default function UpgradePropertyModal({
           {(isOwnProperty && !isLandmark) ? (
             <button
               onClick={() => onUpgrade(cell.index)}
-              disabled={!canAfford}
+              disabled={!canAfford || isLoading}
               className={`flex-1 py-3 font-bold rounded-xl transition-colors ${
-                canAfford
+                canAfford && !isLoading
                   ? 'bg-[#4edea3] text-white hover:bg-[#3dc992]'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              UPGRADE
+              {isLoading ? 'UPGRADING...' : 'UPGRADE'}
             </button>
           ) : (!isOwnProperty && onTakeover) ? (
             <button
               onClick={() => onTakeover(cell.index)}
-              disabled={!canAfford}
+              disabled={!canAfford || isLoading}
               className={`flex-1 py-3 font-bold rounded-xl transition-colors ${
-                canAfford
+                canAfford && !isLoading
                   ? 'bg-[#ffd56d] text-black hover:bg-[#ffc853]'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              TAKEOVER
+              {isLoading ? 'MEMBELI...' : 'TAKEOVER'}
             </button>
           ) : null}
           <button
             onClick={onClose}
-            className="flex-1 py-3 bg-gray-500 text-white font-bold rounded-xl hover:bg-gray-600 transition-colors"
+            disabled={isLoading}
+            className="flex-1 py-3 bg-gray-500 text-white font-bold rounded-xl hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             LEWATI
           </button>

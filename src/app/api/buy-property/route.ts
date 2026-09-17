@@ -236,17 +236,29 @@ export async function PUT(request: NextRequest) {
     const baseRent = calculateRent(cell.rent || 0, dbProperty.house_level, false);
     const rent = Math.round(baseRent * rentMultiplier);
 
-    if (payer.cleanMoney < rent) {
-      return NextResponse.json({ error: 'Not enough money to pay rent' }, { status: 400 });
+    const canPayRent = payer.cleanMoney >= rent;
+    const actualPayment = Math.min(payer.cleanMoney, rent);
+    const remainingRent = rent - actualPayment;
+
+    // Transfer money: payer pays what they can
+    const potAmount = Math.floor(actualPayment * 0.10);
+    const ownerShare = actualPayment - potAmount;
+    const newPayerBalance = payer.cleanMoney - actualPayment;
+    const isPayerBankrupt = !canPayRent;
+
+    if (isPayerBankrupt) {
+      // Player goes bankrupt — seize all assets
+      await supabaseAdmin.from('players').update({
+        clean_money: 0,
+        dirty_money: 0,
+        is_bankrupt: true,
+        properties: [],
+        status_effects: [],
+      }).eq('id', payerId);
+    } else {
+      await supabaseAdmin.from('players').update({ clean_money: newPayerBalance }).eq('id', payerId);
     }
 
-    // Transfer money: payer pays rent, owner gets 90%, pot gets 10%
-    const potAmount = Math.floor(rent * 0.10);
-    const ownerShare = rent - potAmount;
-    const newPayerBalance = payer.cleanMoney - rent;
-    const isPayerBankrupt = newPayerBalance < 0;
-
-    await supabaseAdmin.from('players').update({ clean_money: newPayerBalance }).eq('id', payerId);
     await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + ownerShare }).eq('id', owner.id);
 
     // Free Parking Pot: 10% of rent goes to pot
@@ -290,8 +302,9 @@ export async function PUT(request: NextRequest) {
       rent,
       ownerName: owner.name,
       ownerShare,
-      newPayerBalance: payer.cleanMoney - rent,
+      newPayerBalance: isPayerBankrupt ? 0 : newPayerBalance,
       newOwnerBalance: owner.cleanMoney + ownerShare,
+      isBankrupt: isPayerBankrupt,
     });
   } catch (error) {
     console.error('Pay rent error:', error);

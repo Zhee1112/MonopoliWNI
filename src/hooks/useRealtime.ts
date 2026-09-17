@@ -304,9 +304,10 @@ export interface ChatMessage {
   sender: string;
   text: string;
   time: string;
+  senderId?: string;
 }
 
-export function useRealtimeChat(roomCode: string) {
+export function useRealtimeChat(roomCode: string, currentUserId?: string) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
@@ -317,6 +318,7 @@ export function useRealtimeChat(roomCode: string) {
     channel
       .on('broadcast', { event: 'chat_message' }, (payload) => {
         const msg = payload.payload as ChatMessage;
+        if (msg.senderId && currentUserId && msg.senderId === currentUserId) return;
         setChatMessages((prev) => [...prev, msg]);
       })
       .subscribe();
@@ -324,7 +326,7 @@ export function useRealtimeChat(roomCode: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomCode]);
+  }, [roomCode, currentUserId]);
 
   const sendChatMessage = useCallback(
     async (sender: string, text: string) => {
@@ -332,14 +334,16 @@ export function useRealtimeChat(roomCode: string) {
         sender,
         text,
         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        senderId: currentUserId,
       };
+      setChatMessages((prev) => [...prev, msg]);
       await supabase.channel(`chat:${roomCode}`).send({
         type: 'broadcast',
         event: 'chat_message',
         payload: msg,
       });
     },
-    [roomCode]
+    [roomCode, currentUserId]
   );
 
   return { chatMessages, setChatMessages, sendChatMessage };

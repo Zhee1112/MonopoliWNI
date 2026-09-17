@@ -7,6 +7,9 @@ interface DiceRollModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRollComplete: (result: { dice1: number; dice2: number; total: number }) => void;
+  isJailed?: boolean;
+  sogokCost?: number;
+  onSogok?: () => void;
 }
 
 function DiceDot({ row, col }: { row: number; col: number }) {
@@ -55,7 +58,7 @@ function Dice3D({ value, rotation }: { value: number; rotation: string }) {
   );
 }
 
-export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceRollModalProps) {
+export default function DiceRollModal({ isOpen, onClose, onRollComplete, isJailed = false, sogokCost = 0, onSogok }: DiceRollModalProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [dice1, setDice1] = useState(1);
   const [dice2, setDice2] = useState(1);
@@ -234,6 +237,11 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
                 <span className="text-[#4edea3] animate-spin">&#x21BB;</span>
                 <span>Mengocok dadu...</span>
               </>
+            ) : isJailed ? (
+              <>
+                <span className="text-[#f87171]">&#x1F6AB;</span>
+                <span>Ditahan di penjara! Pilih aksi:</span>
+              </>
             ) : showResult ? (
               <>
                 <span className="text-[#4edea3]">&#x2705;</span>
@@ -247,6 +255,14 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
             )}
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            {isJailed && !isRolling && (
+              <button
+                onClick={() => { if (onSogok) onSogok(); }}
+                className="px-4 py-2.5 rounded-lg font-bold text-sm transition-all bg-[#ffd56d] text-[#3e2e00] hover:bg-[#eec14a] active:scale-95 shadow-[2px_2px_0_0_#000]"
+              >
+                &#x1F4B0; Sogok ({sogokCost > 0 ? `Rp ${sogokCost.toLocaleString('id-ID')}` : 'Gratis'})
+              </button>
+            )}
             {!showResult ? (
               <button
                 onClick={handleRoll}
@@ -257,7 +273,7 @@ export default function DiceRollModal({ isOpen, onClose, onRollComplete }: DiceR
                     : 'bg-[#ffd56d] text-[#3e2e00] hover:bg-[#eec14a] active:scale-95 shadow-[2px_2px_0_0_#000]'
                 }`}
               >
-                {isRolling ? 'MENGOCOK...' : 'LEMPAR DADU!'}
+                {isRolling ? 'MENGOCOK...' : isJailed ? 'LEMPAR (SKIP)' : 'LEMPAR DADU!'}
               </button>
             ) : (
               <button

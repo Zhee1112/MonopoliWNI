@@ -44,6 +44,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showDiceModal, setShowDiceModal] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [selectedCell, setSelectedCell] = useState<BoardCell | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showCellInfo, setShowCellInfo] = useState(false);
+  const [cellInfoData, setCellInfoData] = useState<BoardCell | null>(null);
   const [lastRoll, setLastRoll] = useState<{ dice1: number; dice2: number; total: number } | null>(null);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
@@ -121,7 +124,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const { room, setRoom, loading: roomLoading, notFound: roomNotFound } = useRealtimeRoom(roomCode);
   const { players, setPlayers } = useRealtimePlayers(room?.id || '');
   const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard(roomCode);
-  const { chatMessages, sendChatMessage } = useRealtimeChat(roomCode);
+  const { chatMessages, sendChatMessage } = useRealtimeChat(roomCode, currentPlayer?.id);
   const { announcements, broadcastAnnouncement } = useRealtimeAnnouncement(roomCode);
   const { properties: dbProperties } = useRealtimeProperties(room?.id || '');
   const { animatePion, getPionPosition } = usePionAnimation();
@@ -710,14 +713,28 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 .then(r => r.json().then(data => ({ ok: r.ok, data })))
                 .then(({ ok, data: rentData }) => {
                   if (!ok) throw new Error(rentData.error);
-                  SoundEffects.payRent();
-                  setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: rentData.newPayerBalance } : null);
-                  broadcastAnnouncement({
-                    type: 'rent',
-                    playerName: currentPlayerRef.current?.name || 'Pemain',
-                    message: `membayar sewa ke ${rentData.ownerName}`,
-                    detail: `-Rp ${rentData.rent.toLocaleString('id-ID')} (pemilik terima Rp ${rentData.ownerShare.toLocaleString('id-ID')})`,
-                  });
+
+                  if (rentData.isBankrupt) {
+                    SoundEffects.gameOver();
+                    setCurrentPlayer((prev) => prev ? {
+                      ...prev, cleanMoney: 0, dirtyMoney: 0, properties: [], isBankrupt: true,
+                    } : null);
+                    broadcastAnnouncement({
+                      type: 'bankrupt',
+                      playerName: currentPlayerRef.current?.name || 'Pemain',
+                      message: `BANKRUP! Tidak bisa bayar sewa ke ${rentData.ownerName}`,
+                      detail: `Sewa Rp ${rentData.rent.toLocaleString('id-ID')}`,
+                    });
+                  } else {
+                    SoundEffects.payRent();
+                    setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: rentData.newPayerBalance } : null);
+                    broadcastAnnouncement({
+                      type: 'rent',
+                      playerName: currentPlayerRef.current?.name || 'Pemain',
+                      message: `membayar sewa ke ${rentData.ownerName}`,
+                      detail: `-Rp ${rentData.rent.toLocaleString('id-ID')} (pemilik terima Rp ${rentData.ownerShare.toLocaleString('id-ID')})`,
+                    });
+                  }
                   // If property is not landmark (level < 5), show takeover modal
                   if (!dbProp.is_landmark && dbProp.house_level < 5) {
                     setUpgradeModalCell(property);
@@ -751,7 +768,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   );
 
   const handleBuyProperty = useCallback(async () => {
-    if (!currentPlayer || !room || !selectedCell) return;
+    if (!currentPlayer || !room || !selectedCell || actionLoading) return;
+    setActionLoading(true);
     try {
       const response = await fetch('/api/buy-property', {
         method: 'POST',
@@ -774,10 +792,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setShowBuyModal(false);
       setSelectedCell(null);
     } catch (err) { console.error('Buy property error:', err); }
-  }, [currentPlayer, room, selectedCell, broadcastAnnouncement]);
+    setActionLoading(false);
+  }, [currentPlayer, room, selectedCell, broadcastAnnouncement, actionLoading]);
 
   const handleUpgradeProperty = useCallback(async (boardIndex: number) => {
-    if (!currentPlayer || !room) return;
+    if (!currentPlayer || !room || actionLoading) return;
+    setActionLoading(true);
     try {
       const response = await fetch('/api/upgrade-property', {
         method: 'POST',
@@ -802,10 +822,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       console.error('Upgrade property error:', err);
       SoundEffects.error();
     }
-  }, [currentPlayer, room, broadcastAnnouncement]);
+    setActionLoading(false);
+  }, [currentPlayer, room, broadcastAnnouncement, actionLoading]);
 
   const handleTakeoverProperty = useCallback(async (boardIndex: number) => {
-    if (!currentPlayer || !room) return;
+    if (!currentPlayer || !room || actionLoading) return;
+    setActionLoading(true);
     try {
       const response = await fetch('/api/takeover-property', {
         method: 'POST',
@@ -832,7 +854,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       console.error('Takeover property error:', err);
       SoundEffects.error();
     }
-  }, [currentPlayer, room, broadcastAnnouncement]);
+    setActionLoading(false);
+  }, [currentPlayer, room, broadcastAnnouncement, actionLoading]);
 
   const handleEndTurn = useCallback(async () => {
     if (!currentPlayer || !room) return;
@@ -944,7 +967,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   const handleDismissCard = useCallback(() => { broadcastDismiss(); }, [broadcastDismiss]);
 
-  const handleCellClick = useCallback((cell: BoardCell) => { setSelectedCell(cell); }, []);
+  const handleCellClick = useCallback((cell: BoardCell) => {
+    setCellInfoData(cell);
+    setShowCellInfo(true);
+  }, []);
 
   // ---- LOAN HANDLER ----
   const handleBorrow = useCallback((loan: Loan, amount: number) => {
@@ -1800,7 +1826,31 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       />
 
       {/* OTHER MODALS */}
-      <DiceRollModal isOpen={showDiceModal} onClose={() => setShowDiceModal(false)} onRollComplete={handleDiceRollComplete} />
+      <DiceRollModal
+        isOpen={showDiceModal}
+        onClose={() => setShowDiceModal(false)}
+        onRollComplete={handleDiceRollComplete}
+        isJailed={(currentPlayer.statusEffects || []).some((e: { type: string }) => e.type === 'skip_turn')}
+        sogokCost={Math.max(100000, Math.floor((currentPlayer.cleanMoney || 0) * 0.2))}
+        onSogok={() => {
+          const cost = Math.max(100000, Math.floor((currentPlayer.cleanMoney || 0) * 0.2));
+          if ((currentPlayer.cleanMoney || 0) < cost) {
+            SoundEffects.error();
+            broadcastAnnouncement({ type: 'system', playerName: currentPlayer.name, message: 'Gagal sogok — uang tidak cukup!', detail: `Butuh Rp ${cost.toLocaleString('id-ID')}` });
+            return;
+          }
+          const newMoney = Math.max(0, currentPlayer.cleanMoney - cost);
+          const newEffects = (currentPlayer.statusEffects || []).filter((e: { type: string }) => e.type !== 'skip_turn');
+          setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: newMoney, statusEffects: newEffects } : null);
+          fetch('/api/update-player', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomId: room.id, playerId: currentPlayer.id, cleanMoneyDelta: -cost, statusEffects: newEffects }),
+          }).catch(() => {});
+          broadcastAnnouncement({ type: 'system', playerName: currentPlayer.name, message: 'Menyogok petugas KPK! Bebas dari penjara.', detail: `-Rp ${cost.toLocaleString('id-ID')}` });
+          setShowDiceModal(false);
+        }}
+      />
       {selectedCell && (
         <BuyPropertyModal
           isOpen={showBuyModal}
@@ -1808,6 +1858,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           playerMoney={currentPlayer.cleanMoney}
           onBuy={handleBuyProperty}
           onSkip={() => { setShowBuyModal(false); setSelectedCell(null); }}
+          isLoading={actionLoading}
         />
       )}
       <GachaRollModal
@@ -1862,6 +1913,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         onTakeover={handleTakeoverProperty}
         onClose={() => { setShowUpgradeModal(false); setUpgradeModalCell(null); }}
         isOwnProperty={upgradeModalIsOwn}
+        isLoading={actionLoading}
       />
       <DefenseModal
         isOpen={showDefenseModal}
@@ -2150,6 +2202,57 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 Ya, Menyerah
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CELL INFO MODAL - Info Only */}
+      {showCellInfo && cellInfoData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCellInfo(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="rounded-xl p-4 mb-4 text-center"
+              style={{ backgroundColor: cellInfoData.color }}
+            >
+              <h2 className="text-xl font-bold text-white">{cellInfoData.name}</h2>
+              <p className="text-white/80 text-xs mt-1">{cellInfoData.description}</p>
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 text-sm">Tipe:</span>
+                <span className="font-semibold text-gray-800 text-sm capitalize">{cellInfoData.type}</span>
+              </div>
+              {cellInfoData.price !== undefined && cellInfoData.price > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm">Harga Beli:</span>
+                  <span className="font-bold text-green-600">Rp{(cellInfoData.price || 0).toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              {cellInfoData.rent !== undefined && cellInfoData.rent > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm">Sewa Dasar:</span>
+                  <span className="font-semibold text-gray-800 text-sm">Rp{(cellInfoData.rent || 0).toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              {cellInfoData.group && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm">Grup:</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-bold text-white" style={{ backgroundColor: cellInfoData.color }}>{cellInfoData.group}</span>
+                </div>
+              )}
+              {cellInfoData.buildingCost !== undefined && cellInfoData.buildingCost > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm">Biaya Bangun:</span>
+                  <span className="font-semibold text-gray-800 text-sm">Rp{(cellInfoData.buildingCost || 0).toLocaleString('id-ID')}</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setShowCellInfo(false)}
+              className="w-full py-2.5 bg-gray-500 text-white font-bold rounded-xl hover:bg-gray-600 transition-colors"
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}

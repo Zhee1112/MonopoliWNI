@@ -12,6 +12,7 @@ interface BuyPropertyModalProps {
   playerMoney: number;
   onBuy: () => void;
   onSkip: () => void;
+  isLoading?: boolean;
 }
 
 export default function BuyPropertyModal({
@@ -20,13 +21,14 @@ export default function BuyPropertyModal({
   playerMoney,
   onBuy,
   onSkip,
+  isLoading = false,
 }: BuyPropertyModalProps) {
   if (!isOpen) return null;
 
   const canAfford = playerMoney >= (cell.price || 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
         {/* Header */}
         <div
@@ -85,18 +87,19 @@ export default function BuyPropertyModal({
         <div className="flex gap-3">
           <button
             onClick={onBuy}
-            disabled={!canAfford}
+            disabled={!canAfford || isLoading}
             className={`flex-1 py-3 font-bold rounded-xl transition-colors ${
-              canAfford
+              canAfford && !isLoading
                 ? 'bg-green-500 text-white hover:bg-green-600'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            BELI
+            {isLoading ? 'MEMBELI...' : 'BELI'}
           </button>
           <button
             onClick={onSkip}
-            className="flex-1 py-3 bg-gray-500 text-white font-bold rounded-xl hover:bg-gray-600 transition-colors"
+            disabled={isLoading}
+            className="flex-1 py-3 bg-gray-500 text-white font-bold rounded-xl hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             LEWATI
           </button>
