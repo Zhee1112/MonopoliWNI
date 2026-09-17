@@ -16,7 +16,9 @@ export default function AuthCallbackPage() {
       if (done) return;
       done = true;
       setStatus('Login berhasil!');
-      setTimeout(() => window.location.replace('/'), 500);
+      const returnTo = sessionStorage.getItem('returnTo');
+      sessionStorage.removeItem('returnTo');
+      setTimeout(() => window.location.replace(returnTo || '/'), 500);
     }
 
     async function handleCallback() {
@@ -81,9 +83,11 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      // Final: maybe redirect to home and let AuthProvider handle it
+      // Final: maybe redirect to saved URL or home and let AuthProvider handle it
+      const returnTo = sessionStorage.getItem('returnTo');
+      sessionStorage.removeItem('returnTo');
       setStatus('Tidak ada token di URL. Mencoba langsung...');
-      setTimeout(() => window.location.replace('/'), 1000);
+      setTimeout(() => window.location.replace(returnTo || '/'), 1000);
     }
 
     handleCallback();

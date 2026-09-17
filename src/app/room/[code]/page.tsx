@@ -118,7 +118,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const currentPlayerRef = useRef<Player | null>(null);
 
   // Realtime hooks
-  const { room, setRoom } = useRealtimeRoom(roomCode);
+  const { room, setRoom, loading: roomLoading, notFound: roomNotFound } = useRealtimeRoom(roomCode);
   const { players, setPlayers } = useRealtimePlayers(room?.id || '');
   const { activeCard, broadcastCard, broadcastReaction, broadcastDismiss } = useRealtimeCard(roomCode);
   const { chatMessages, sendChatMessage } = useRealtimeChat(roomCode);
@@ -129,7 +129,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   // Load player from sessionStorage, fallback to DB relog
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
+    if (!user) {
+      sessionStorage.setItem('returnTo', `/room/${roomCode}`);
+      router.push('/login');
+      return;
+    }
 
     const storedPlayer = sessionStorage.getItem('player');
     const storedRoom = sessionStorage.getItem('room');
@@ -1016,17 +1020,26 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     runBotTurn();
   }, [room?.currentTurn, room?.status, players]);
 
-  // ---- LOADING STATE ----
-  if (!currentPlayer || !room) {
+  // ---- ROOM NOT FOUND ----
+  if (roomNotFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#001809' }}>
-        <div className="text-xl" style={{ color: '#cbead1' }}>Loading...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: '#001809' }}>
+        <div className="text-6xl mb-4">🔍</div>
+        <div className="text-xl font-bold mb-2" style={{ color: '#cbead1' }}>Room Tidak Ditemukan</div>
+        <p className="text-sm mb-6" style={{ color: '#9a907c' }}>Kode <span className="font-mono font-bold" style={{ color: '#ffd56d' }}>{roomCode}</span> tidak valid atau room sudah ditutup.</p>
+        <button
+          onClick={() => router.push('/')}
+          className="px-6 py-2.5 rounded-lg text-sm font-bold transition-all"
+          style={{ background: 'linear-gradient(to right, #2d5a3d, #3a7a4f, #2d5a3d)', color: '#ffd56d' }}
+        >
+          Kembali ke Beranda
+        </button>
       </div>
     );
   }
 
-  // ---- JOIN FROM LINK ----
-  if (needsJoin) {
+  // ---- JOIN FROM LINK (needs room loaded) ----
+  if (needsJoin && room) {
     return (
       <div className="min-h-screen bg-[#001809] flex items-center justify-center px-4">
         <div className="absolute top-20 left-1/4 w-80 h-80 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,213,109,0.05) 0%, transparent 70%)' }} />
@@ -1102,6 +1115,20 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- LOADING STATE ----
+  if (!currentPlayer || !room) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#001809' }}>
+        <div className="text-center">
+          <div className="text-xl mb-3" style={{ color: '#cbead1' }}>Loading...</div>
+          {!authLoading && !user && (
+            <p className="text-sm" style={{ color: '#9a907c' }}>Mengalihkan ke login...</p>
+          )}
         </div>
       </div>
     );

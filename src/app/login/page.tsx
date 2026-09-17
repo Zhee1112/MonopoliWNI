@@ -19,7 +19,9 @@ export default function LoginPage() {
   }
 
   if (user) {
-    router.replace('/');
+    const returnTo = sessionStorage.getItem('returnTo');
+    sessionStorage.removeItem('returnTo');
+    router.replace(returnTo || '/');
     return null;
   }
 

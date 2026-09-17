@@ -11,6 +11,7 @@ import { Player, Room, mapPlayerFromDB, mapRoomFromDB } from '@/lib/types';
 export function useRealtimeRoom(roomCode: string) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!roomCode) return;
@@ -25,9 +26,13 @@ export function useRealtimeRoom(roomCode: string) {
 
         if (data && !error) {
           setRoom(mapRoomFromDB(data as Record<string, unknown>));
+          setNotFound(false);
+        } else {
+          setNotFound(true);
         }
       } catch (e) {
         console.error('Failed to fetch room:', e);
+        setNotFound(true);
       } finally {
         setLoading(false);
       }
@@ -63,7 +68,7 @@ export function useRealtimeRoom(roomCode: string) {
     };
   }, [roomCode]);
 
-  return { room, setRoom, loading };
+  return { room, setRoom, loading, notFound };
 }
 
 export function useRealtimePlayers(roomId: string) {
