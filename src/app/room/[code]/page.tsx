@@ -389,7 +389,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const data = await response.json();
       if (!response.ok) {
         setError(data.error || 'Gagal menghapus bot');
+        return;
       }
+      setPlayers((prev) => prev.filter((p) => p.id !== playerId));
     } catch {
       setError('Gagal menghapus bot');
     }
@@ -1206,10 +1208,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                         }
                         {isHost && player.isBot && (
                           <button
-                            onClick={() => handleRemoveBot(player.id)}
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ml-0.5"
-                            style={{ backgroundColor: 'rgba(255,71,87,0.15)', color: '#ff4757', border: '1px solid rgba(255,71,87,0.3)' }}
-                            title="Hapus bot"
+                            onClick={(e) => { e.stopPropagation(); handleRemoveBot(player.id); }}
+                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all active:scale-90"
+                            style={{ backgroundColor: 'rgba(255,71,87,0.2)', color: '#ff4757', border: '1px solid rgba(255,71,87,0.4)' }}
                           >
                             ✕
                           </button>
