@@ -70,6 +70,10 @@ export default function GameModal({
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isOpen) setActiveTab(defaultTab);
+  }, [defaultTab, isOpen]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
@@ -373,8 +377,19 @@ export default function GameModal({
 
           {/* PANEL: PENGATURAN */}
           {activeTab === 'settings' && (
-            <div className="p-3">
+            <div className="p-3 max-h-[450px] overflow-y-auto">
               <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+                {/* Round Info */}
+                <div className="p-3 rounded-xl shrink-0 min-w-[180px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', scrollSnapAlign: 'start' }}>
+                  <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Babak</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">📅</span>
+                    <div className="text-right">
+                      <span className="font-mono font-bold text-sm" style={{ color: '#ffd56d' }}>{round}/{totalRounds}</span>
+                      <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>{roomCode}</span>
+                    </div>
+                  </div>
+                </div>
                 {/* Music Toggle */}
                 <div className="p-3 rounded-xl shrink-0 min-w-[180px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', scrollSnapAlign: 'start' }}>
                   <div className="flex items-center justify-between">
@@ -429,6 +444,39 @@ export default function GameModal({
                     <div className="flex items-center justify-between">
                       <span className="text-[11px]" style={{ color: '#93c5a7' }}>Pemain</span>
                       <span className="text-xs font-bold" style={{ color: '#4edea3' }}>{players.length}/8</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Catalog */}
+              <div className="mt-3">
+                <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Katalog Kartu</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-lg" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                    <span className="text-lg block mb-1">🃏</span>
+                    <span className="text-xs font-bold block" style={{ color: '#ffd56d' }}>140 Kartu</span>
+                    <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Kartu Takdir</span>
+                    <div className="mt-1.5 space-y-0.5">
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🎲 Normal (35)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🃏 Meme (30)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🤝 Interaksi (32)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>💣 Sabotase (20)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>💰 Koruptor (8)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🔍 Audit (5)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>👑 Legendaris (10)</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                    <span className="text-lg block mb-1">📦</span>
+                    <span className="text-xs font-bold block" style={{ color: '#4edea3' }}>100 Kartu</span>
+                    <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Kartu Kegiatan</span>
+                    <div className="mt-1.5 space-y-0.5">
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🏪 Usaha (20)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>💼 Kerja (20)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>📈 Investasi (20)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🤝 Sosial (20)</span>
+                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🎯 Tantangan (20)</span>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { getPropertyCells, calculateRent } from '@/lib/game/board-data';
+import { getPropertyCells, calculateRent, hasMonopoly } from '@/lib/game/board-data';
 
 // ============================================================
 // UPGRADE PROPERTY API
@@ -98,7 +98,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate new rent for display
-    const newRent = calculateRent(cell.rent || 0, newLevel, false);
+    const isMonopoly = hasMonopoly(dbPlayer.properties as string[] || [], cell.group || '');
+    const newRent = calculateRent(cell.rent || 0, newLevel, isMonopoly);
 
     return NextResponse.json({
       success: true,

@@ -37,6 +37,16 @@ export const EVENT_NORMAL_CARDS: Card[] = [
   { id: 'en_25', name: 'Crypto Pom-Pom', tier: 'berat', category: 'event_normal', effect: { type: 'dice', special: 'genap_plus3jt_ganjil_minus2jt' }, frequency: 1, flavorText: 'To the moon or to zero?' },
   { id: 'en_26', name: 'Pinjaman Darurat', tier: 'berat', category: 'event_normal', effect: { type: 'money', value: -1000000, target: 'all', special: 'semua_pemain_plus500rb' }, frequency: 1, flavorText: 'Pinjaman darurat, semua dapat jatah.' },
   { id: 'en_27', name: 'Byone dari Atasan', tier: 'berat', category: 'event_normal', effect: { type: 'money', value: 2000000, special: 'bayar_pajak_30persen' }, frequency: 1, flavorText: 'Byone? Siapa bilang gratis?' },
+
+  // EVEN MORE NORMAL (8 kartu)
+  { id: 'en_28', name: 'Bayar BPJS Kesehatan', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: -150000 }, frequency: 2, flavorText: 'BPJS naik, dompet menangis.' },
+  { id: 'en_29', name: 'Dapat Subsidi BBM', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: 100000 }, frequency: 2, flavorText: 'BBM subsidi, dompet lega.' },
+  { id: 'en_30', name: 'Kena Pajak PPh 21', tier: 'sedang', category: 'event_normal', effect: { type: 'money', value: -600000 }, frequency: 1, flavorText: 'PPh 21? Gaji sudah kecil, dipotong lagi.' },
+  { id: 'en_31', name: 'Dapat Bantuan Sosial', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: 200000 }, frequency: 1, flavorText: 'Bansos cair! Rejeki nomplok.' },
+  { id: 'en_32', name: 'Gempa Bumi Ringan', tier: 'sedang', category: 'event_normal', effect: { type: 'skip', value: 1, special: 'bayar_200rb' }, frequency: 1, flavorText: 'Gempa! Dompet juga bergetar.' },
+  { id: 'en_33', name: 'Banjir Jakarta', tier: 'sedang', category: 'event_normal', effect: { type: 'money', value: -300000 }, frequency: 1, flavorText: 'Banjir! Mobil mogok, dompet tenggelam.' },
+  { id: 'en_34', name: 'PSBB Mendadak', tier: 'berat', category: 'event_normal', effect: { type: 'skip', value: 2 }, frequency: 1, flavorText: 'PSBB! Semua aktivitas berhenti.' },
+  { id: 'en_35', name: 'Dapat THR Lebaran', tier: 'sedang', category: 'event_normal', effect: { type: 'money', value: 1500000 }, frequency: 1, flavorText: 'THR cair! Lebaran jadi meriah.' },
 ];
 
 // ============================================================
@@ -69,6 +79,18 @@ export const EVENT_MEME_CARDS: Card[] = [
   { id: 'em_18', name: 'Anak Jaksel Bilingual', tier: 'ringan', category: 'event_meme', effect: { type: 'special', special: 'properti_premium_naik_10' }, luckModifier: { source: 'jaksel', amount: 3, isPermanent: false }, frequency: 1, flavorText: 'Anak Jaksel, semua harga naik 10%.' },
   { id: 'em_19', name: 'Emak-emak Pasar Tradisional', tier: 'ringan', category: 'event_meme', effect: { type: 'property', special: 'diskon_15persen' }, luckModifier: { source: 'emak_pasar', amount: 3, isPermanent: false }, frequency: 1, flavorText: 'Emak-emak pasar, harga pasti murah.' },
   { id: 'em_20', name: 'Bapak Warung Nongkrong', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: 75000 }, luckModifier: { source: 'bapak_warung', amount: 2, isPermanent: false }, frequency: 1, flavorText: 'Bapak warung, semua orang kenal.' },
+
+  // MEME INDONESIA BARU (10 kartu)
+  { id: 'em_21', name: 'Nasi Goreng Gila', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: 150000 }, luckModifier: { source: 'nasgor', amount: 3, isPermanent: false }, frequency: 2, flavorText: 'Nasi goreng gila? Yang gila harganya!' },
+  { id: 'em_22', name: 'Kopi Susu Kekinian', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: -80000 }, luckModifier: { source: 'kopi_susu', amount: -1, isPermanent: false }, frequency: 2, flavorText: 'Kopi susu 50 ribu? Gaji UMR berasa kacang.' },
+  { id: 'em_23', name: 'Ojol Dibegal', tier: 'sedang', category: 'event_meme', effect: { type: 'skip', value: 1, special: 'dapat_500rb' }, luckModifier: { source: 'ojol_dibegal', amount: -3, isPermanent: false }, frequency: 1, flavorText: 'Ojol dibegal? Dompet juga kena.' },
+  { id: 'em_24', name: 'Shopee Flash Sale', tier: 'sedang', category: 'event_meme', effect: { type: 'money', value: -800000, special: 'bayar_20persen_saldo' }, luckModifier: { source: 'shopee_sale', amount: -5, isPermanent: false }, frequency: 1, flavorText: 'Flash sale? Kartu kredit menangis.' },
+  { id: 'em_25', name: 'Gofood Diskon 50%', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: 200000 }, luckModifier: { source: 'gofood', amount: 2, isPermanent: false }, frequency: 2, flavorText: 'Diskon 50% tapi ongkir 30 ribu.' },
+  { id: 'em_26', name: 'Grab Bike Hujan', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: -100000 }, luckModifier: { source: 'grab_hujan', amount: -2, isPermanent: false }, frequency: 1, flavorText: 'Grab bike hujan? Basah kuyup, dompet basah.' },
+  { id: 'em_27', name: 'Viral di Twitter', tier: 'sedang', category: 'event_meme', effect: { type: 'money', value: 1500000, special: 'buka_info_semua_pemain' }, luckModifier: { source: 'viral_twitter', amount: 10, isPermanent: false }, frequency: 1, flavorText: 'Viral! Semua orang tahu posisimu.' },
+  { id: 'em_28', name: 'Tokopedia Seller Day', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: 300000 }, luckModifier: { source: 'tokped', amount: 3, isPermanent: false }, frequency: 2, flavorText: 'Seller day? Untung jutaan!' },
+  { id: 'em_29', name: 'Bapak-Bapak Nonton Bola', tier: 'ringan', category: 'event_meme', effect: { type: 'skip', value: 1 }, luckModifier: { source: 'nonton_bola', amount: -2, isPermanent: false }, frequency: 1, flavorText: 'Nonton bola, lupa kerja. Skip 1 giliran.' },
+  { id: 'em_30', name: 'Ibu-Ibu Arisan', tier: 'sedang', category: 'event_meme', effect: { type: 'money', value: -500000, special: 'semua_pemain_plus500rb' }, luckModifier: { source: 'arisan', amount: 5, isPermanent: false }, frequency: 1, flavorText: 'Arisan? Bayar iuran, semua dapat jatah.' },
 ];
 
 // ============================================================

@@ -31,6 +31,32 @@ export interface GlobalEventDefinition {
   subEvents: SubEvent[];
 }
 
+export interface GlobalEventEffect {
+  type: 'all_money_divide' | 'all_pay_percent' | 'swap_positions' | 'rent_frozen' | 'skip_even' | 'cancel_rent' | 'seize_dirty' | 'rich_penalty' | 'tech_disable' | 'all_bonus' | 'random_fine' | 'property_disable';
+  value?: number;
+  duration?: number;
+  target?: 'all' | 'richest' | 'random' | 'poorest';
+  targetCount?: number;
+}
+
+export interface SubEvent {
+  id: string;
+  name: string;
+  description: string;
+  effect: GlobalEventEffect;
+}
+
+export interface GlobalEventDefinition {
+  id: string;
+  name: string;
+  emoji: string;
+  flavorText: string;
+  triggerRound: number[];
+  duration?: number;
+  effect: GlobalEventEffect;
+  subEvents: SubEvent[];
+}
+
 export const GLOBAL_EVENTS: GlobalEventDefinition[] = [
   // 1. Reshuffle Kabinet Dadakan
   {
@@ -316,6 +342,132 @@ export const GLOBAL_EVENTS: GlobalEventDefinition[] = [
         name: 'Demo Nasional',
         description: 'Demo besar-besaran! SEMUA properti tidak bisa disewa selama 1 babak.',
         effect: { type: 'property_disable', duration: 1 },
+      },
+    ],
+  },
+
+  // 13. Kebakaran Hutan Kalimantan
+  {
+    id: 'kebakaran_hutan',
+    name: 'Kebakaran Hutan Kalimantan',
+    emoji: '🔥',
+    flavorText: 'Asap kebakaran hutan menyebar ke seluruh Indonesia! Semua aktivitas terganggu.',
+    triggerRound: [3, 9, 16, 23],
+    effect: { type: 'random_fine', value: 200000, target: 'all' },
+    subEvents: [
+      {
+        id: 'asap_ringan',
+        name: 'Asap Ringan',
+        description: 'Asap tipis menyelimuti kota. Semua pemain bayar Rp200.000 untuk masker.',
+        effect: { type: 'random_fine', value: 200000, target: 'all' },
+      },
+      {
+        id: 'asap_parah',
+        name: 'Asap Parah - PSBB Asap',
+        description: 'Asap pekat! PSBB asap diberlakukan. Semua properti sewa gratis 1 babak + denda Rp300.000.',
+        effect: { type: 'rent_frozen', duration: 1 },
+      },
+    ],
+  },
+
+  // 14. Infliasi Sawit
+  {
+    id: 'infliasi_sawit',
+    name: 'Infliasi Sawit Nasional',
+    emoji: '🌴',
+    flavorText: 'Harga sawit merosot tajam! Ekonomi kelapa sawit berkontribusi pada inflasi.',
+    triggerRound: [4, 11, 18, 25],
+    effect: { type: 'all_pay_percent', value: 10, target: 'all' },
+    subEvents: [
+      {
+        id: 'sawit_merosot',
+        name: 'Harga Sawit Merosot',
+        description: 'Harga sawit turun 50%! Semua pemain bayar 10% dari kas.',
+        effect: { type: 'all_pay_percent', value: 10, target: 'all' },
+      },
+      {
+        id: 'sawit_boom',
+        name: 'Booming Sawit',
+        description: 'Ekspor sawit melonjak! Semua pemain mendapat bonus Rp500.000.',
+        effect: { type: 'all_bonus', value: 500000, target: 'all' },
+      },
+    ],
+  },
+
+  // 15. Pidato Presiden
+  {
+    id: 'pidato_presiden',
+    name: 'Pidato Presiden RI',
+    emoji: '🎤',
+    flavorText: 'Presiden memberikan pidato kenegaraan! Kebijakan baru berdampak pada semua.',
+    triggerRound: [5, 13, 20, 28],
+    effect: { type: 'swap_positions', target: 'all' },
+    subEvents: [
+      {
+        id: 'pidato_kampanye',
+        name: 'Pidato Kampanye',
+        description: 'Pidato penuh janji! Semua posisi pemain dikocok acak.',
+        effect: { type: 'swap_positions', target: 'all' },
+      },
+      {
+        id: 'pidato_ekonomi',
+        name: 'Pidato Kebijakan Ekonomi',
+        description: 'Kebijakan ekonomi baru! Semua pemain yang punya kas >Rp2jt bayar 20%.',
+        effect: { type: 'rich_penalty', value: 20, target: 'richest' },
+      },
+      {
+        id: 'pidato_reformasi',
+        name: 'Pidato Reformasi Digital',
+        description: 'Reformasi digital! Uang kotor pemain dikurangi 50%.',
+        effect: { type: 'seize_dirty', value: 50, target: 'all' },
+      },
+    ],
+  },
+
+  // 16. Injeksi Uang Gelap
+  {
+    id: 'uang_gelap',
+    name: 'Injeksi Uang Gelap',
+    emoji: '🕵️',
+    flavorText: 'Berita beredar tentang sirkulasi uang gelap di pasar gelap!',
+    triggerRound: [6, 14, 22, 30],
+    effect: { type: 'seize_dirty', value: 100, target: 'all' },
+    subEvents: [
+      {
+        id: 'razia_kpk',
+        name: 'Razia KPK Mendadak',
+        description: 'KPK razia uang gelap! Semua uang kotor disita 100%.',
+        effect: { type: 'seize_dirty', value: 100, target: 'all' },
+      },
+      {
+        id: 'sirkulasi_gelap',
+        name: 'Sirkulasi Uang Gelap',
+        description: 'Uang gelap beredar! Pemain dengan uang kotor terbanyak kehilangan 50% uang bersih.',
+        effect: { type: 'rich_penalty', value: 30, target: 'richest' },
+      },
+    ],
+  },
+
+  // 17. Operasi Tangkap Tangan (OTT) Serentak
+  {
+    id: 'ott_serentak',
+    name: 'OTT Serentak Se-Indonesia',
+    emoji: '🚨',
+    flavorText: 'OTT KPK serentak di beberapa daerah! Pejabat dan pengusaha ditangkap.',
+    triggerRound: [7, 15, 24],
+    effect: { type: 'rich_penalty', value: 25, target: 'richest' },
+    subEvents: [
+      {
+        id: 'ott_ringan',
+        name: 'OTT Ringan',
+        description: 'OTT kecil-kecilan. Pemain terkaya bayar 25% ke bank.',
+        effect: { type: 'rich_penalty', value: 25, target: 'richest' },
+      },
+      {
+        id: 'ott_besar',
+        name: 'OTT Besar-Besaran',
+        description: 'OTT masif! Semua pemain yang punya properti bayar denda Rp200.000 per properti.',
+        effect: { type: 'all_pay_percent', value: 15, target: 'all' },
       },
     ],
   },

@@ -525,6 +525,57 @@ function processMoneyEffect(
       result.statusMessages.push(`Bayar denda: -Rp ${penalty.toLocaleString('id-ID')}`);
       result.shouldCheckBankruptcy = true;
     }
+
+    // Handle property-specific koruptor effects
+    if (special.includes('1_properti_disita') && p.properties.length > 0) {
+      const seizedProp = p.properties[Math.floor(Math.random() * p.properties.length)];
+      p.properties = p.properties.filter(prop => prop !== seizedProp);
+      result.statusMessages.push(`Properti "${seizedProp}" disita oleh KPK!`);
+    }
+    if (special.includes('2_properti_50') && p.properties.length > 0) {
+      const count = Math.min(2, p.properties.length);
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(Math.random() * p.properties.length);
+        const prop = p.properties[idx];
+        p.properties.splice(idx, 1);
+        result.statusMessages.push(`Properti "${prop}" dijual paksa 50%!`);
+      }
+    }
+    if (special.includes('semua_dapat_properti_gratis')) {
+      // Give each player a free property
+      for (const other of allPlayers) {
+        result.moneyChanges.push({ playerId: other.id, amount: 0, label: 'Properti gratis korupsi' });
+      }
+      result.statusMessages.push(`Semua pemain dapat properti gratis dari korupsi!`);
+    }
+    if (special.includes('ke_pemain_luck_tertinggi')) {
+      // Pay 2M to player with highest luck
+      const highestLuckPlayer = [...allPlayers].filter(o => o.id !== p.id).sort((a, b) => b.luck - a.luck)[0];
+      if (highestLuckPlayer) {
+        const penalty = 2000000;
+        p.cleanMoney = Math.max(0, p.cleanMoney - penalty);
+        highestLuckPlayer.cleanMoney += penalty;
+        result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Bayar ke pemain beruntung' });
+        result.moneyChanges.push({ playerId: highestLuckPlayer.id, amount: penalty, label: 'Diterima dari koruptor' });
+        result.statusMessages.push(`Bayar Rp 2.000.000 ke ${highestLuckPlayer.name} (luck tertinggi)!`);
+        result.shouldCheckBankruptcy = true;
+      }
+    }
+    if (special.includes('3_pemain_random')) {
+      // Pay 500k to 3 random players
+      const others = allPlayers.filter(o => o.id !== p.id);
+      const shuffled = [...others].sort(() => Math.random() - 0.5);
+      const targets = shuffled.slice(0, Math.min(3, shuffled.length));
+      for (const target of targets) {
+        const penalty = 500000;
+        p.cleanMoney = Math.max(0, p.cleanMoney - penalty);
+        target.cleanMoney += penalty;
+        result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Bagi korupsi' });
+        result.moneyChanges.push({ playerId: target.id, amount: penalty, label: 'Diterima dari koruptor' });
+      }
+      result.statusMessages.push(`Bayar Rp 500.000 ke 3 pemain random!`);
+      result.shouldCheckBankruptcy = true;
+    }
   }
 }
 
@@ -563,7 +614,8 @@ function processSkipEffect(
     result.statusMessages.push(`Kehilangan Rp 200.000`);
     result.shouldCheckBankruptcy = true;
   } else if (special === 'atau_skip_1') {
-    // Card owner pays money OR skips 1 turn (money already applied by caller)
+    // Player already loses money from card, but also gets skipped
+    result.statusMessages.push(`Bayar atau skip 1 giliran!`);
   }
 }
 
@@ -794,6 +846,17 @@ function processSpecialEffect(
       result.statusMessages.push(`${target.name} masuk Black Hole! Bankrupt!`);
       result.shouldCheckBankruptcy = true;
     }
+  } else if (special === 'kas_x3_tapi_dicurigai_kpk_3_babak') {
+    // Uang Gaib: money x3 but flagged by KPK for 3 rounds
+    p.cleanMoney += card.effect.value || 0;
+    p.dirtyMoney = Math.floor(p.dirtyMoney + (card.effect.value || 0) * 0.7);
+    p.statusEffects = [...p.statusEffects, {
+      type: 'kpk_suspicion',
+      duration: 3,
+      effect: 'Dicurigai KPK - 30% uang kotor bisa disita tiap babak',
+    }];
+    result.moneyChanges.push({ playerId: p.id, amount: card.effect.value || 0, label: 'Uang Gaib' });
+    result.statusMessages.push(`Uang Gaib! +Rp ${(card.effect.value || 0).toLocaleString('id-ID')} tapi dicurigai KPK 3 babak!`);
   }
 }
 

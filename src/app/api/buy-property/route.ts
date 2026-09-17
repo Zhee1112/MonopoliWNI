@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { mapPlayerFromDB, mapRoomFromDB, GameMode } from '@/lib/types';
 import { performAction } from '@/lib/game/game-logic';
-import { getPropertyCells, calculateRent, getGroupCells } from '@/lib/game/board-data';
+import { getPropertyCells, calculateRent, getGroupCells, hasMonopoly } from '@/lib/game/board-data';
 
 // ============================================================
 // BUY PROPERTY API
@@ -233,7 +233,8 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    const baseRent = calculateRent(cell.rent || 0, dbProperty.house_level, false);
+    const isMonopoly = hasMonopoly(owner.properties || [], cell.group || '');
+    const baseRent = calculateRent(cell.rent || 0, dbProperty.house_level, isMonopoly);
     const rent = Math.round(baseRent * rentMultiplier);
 
     const canPayRent = payer.cleanMoney >= rent;

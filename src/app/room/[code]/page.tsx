@@ -16,6 +16,7 @@ import GlobalEventModal from '@/components/Modal/GlobalEventModal';
 import PostGameModal from '@/components/Modal/PostGameModal';
 import UpgradePropertyModal from '@/components/Modal/UpgradePropertyModal';
 import DefenseModal from '@/components/Modal/DefenseModal';
+import BankruptcyModal from '@/components/Modal/BankruptcyModal';
 import { useRealtimeRoom, useRealtimePlayers, useRealtimeCard, useRealtimeChat, useRealtimeAnnouncement, useRealtimeProperties, PropertyRow } from '@/hooks/useRealtime';
 import { usePionAnimation } from '@/hooks/usePionAnimation';
 import { getCellByIndex, getPropertyCells, JAKARTA_ZONES } from '@/lib/game/board-data';
@@ -55,7 +56,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showRegulations, setShowRegulations] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [gameModalOpen, setGameModalOpen] = useState(false);
-  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'log' | 'chat'>('players');
+  const [gameModalTab, setGameModalTab] = useState<'players' | 'status' | 'log' | 'chat' | 'settings'>('players');
   const [hasRolledThisTurn, setHasRolledThisTurn] = useState(false);
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
@@ -65,6 +66,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [showDefenseModal, setShowDefenseModal] = useState(false);
   const [defenseAuditAmount, setDefenseAuditAmount] = useState(0);
   const [defenseCallback, setDefenseCallback] = useState<((option: string, success: boolean) => void) | null>(null);
+  const [showBankruptcyModal, setShowBankruptcyModal] = useState(false);
   const [showGameEventModal, setShowGameEventModal] = useState(false);
   const [gameEventCell, setGameEventCell] = useState<BoardCell | null>(null);
   const [gameEventDice, setGameEventDice] = useState<{ dice1: number; dice2: number; total: number } | undefined>(undefined);
@@ -454,7 +456,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           
           // After animation completes, update state
           setCurrentPlayer((prev) =>
-            prev ? { ...prev, position: newPosition, luck: data.newLuck, cleanMoney: prev.cleanMoney + data.moneyChange } : null
+            prev ? { ...prev, position: newPosition, luck: data.newLuck, cleanMoney: prev.cleanMoney + data.moneyChange, roleLevel: data.newRoleLevel || prev.roleLevel } : null
           );
           setHasRolledThisTurn(true);
           const cell = getCellByIndex(newPosition);
@@ -465,6 +467,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           if (data.luckFluctuation && data.luckFluctuation !== 0) {
             const sign = data.luckFluctuation > 0 ? '+' : '';
             luckDetail = ` | Hoki ${sign}${data.luckFluctuation} → ${data.newLuck}`;
+          }
+
+          // Level-up announcement
+          if (data.levelUpMessage) {
+            broadcastAnnouncement({
+              type: 'event',
+              playerName: freshName,
+              message: 'NAIK LEVEL!',
+              detail: data.levelUpMessage,
+            });
           }
           
           broadcastAnnouncement({
@@ -717,7 +729,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   if (rentData.isBankrupt) {
                     SoundEffects.gameOver();
                     setCurrentPlayer((prev) => prev ? {
-                      ...prev, cleanMoney: 0, dirtyMoney: 0, properties: [], isBankrupt: true,
+                      ...prev, cleanMoney: 0, dirtyMoney: 0, properties: [], isBankrupt: true, statusEffects: [],
                     } : null);
                     broadcastAnnouncement({
                       type: 'bankrupt',
@@ -1630,6 +1642,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               Chat
             </button>
             <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
+              className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#152f1f] hover:text-[#cbead1] transition-colors"
+            >
+              Setelan
+            </button>
+            <button
               onClick={() => router.push('/')}
               className="px-2.5 py-1.5 rounded text-xs font-medium text-[#d1c5af] hover:bg-[#ff4757]/20 hover:text-[#ff4757] transition-colors"
             >
@@ -1721,6 +1739,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               <span className="text-lg">&#x1F3E6;</span>
               <span className="hidden md:inline text-xs font-bold">Pinjam</span>
             </button>
+            <button
+              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
+              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
+              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#a78bfa' }}
+              title="Pengaturan"
+            >
+              <span className="text-lg">&#x2699;&#xFE0F;</span>
+              <span className="hidden md:inline text-xs font-bold">Setelan</span>
+            </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-[#d1c5af]">
@@ -1804,7 +1831,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         roomCode={roomCode}
         chatMessages={chatMessages}
         announcements={announcements}
-        round={Math.floor((room.currentTurn || 0) / (room.turnOrder?.length || 1)) + 1}
+        round={room.roundNumber || 1}
         totalRounds={room.totalRounds || 20}
         potMoney={room.potMoney || 0}
         onSendChat={(text) => {
@@ -2123,27 +2150,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
             // Check bankruptcy after card effects
             if (updatedPlayerData && updatedPlayerData.cleanMoney <= 0 && updatedPlayerData.dirtyMoney <= 0 && !updatedPlayerData.isBankrupt) {
-              const bankruptPlayer = { ...updatedPlayerData, isBankrupt: true, cleanMoney: 0, dirtyMoney: 0, properties: [] };
-              setCurrentPlayer(bankruptPlayer);
-              SoundEffects.gameOver();
-              broadcastAnnouncement({
-                type: 'bankrupt',
-                playerName: updatedPlayerData.name,
-                message: 'BANKRUP! Semua properti disita bank.',
-                detail: '',
-              });
-              fetch('/api/update-player', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  roomId: room.id,
-                  playerId: currentPlayer.id,
-                  cleanMoneyDelta: -updatedPlayerData.cleanMoney,
-                  dirtyMoneyDelta: -updatedPlayerData.dirtyMoney,
-                  properties: [],
-                  isBankrupt: true,
-                }),
-              }).catch(() => {});
+              // Show bankruptcy modal instead of immediately marking as bankrupt
+              setShowBankruptcyModal(true);
             }
 
             // Broadcast the SAME card that was drawn (no second draw!)
@@ -2255,6 +2263,123 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             </button>
           </div>
         </div>
+      )}
+
+      {/* BANKRUPTCY MODAL */}
+      {showBankruptcyModal && currentPlayer && (
+        <BankruptcyModal
+          isOpen={showBankruptcyModal}
+          player={currentPlayer}
+          otherPlayers={players}
+          onSellToBank={async (propertyName: string) => {
+            try {
+              const response = await fetch('/api/bankrupt-sell', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  roomId: room?.id,
+                  sellerId: currentPlayer.id,
+                  propertyName,
+                }),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error);
+              SoundEffects.success();
+              setCurrentPlayer((prev) => prev ? {
+                ...prev,
+                cleanMoney: data.newSellerBalance,
+                properties: (prev.properties || []).filter(p => p !== propertyName),
+              } : null);
+              broadcastAnnouncement({
+                type: 'sell',
+                playerName: currentPlayer.name,
+                message: `menjual ${propertyName} ke Bank`,
+                detail: `+Rp ${data.sellPrice.toLocaleString('id-ID')}`,
+              });
+            } catch (err) {
+              console.error('Sell to bank error:', err);
+            }
+          }}
+          onSellToPlayer={async (propertyName: string, buyerId: string, amount: number) => {
+            try {
+              const response = await fetch('/api/bankrupt-sell', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  roomId: room?.id,
+                  sellerId: currentPlayer.id,
+                  propertyName,
+                  buyerId,
+                }),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error);
+              SoundEffects.success();
+              const buyer = players.find(p => p.id === buyerId);
+              setCurrentPlayer((prev) => prev ? {
+                ...prev,
+                cleanMoney: data.newSellerBalance,
+                properties: (prev.properties || []).filter(p => p !== propertyName),
+              } : null);
+              broadcastAnnouncement({
+                type: 'sell',
+                playerName: currentPlayer.name,
+                message: `menjual ${propertyName} ke ${buyer?.name || 'pemain'}`,
+                detail: `+Rp ${data.sellPrice.toLocaleString('id-ID')}`,
+              });
+            } catch (err) {
+              console.error('Sell to player error:', err);
+            }
+          }}
+          onTakeLoan={async (amount: number) => {
+            try {
+              const response = await fetch('/api/bankrupt-loan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  roomId: room?.id,
+                  playerId: currentPlayer.id,
+                  amount,
+                }),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error);
+              SoundEffects.success();
+              setCurrentPlayer((prev) => prev ? {
+                ...prev,
+                cleanMoney: data.newBalance,
+                statusEffects: [...(prev.statusEffects || []), {
+                  type: 'loan',
+                  duration: 999,
+                  effect: `Pinjaman Rp ${amount.toLocaleString('id-ID')}`,
+                }],
+              } : null);
+              broadcastAnnouncement({
+                type: 'loan',
+                playerName: currentPlayer.name,
+                message: `mengambil pinjaman bank`,
+                detail: `+Rp ${amount.toLocaleString('id-ID')}`,
+              });
+              setShowBankruptcyModal(false);
+            } catch (err) {
+              console.error('Take loan error:', err);
+            }
+          }}
+          onDeclineLoan={() => {
+            // Player accepts bankruptcy — clear ALL status effects including DND
+            setCurrentPlayer((prev) => prev ? {
+              ...prev, cleanMoney: 0, dirtyMoney: 0, properties: [], isBankrupt: true, statusEffects: [],
+            } : null);
+            SoundEffects.gameOver();
+            broadcastAnnouncement({
+              type: 'bankrupt',
+              playerName: currentPlayer.name,
+              message: 'BANKRUP! Semua properti disita bank.',
+              detail: '',
+            });
+            setShowBankruptcyModal(false);
+          }}
+        />
       )}
     </div>
   );

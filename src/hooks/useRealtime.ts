@@ -355,7 +355,7 @@ export function useRealtimeChat(roomCode: string, currentUserId?: string) {
 
 export interface Announcement {
   id: string;
-  type: 'roll' | 'buy' | 'rent' | 'card' | 'event' | 'tax' | 'loan' | 'bankrupt' | 'turn' | 'round' | 'system' | 'skip';
+  type: 'roll' | 'buy' | 'rent' | 'card' | 'event' | 'tax' | 'loan' | 'bankrupt' | 'turn' | 'round' | 'system' | 'skip' | 'sell';
   playerName: string;
   message: string;
   detail?: string;

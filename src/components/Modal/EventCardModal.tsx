@@ -38,6 +38,26 @@ const TIER_ACCENT: Record<string, string> = {
   legendary: '#a855f7',
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  event_normal: 'TAKDIR WNI',
+  event_meme: 'TAKDIR WNI',
+  interaksi: 'INTERAKSI',
+  sabotase: 'SABOTASE',
+  koruptor: 'KORUPTOR',
+  audit: 'AUDIT',
+  legendary: 'LEGENDARIS',
+};
+
+const CATEGORY_EMOJIS: Record<string, string> = {
+  event_normal: '🎲',
+  event_meme: '🃏',
+  interaksi: '🤝',
+  sabotase: '💣',
+  koruptor: '💰',
+  audit: '🔍',
+  legendary: '👑',
+};
+
 const EFFECT_DESCRIPTIONS: Record<string, string> = {
   bayar_30_persen_duit_kotor: 'Bayar 30% uang kotor',
   bayar_20persen_saldo: 'Bayar 20% saldo',
@@ -68,6 +88,7 @@ const EFFECT_DESCRIPTIONS: Record<string, string> = {
   semua_properti_murah_gratis: 'Semua properti murah/gratis',
   target_bayar_ke_draw: 'Target bayar ke penarik kartu',
   target_mundur_3_langkah: 'Target mundur 3 langkah',
+  'target mundur 3 langkah': 'Target mundur 3 langkah',
   target_rent_freeze_2_babak: 'Properti target sewa gratis 2 babak',
   curi_30_persen_kas_target: 'Curi 30% kas dari target',
   target_bayar_50_persen_kas_ke_kamu: 'Target bayar 50% kas ke kamu',
@@ -104,7 +125,59 @@ const EFFECT_DESCRIPTIONS: Record<string, string> = {
   ganda_x2_tapi_gagal_bayar_200rb: 'Dadu x2, gagal bayar Rp200rb',
   batalkan_dadu_pemain_lain: 'Batalkan dadu pemain lain',
   '3x_dadu_permanen': 'Dadu x3 permanen',
+  kas_x3_tapi_dicurigai_kpk_3_babak: 'Kas x3, tapi dicurigai KPK 3 babak',
+  semua_plus500rb: 'Semua pemain +Rp500.000',
+  semua_plus300rb: 'Semua pemain +Rp300.000',
+  semua_plus200rb: 'Semua pemain +Rp200.000',
+  semua_plus400rb: 'Semua pemain +Rp400.000',
+  semua_plus1jt: 'Semua pemain +Rp1.000.000',
+  '10persen_n_level': '+10% bonus income',
+  semua_radius3_bayar: 'Semua pemain radius 3 bayar',
+  saldo_langsung_10jt: 'Saldo langsung Rp10jt',
+  anak_sultan_role: 'Role Anak Sultan',
+  presiden_gorong_gorong: 'Role Presiden Gorong-Gorong',
+  pilih_pemain_bayar_atau_skip: 'Pilih pemain: bayar atau skip',
+  buka_info_semua_pemain: 'Buka info semua pemain',
+  luck_30_semua_plus500rb_bisa_impeach: 'Luck -30, semua +Rp500rb',
+  luck_35_2_properti_50_semua_plus300rb: 'Luck -35, 2 properti 50%, semua +Rp300rb',
+  luck_20_bayar_1jt_semua_plus200rb: 'Luck -20, bayar Rp1jt, semua +Rp200rb',
+  luck_25_semua_dapat_properti_gratis: 'Luck -25, semua dapat properti gratis',
+  luck_30_bayar_2jt_ke_pemain_luck_tertinggi: 'Luck -30, bayar Rp2jt ke pemain luck tertinggi',
+  luck_40_semua_plus1jt_bisa_dilapor: 'Luck -40, semua +Rp1jt',
+  luck_15_bayar_500rb_3_pemain_random: 'Luck -15, bayar Rp500rb ke 3 pemain',
+  luck_35_1_properti_disita_semua_plus400rb: 'Luck -35, 1 properti disita, semua +Rp400rb',
 };
+
+function getEffectDescription(card: Card): string {
+  const { type, special, value } = card.effect;
+  if (special && EFFECT_DESCRIPTIONS[special]) return EFFECT_DESCRIPTIONS[special];
+  if (special) return special.replace(/_/g, ' ');
+  switch (type) {
+    case 'money': return value !== undefined ? `${value >= 0 ? '+' : ''}Rp${Math.abs(value).toLocaleString('id-ID')}` : 'Efek Uang';
+    case 'skip': return `Skip ${card.effect.value || 1} giliran`;
+    case 'dice': return 'Efek Dadu Khusus';
+    case 'property': return 'Efek Properti';
+    case 'interaction': return 'Efek Interaksi';
+    case 'special': return 'Efek Khusus';
+    case 'role': return 'Efek Role';
+    case 'luck': return 'Efek Hoki';
+    default: return 'Efek Khusus';
+  }
+}
+
+function getEffectIcon(card: Card): string {
+  const { type, special } = card.effect;
+  if (special?.includes('bayar') || special?.includes('sita') || special?.includes('minus')) return '💸';
+  if (special?.includes('semua_pemain') || special?.includes('semua_plus') || special?.includes('bonus')) return '💸';
+  if (special?.includes('properti')) return '🏠';
+  if (special?.includes('luck')) return '🍀';
+  if (special?.includes('skip')) return '⏭️';
+  if (special?.includes('dadu') || type === 'dice') return '🎲';
+  if (type === 'interaction') return '🤝';
+  if (type === 'money' && (card.effect.value || 0) > 0) return '💰';
+  if (type === 'money' && (card.effect.value || 0) < 0) return '💸';
+  return '🃏';
+}
 
 export default function EventCardModal({
   isOpen,
@@ -127,21 +200,27 @@ export default function EventCardModal({
   const name = card.name;
   const flavorText = 'flavorText' in card ? card.flavorText : '';
   const isKegiatan = 'positive' in card;
+  const category = 'category' in card ? card.category : 'event_normal';
   const accentColor = TIER_ACCENT[tier] || '#4edea3';
+  const catLabel = isKegiatan ? 'KEGIATAN WNI' : (CATEGORY_LABELS[category] || 'TAKDIR WNI');
+  const catEmoji = isKegiatan ? '📦' : (CATEGORY_EMOJIS[category] || '🎲');
 
   const handleReaction = (reaction: string) => {
     setSelectedReaction(reaction);
     onReact?.(reaction);
   };
 
+  const effectDesc = isKegiatan ? '' : getEffectDescription(card as Card);
+  const effectIcon = isKegiatan ? '💰' : getEffectIcon(card as Card);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#001809]/90 backdrop-blur-md">
       <div className="relative z-20 w-full max-w-lg mx-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)]">
-        {/* Card Wrapper - Parchment Style */}
+        {/* Card Wrapper */}
         <div className="rounded-xl bg-[#FBF8EE] text-[#07190F] p-5 shadow-[4px_4px_0_0_#001206] overflow-hidden relative">
           {/* Color Header Strip */}
           <div
-            className="flex items-center justify-between pb-3 border-b border-[#07190F]/20 mb-4"
+            className="flex items-center justify-between pb-3 border-b mb-4"
             style={{ borderBottomColor: `${accentColor}40` }}
           >
             <div className="flex items-center gap-2">
@@ -149,11 +228,11 @@ export default function EventCardModal({
                 className="px-2 py-0.5 rounded text-[10px] font-bold"
                 style={{ backgroundColor: accentColor, color: '#07190F' }}
               >
-                {isKegiatan ? 'KEGIATAN WNI' : 'TAKDIR WNI'}
+                {catLabel}
               </span>
               <span className="text-xs font-semibold text-[#07190F]/70">{TIER_LABELS[tier]}</span>
             </div>
-            <span className="text-[#07190F]/50 text-sm">{isKegiatan ? '📦' : '🃏'}</span>
+            <span className="text-sm">{catEmoji}</span>
           </div>
 
           {/* Card Content */}
@@ -162,7 +241,7 @@ export default function EventCardModal({
               className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${accentColor}20` }}
             >
-              <span className="text-2xl">{isKegiatan ? '💰' : '🎲'}</span>
+              <span className="text-2xl">{effectIcon}</span>
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold text-[#07190F] mb-1" style={{ fontFamily: "'Syne', sans-serif" }}>
@@ -203,15 +282,7 @@ export default function EventCardModal({
             <div className="p-3 rounded-lg bg-[#07190F]/5 mb-4">
               <p className="text-[10px] text-[#07190F]/60 uppercase font-semibold mb-1">Efek Kartu</p>
               <p className="text-sm font-bold text-[#07190F]">
-                {'effect' in card && card.effect.type === 'money'
-                  ? `${(card.effect.value || 0) >= 0 ? '+' : ''}Rp${(card.effect.value || 0).toLocaleString('id-ID')}`
-                  : 'effect' in card && card.effect.type === 'skip'
-                    ? `Skip ${card.effect.value || 1} giliran`
-                    : 'effect' in card && card.effect.type === 'dice'
-                      ? (EFFECT_DESCRIPTIONS[card.effect.special || ''] || card.effect.special || 'Efek Dadu')
-                      : 'effect' in card && card.effect.special
-                        ? (EFFECT_DESCRIPTIONS[card.effect.special] || card.effect.special.replace(/_/g, ' '))
-                        : 'Efek Khusus'}
+                {effectDesc}
               </p>
             </div>
           )}
@@ -220,8 +291,8 @@ export default function EventCardModal({
           {'luckModifier' in card && card.luckModifier && (
             <div className="p-2 rounded-lg bg-[#a855f7]/10 border border-[#a855f7]/30 mb-4">
               <p className="text-[10px] text-[#a855f7] font-semibold">
-                Luck Modifier: {card.luckModifier.amount > 0 ? '+' : ''}{card.luckModifier.amount} Luck
-                {card.luckModifier.isPermanent && ' (Permanen)'}
+                🍀 Luck {card.luckModifier.amount > 0 ? '+' : ''}{card.luckModifier.amount}
+                {card.luckModifier.isPermanent ? ' (Permanen)' : ''}
               </p>
             </div>
           )}
@@ -230,8 +301,13 @@ export default function EventCardModal({
           <div className="flex items-center justify-between pt-3 border-t border-[#07190F]/20">
             <div className="flex items-center gap-3">
               {'effect' in card && card.effect && 'value' in card.effect && (card.effect.value || 0) > 0 && (
-                  <span className="text-xs font-bold text-[#00603b] flex items-center gap-1">
-                    💵 +Rp{((card.effect.value || 0)).toLocaleString('id-ID')}
+                <span className="text-xs font-bold text-[#00603b] flex items-center gap-1">
+                  💵 +Rp{((card.effect.value || 0)).toLocaleString('id-ID')}
+                </span>
+              )}
+              {'effect' in card && card.effect && 'value' in card.effect && (card.effect.value || 0) < 0 && (
+                <span className="text-xs font-bold text-[#b45309] flex items-center gap-1">
+                  💸 -Rp{Math.abs((card.effect.value || 0)).toLocaleString('id-ID')}
                 </span>
               )}
             </div>

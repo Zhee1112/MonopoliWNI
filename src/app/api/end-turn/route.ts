@@ -585,6 +585,11 @@ export async function POST(request: NextRequest) {
                 // Handled after the per-player loop
                 break;
               }
+              case 'all_bonus': {
+                const bonus = subEvent.effect.value || 500000;
+                moneyChange = bonus;
+                break;
+              }
               default:
                 break;
             }

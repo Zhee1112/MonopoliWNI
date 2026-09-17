@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { rollDice, updateLuck, rollLuckFluctuation } from '@/lib/game/game-logic';
 import { mapPlayerFromDB, mapRoomFromDB } from '@/lib/types';
+import { NORMAL_ROLES } from '@/lib/game/role-data';
 
 // ============================================================
 // ROLL DICE API
@@ -171,6 +172,22 @@ export async function POST(request: NextRequest) {
       moneyChange += 200000;
     }
 
+    // Role Level-Up System: chance to level up based on role
+    const roleDef = NORMAL_ROLES.find(r => r.id === player.role);
+    let newRoleLevel = player.roleLevel || 1;
+    let levelUpMessage = '';
+    if (roleDef && newRoleLevel < 5) {
+      // Level-up chance: 10% base + 2% per level below max
+      const levelUpChance = 0.10 + (5 - newRoleLevel) * 0.02;
+      if (Math.random() < levelUpChance) {
+        newRoleLevel += 1;
+        const nextRole = roleDef.progressionChain?.[newRoleLevel - 2] || roleDef.id;
+        levelUpMessage = `${roleDef.name} naik ke Lv.${newRoleLevel}!${nextRole !== roleDef.id ? ` → ${nextRole}` : ''}`;
+        // Level-up bonus: +Rp 100.000 per level
+        moneyChange += 100000 * newRoleLevel;
+      }
+    }
+
     // Update player + set has_rolled flag
     const updatedEffects = [...statusEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }];
     const { error: updateError } = await supabaseAdmin
@@ -180,6 +197,7 @@ export async function POST(request: NextRequest) {
         luck: newLuck,
         clean_money: player.cleanMoney + moneyChange,
         status_effects: updatedEffects,
+        role_level: newRoleLevel,
       })
       .eq('id', playerId);
 
@@ -223,6 +241,8 @@ export async function POST(request: NextRequest) {
       luckFluctuation,
       newLuck,
       moneyChange,
+      newRoleLevel,
+      levelUpMessage,
       gameMode: room.gameMode,
       currentRound: Math.floor(room.currentTurn / room.turnOrder.length) + 1,
       totalRounds: room.totalRounds,

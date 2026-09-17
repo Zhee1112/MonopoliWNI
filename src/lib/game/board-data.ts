@@ -375,6 +375,12 @@ export function calculateRent(baseRent: number, houseLevel: number, hasMonopoly:
   const levelMultipliers = [1, 1.5, 2, 2.5, 3, 5];
   const multiplier = levelMultipliers[Math.min(houseLevel, 5)];
   let rent = Math.round(baseRent * multiplier);
-  if (hasMonopoly) rent = Math.round(rent * 1.5);
+  if (hasMonopoly) rent = Math.round(rent * 2);
   return rent;
+}
+
+export function hasMonopoly(ownerProperties: string[], group: string): boolean {
+  const groupCells = getGroupCells(group);
+  if (groupCells.length === 0) return false;
+  return groupCells.every(cell => ownerProperties.includes(cell.name));
 }
