@@ -430,18 +430,8 @@ export async function POST(request: NextRequest) {
     const nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
     const currentRoundNumber = (dbRoom.round_number as number) || 1;
 
-    // Check babak: did all non-bankrupt players pass Start?
-    const { data: allPlayersForBabak } = await supabaseAdmin
-      .from('players')
-      .select('id, is_bankrupt, status_effects')
-      .eq('room_id', roomId);
-
-    const nonBankruptPlayers = (allPlayersForBabak || []).filter(p => !p.is_bankrupt);
-    const allPassedStart = nonBankruptPlayers.length > 0 && nonBankruptPlayers.every(p => {
-      const effects = (p.status_effects as Array<{ type: string }>) || [];
-      return effects.some(e => e.type === 'passed_start_this_babak');
-    });
-    const isNewBabak = allPassedStart;
+    // Babak baru = semua pemain dalam turnOrder sudah dapat giliran (nextTurn wrap ke 0)
+    const isNewBabak = nextTurn === 0;
 
     const roomUpdate: Record<string, unknown> = {
       current_turn: nextTurn,
@@ -456,7 +446,7 @@ export async function POST(request: NextRequest) {
       .update(roomUpdate)
       .eq('id', roomId);
 
-    // Check if new babak started (all players passed Start)
+    // Check if new babak started (all players completed their turn)
     let globalEventTriggered = false;
     let globalEventName = '';
     let globalEventEmoji = '';
@@ -464,7 +454,12 @@ export async function POST(request: NextRequest) {
 
     if (isNewBabak) {
       // Clear passed_start_this_babak from all players
-      for (const p of allPlayersForBabak || []) {
+      const { data: allPlayersForCleanup } = await supabaseAdmin
+        .from('players')
+        .select('id, status_effects')
+        .eq('room_id', roomId);
+
+      for (const p of allPlayersForCleanup || []) {
         const effects = ((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
           .filter(e => e.type !== 'passed_start_this_babak');
         await supabaseAdmin

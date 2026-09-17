@@ -456,11 +456,19 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           setHasRolledThisTurn(true);
           const cell = getCellByIndex(newPosition);
           const freshName = currentPlayerRef.current?.name || 'Pemain';
+          
+          // Luck fluctuation announcement
+          let luckDetail = '';
+          if (data.luckFluctuation && data.luckFluctuation !== 0) {
+            const sign = data.luckFluctuation > 0 ? '+' : '';
+            luckDetail = ` | Hoki ${sign}${data.luckFluctuation} → ${data.newLuck}`;
+          }
+          
           broadcastAnnouncement({
             type: 'roll',
             playerName: freshName,
             message: `melempar dadu ${result.dice1} + ${result.dice2} = ${result.dice1 + result.dice2}`,
-            detail: `mendarat di ${cell.name} ${cell.emoji || ''}`,
+            detail: `mendarat di ${cell.name} ${cell.emoji || ''}${luckDetail}`,
           });
           
           // Trigger GachaRollModal for special petaks (tax, takdir, kegiatan)
@@ -708,7 +716,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                     type: 'rent',
                     playerName: currentPlayerRef.current?.name || 'Pemain',
                     message: `membayar sewa ke ${rentData.ownerName}`,
-                    detail: `-Rp ${rentData.rent.toLocaleString('id-ID')}`,
+                    detail: `-Rp ${rentData.rent.toLocaleString('id-ID')} (pemilik terima Rp ${rentData.ownerShare.toLocaleString('id-ID')})`,
                   });
                   // If property is not landmark (level < 5), show takeover modal
                   if (!dbProp.is_landmark && dbProp.house_level < 5) {
@@ -816,7 +824,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         type: 'buy',
         playerName: currentPlayer.name,
         message: `takeover ${data.propertyName} dari ${data.ownerName}`,
-        detail: `-Rp ${data.takeoverCost.toLocaleString('id-ID')}`,
+        detail: `-Rp ${data.takeoverCost.toLocaleString('id-ID')} (pemilik terima Rp ${data.ownerReceived.toLocaleString('id-ID')})`,
       });
       setShowUpgradeModal(false);
       setUpgradeModalCell(null);
@@ -1824,7 +1832,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       {activeCard && (
         <EventCardModal
           isOpen={true}
-          card={getCardById(activeCard.cardId) || drawRandomCard()}
+          card={getCardById(activeCard.cardId) || getKegiatanById(activeCard.cardId) || drawRandomCard()}
           drawnBy={activeCard.playerName || players.find((p) => p.id === activeCard.drawnBy)?.name || 'Unknown'}
           reactions={activeCard.reactions}
           onReact={handleReaction}
@@ -2051,6 +2059,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   roomId: room.id,
                   playerId: currentPlayer.id,
                   cleanMoneyDelta: updatedPlayerData.cleanMoney - currentPlayer.cleanMoney,
+                  dirtyMoneyDelta: (updatedPlayerData.dirtyMoney || 0) - (currentPlayer.dirtyMoney || 0),
                   properties: updatedPlayerData.properties,
                   statusEffects: updatedPlayerData.statusEffects,
                   luck: updatedPlayerData.luck,

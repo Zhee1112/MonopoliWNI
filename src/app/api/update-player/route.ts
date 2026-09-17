@@ -76,7 +76,20 @@ export async function POST(request: NextRequest) {
       update.status_effects = statusEffects;
     }
     if (luck !== undefined) {
-      update.luck = Math.max(0, Math.min(100, luck));
+      const newLuck = Math.max(0, Math.min(100, luck));
+      update.luck = newLuck;
+      // Check luck 0 achievement
+      if (newLuck === 0 && (dbPlayer.luck || 0) > 0) {
+        await supabaseAdmin
+          .from('player_achievements')
+          .upsert({
+            game_room_id: roomId,
+            player_id: playerId,
+            user_id: dbPlayer.user_id || null,
+            achievement_id: 'unlucky_zero',
+            xp_granted: 25,
+          }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+      }
     }
     if (isBankrupt !== undefined) {
       update.is_bankrupt = isBankrupt;

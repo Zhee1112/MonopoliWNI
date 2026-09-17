@@ -289,6 +289,7 @@ export async function PUT(request: NextRequest) {
       success: true,
       rent,
       ownerName: owner.name,
+      ownerShare,
       newPayerBalance: payer.cleanMoney - rent,
       newOwnerBalance: owner.cleanMoney + ownerShare,
     });

@@ -1,4 +1,5 @@
 import { PlayerStats, Evidence, RollResult, LuckEvent, DirtySource, Card, KegiatanCard, Player, StatusEffect, CardType } from '../types';
+import { getPropertyCells } from './board-data';
 
 // ============================================================
 // GAME LOGIC - Stats, Evidence, Roll System
@@ -451,6 +452,11 @@ function processMoneyEffect(
     result.moneyChanges.push({ playerId: p.id, amount: -penalty, label: 'Ditagih Invoice' });
     result.statusMessages.push(`Bayar 20% saldo: -Rp ${penalty.toLocaleString('id-ID')}`);
     result.shouldCheckBankruptcy = true;
+  } else if (special === '20persen_plus500rb') {
+    const bonus = Math.floor(p.cleanMoney * 0.2) + 500000;
+    p.cleanMoney += bonus;
+    result.moneyChanges.push({ playerId: p.id, amount: bonus, label: 'Pedagang Lima Ribu' });
+    result.statusMessages.push(`Pedagang lima ribu! +Rp ${bonus.toLocaleString('id-ID')} (20% saldo + 500rb)`);
   } else if (special.startsWith('luck_') && isKoruptor) {
     // Koruptor card specials — apply luck penalty and side effects
     const luckMatch = special.match(/luck_(\d+)/);
@@ -625,25 +631,39 @@ function processPropertyEffect(
   const special = card.effect.special || '';
 
   if (special === 'pilih_1_properti_gratis') {
-    // Bapakmu Presiden: give a free property (if player has no properties, nothing happens)
-    result.statusMessages.push(`Bapakmu Presiden! Kamu bisa mengambil 1 properti gratis.`);
+    const propertyCells = getPropertyCells();
+    const unownedCell = propertyCells.find(c => c.type === 'property' && c.price && c.price > 0);
+    if (unownedCell) {
+      p.properties = [...(p.properties || []), unownedCell.name];
+      result.statusMessages.push(`Bapakmu Presiden! Mendapat properti "${unownedCell.name}" gratis!`);
+    } else {
+      result.statusMessages.push(`Bapakmu Presiden! Tidak ada properti tersedia.`);
+    }
   } else if (special === 'diskon_15persen') {
-    // Emak-emak pasar: 15% discount on next purchase
     p.statusEffects = [...p.statusEffects, {
       type: 'discount',
       duration: 3,
       effect: 'Diskon 15% properti berikutnya',
     }];
-    result.statusMessages.push(`Diskon 15% properti berikutnya!`);
+    result.statusMessages.push(`Diskon 15% properti berikutnya berlaku 3 giliran!`);
   } else if (special === '3_properti_nilai_0') {
-    // Sertifikat palsu: 3 properties become value 0
     const props = [...(p.properties || [])];
     const affected = props.slice(0, 3);
     affected.forEach(propName => {
+      p.statusEffects = [...p.statusEffects, {
+        type: 'property_value_zero',
+        duration: 999,
+        effect: `"${propName}" nilainya jadi 0 (Sertifikat Palsu)`,
+      }];
       result.statusMessages.push(`Properti "${propName}" nilainya jadi 0!`);
     });
   } else if (special === 'semua_properti_murah_gratis') {
-    result.statusMessages.push(`Semua properti jadi murah/gratis!`);
+    p.statusEffects = [...p.statusEffects, {
+      type: 'discount',
+      duration: 5,
+      effect: 'Semua properti jadi murah/gratis (Mogul Gosek)',
+    }];
+    result.statusMessages.push(`Semua properti jadi murah/gratis selama 5 giliran!`);
   }
 }
 
@@ -1050,7 +1070,19 @@ function processInteractionEffect(
       result.statusMessages.push(`Properti "${lost}" hilang!`);
     }
   } else if (special === 'sewa_min_50_1_turn') {
-    result.statusMessages.push(`Sewa properti minimal 50% 1 turn!`);
+    p.statusEffects = [...p.statusEffects, {
+      type: 'rent_boost',
+      duration: 1,
+      effect: 'Sewa properti minimal 50% selama 1 giliran',
+    }];
+    result.statusMessages.push(`Sewa properti minimal 50% selama 1 giliran!`);
+  } else if (special === 'properti_level_min_1') {
+    p.statusEffects = [...p.statusEffects, {
+      type: 'no_buy',
+      duration: 1,
+      effect: 'Properti level minimum 1',
+    }];
+    result.statusMessages.push(`Properti tetangga level minimal 1!`);
   } else if (special === 'semua_bayar_300rb_ke_kamu') {
     for (const other of allPlayers) {
       if (other.id !== p.id) {

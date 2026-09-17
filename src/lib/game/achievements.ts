@@ -245,6 +245,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 
   // ---- LUCK/CARD (5) ----
   {
+    id: 'unlucky_zero',
+    name: 'Sesepuh Sial',
+    description: 'Luck turun sampai 0. Hoki sudah meninggalkanmu sepenuhnya.',
+    emoji: '🍀',
+    xp: 25,
+    color: 'text-slate-300',
+    bgColor: 'bg-slate-400/20',
+    borderColor: 'border-slate-400/40',
+    category: 'luck',
+  },
+  {
     id: 'legendary_card',
     name: 'Penarik Kartu Legendaris',
     description: 'Mendapatkan kartu dengan tier Legendaris. Dewi fortuna berpihak!',

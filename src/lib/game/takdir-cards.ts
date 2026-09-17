@@ -59,14 +59,14 @@ export const EVENT_MEME_CARDS: Card[] = [
   // MEME VIRAL (6 kartu)
   { id: 'em_11', name: 'FYP TikTok', tier: 'sedang', category: 'event_meme', effect: { type: 'money', value: 1000000, special: 'buka_info_semua_pemain' }, luckModifier: { source: 'fyp_tiktok', amount: 8, isPermanent: false }, frequency: 1, flavorText: 'FYP! Semua orang tahu posisimu.' },
   { id: 'em_12', name: 'Viral Challenge', tier: 'sedang', category: 'event_meme', effect: { type: 'dice', special: 'roll_2x_pilih_terbaik' }, luckModifier: { source: 'viral_challenge', amount: 5, isPermanent: false }, frequency: 1, flavorText: 'Viral challenge? Semua orang ikut.' },
-  { id: 'em_13', name: 'Ghosting', tier: 'sedang', category: 'event_meme', effect: { type: 'skip', value: 1, special: 'minus_200rb' }, luckModifier: { source: 'ghosting', amount: -5, isPermanent: false }, frequency: 1, flavorText: 'Ghosting? Dompet juga di-ghost.' },
-  { id: 'em_14', name: 'Ditagih Invoice', tier: 'berat', category: 'event_meme', effect: { type: 'money', special: 'bayar_20persen_saldo' }, luckModifier: { source: 'ditagih', amount: -8, isPermanent: false }, frequency: 1, flavorText: 'Ditagih invoice, dompet menangis.' },
+  { id: 'em_13', name: 'Di-Ghosting Kamu Sehari', tier: 'sedang', category: 'event_meme', effect: { type: 'skip', value: 1, special: 'minus_200rb' }, luckModifier: { source: 'ghosting', amount: -5, isPermanent: false }, frequency: 1, flavorText: 'Ghosting? Dompet juga di-ghost.' },
+  { id: 'em_14', name: 'Tagihan Kartu Kredit', tier: 'berat', category: 'event_meme', effect: { type: 'money', special: 'bayar_20persen_saldo' }, luckModifier: { source: 'ditagih', amount: -8, isPermanent: false }, frequency: 1, flavorText: 'Tagihan kartu kredit, dompet menangis.' },
   { id: 'em_15', name: 'Bapakmu Presiden', tier: 'berat', category: 'event_meme', effect: { type: 'property', special: 'pilih_1_properti_gratis' }, luckModifier: { source: 'presiden', amount: 15, isPermanent: true }, frequency: 1, flavorText: 'Bapakmu presiden? Privilege activated.' },
   { id: 'em_16', name: 'Main HP di Rapat', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: -50000 }, luckModifier: { source: 'main_hp', amount: -2, isPermanent: false }, frequency: 1, flavorText: 'Main HP di rapat, ketahuan bos.' },
 
   // REALITA EKONOMI (4 kartu)
-  { id: 'em_17', name: 'Guru Honorer Mengajar', tier: 'sedang', category: 'event_meme', effect: { type: 'money', value: 500000, special: 'skip_1_giliran' }, luckModifier: { source: 'guru_honorer', amount: 5, isPermanent: false }, frequency: 1, flavorText: 'Guru honorer? Semangat mengajar!' },
-  { id: 'em_18', name: 'Anak Jaksel Bilingual', tier: 'ringan', category: 'event_meme', effect: { type: 'special', special: 'properti_premium_naik_10' }, luckModifier: { source: 'jaksel', amount: 3, isPermanent: false }, frequency: 1, flavorText: 'Anak Jaksel, dunia berubah.' },
+  { id: 'em_17', name: 'Guru Honorer Mengajar', tier: 'sedang', category: 'event_meme', effect: { type: 'money', value: 500000 }, luckModifier: { source: 'guru_honorer', amount: 5, isPermanent: false }, frequency: 1, flavorText: 'Guru honorer? Semangat mengajar!' },
+  { id: 'em_18', name: 'Anak Jaksel Bilingual', tier: 'ringan', category: 'event_meme', effect: { type: 'special', special: 'properti_premium_naik_10' }, luckModifier: { source: 'jaksel', amount: 3, isPermanent: false }, frequency: 1, flavorText: 'Anak Jaksel, semua harga naik 10%.' },
   { id: 'em_19', name: 'Emak-emak Pasar Tradisional', tier: 'ringan', category: 'event_meme', effect: { type: 'property', special: 'diskon_15persen' }, luckModifier: { source: 'emak_pasar', amount: 3, isPermanent: false }, frequency: 1, flavorText: 'Emak-emak pasar, harga pasti murah.' },
   { id: 'em_20', name: 'Bapak Warung Nongkrong', tier: 'ringan', category: 'event_meme', effect: { type: 'money', value: 75000 }, luckModifier: { source: 'bapak_warung', amount: 2, isPermanent: false }, frequency: 1, flavorText: 'Bapak warung, semua orang kenal.' },
 ];
@@ -77,16 +77,16 @@ export const EVENT_MEME_CARDS: Card[] = [
 
 export const INTERAKSI_CARDS: Card[] = [
   // UANG/TRANSFER (10 kartu)
-  { id: 'int_01', name: 'Ditagih Invoice', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 500000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Ditagih terus, dompet nangis.' },
-  { id: 'int_02', name: 'Pungli Parkir', tier: 'ringan', category: 'interaksi', effect: { type: 'interaction', value: 200000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Parkir berbayar, semua harus taat.' },
+  { id: 'int_01', name: 'Tagihan Menumpuk', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 500000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Tagihan menumpuk, dompet nangis.' },
+  { id: 'int_02', name: 'Parkir Berbayar', tier: 'ringan', category: 'interaksi', effect: { type: 'interaction', value: 200000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Parkir berbayar, semua harus taat.' },
   { id: 'int_03', name: 'Emak-emak Minta Sumbangan', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 300000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Iuran RT naik terus, gaji nggak naik.' },
-  { id: 'int_04', name: 'Ojol Cancel', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 200000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Ojol cancel? Siapa suruh buru-buru.' },
+  { id: 'int_04', name: 'Ojol Cancel Mendadak', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 200000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Ojol cancel? Siapa suruh buru-buru.' },
   { id: 'int_05', name: 'Pedagang Naik Harga', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_2x_harga_beli' }, frequency: 1, flavorText: 'Inflasi, semua harga naik.' },
-  { id: 'int_06', name: 'Ghosting Invoice', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 400000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Ditagih tapi di-ghost, dompet nangis.' },
+  { id: 'int_06', name: 'Invoice Di-Ghosting', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 400000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Ditagih tapi di-ghost, dompet nangis.' },
   { id: 'int_07', name: 'Anak Sultan Flexing', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 300000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Sultan flexing, semua harus bayar.' },
-  { id: 'int_08', name: 'Tukang Parkir Pro', tier: 'ringan', category: 'interaksi', effect: { type: 'interaction', value: 150000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Parkir pro, semua harus taat.' },
-  { id: 'int_09', name: 'Ibu RT Gossip', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 250000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Gossip RT, semua orang tahu.' },
-  { id: 'int_10', name: 'PNS Scrolling', tier: 'ringan', category: 'interaksi', effect: { type: 'interaction', value: 200000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'PNS main HP, kerjaan numpuk.' },
+  { id: 'int_08', name: 'Tukang Parkir Preman', tier: 'ringan', category: 'interaksi', effect: { type: 'interaction', value: 150000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Parkir preman, semua harus taat.' },
+  { id: 'int_09', name: 'Tetangga Gosip', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', value: 250000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'Gossip tetangga, semua orang tahu.' },
+  { id: 'int_10', name: 'PNS Main HP', tier: 'ringan', category: 'interaksi', effect: { type: 'interaction', value: 200000, special: 'target_bayar_ke_draw' }, frequency: 1, flavorText: 'PNS main HP, kerjaan numpuk.' },
 
   // PROPERTI (8 kartu)
   { id: 'int_11', name: 'Sita Properti', tier: 'berat', category: 'interaksi', effect: { type: 'interaction', special: '1_properti_dijual_50' }, frequency: 1, flavorText: 'Disita, semuanya hilang.' },
@@ -99,11 +99,11 @@ export const INTERAKSI_CARDS: Card[] = [
   { id: 'int_18', name: 'Tetangga Rewel', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'sewa_min_50_1_turn' }, frequency: 1, flavorText: 'Tetangga rese, semua terpengaruh.' },
 
   // GILIRAN/STATUS (8 kartu)
-  { id: 'int_19', name: 'Ghosting', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_skip_1_turn' }, frequency: 1, flavorText: 'Di-ghosting, semua hilang.' },
+  { id: 'int_19', name: 'Mood Crash', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_skip_1_turn' }, frequency: 1, flavorText: 'Mood crash, target harus istirahat.' },
   { id: 'int_20', name: 'Emak-emak Marah', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_skip_1_plus_bayar_200rb' }, frequency: 1, flavorText: 'Emak marah, semua kena.' },
   { id: 'int_21', name: 'Bapak-bapak Ngomel', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_skip_plus_minus_100rb_luck' }, frequency: 1, flavorText: 'Bapak ngomel, semua panas.' },
-  { id: 'int_22', name: 'FOMO Konser', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_500rb_atau_skip' }, frequency: 1, flavorText: 'FOMO? Semua orang harus bayar.' },
-  { id: 'int_23', name: 'Kena Tilang', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_300rb_plus_skip' }, frequency: 1, flavorText: 'Tilang? Semua harus taat.' },
+  { id: 'int_22', name: 'Tiket Konser Sold Out', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_500rb_atau_skip' }, frequency: 1, flavorText: 'Tiket habis? Bayar scalper atau skip.' },
+  { id: 'int_23', name: 'Operasi Zebra', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_300rb_plus_skip' }, frequency: 1, flavorText: 'Operasi Zebra, banyak yang kena tilang.' },
   { id: 'int_24', name: 'WFH Zoom Crash', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_200rb_plus_luck_5' }, frequency: 1, flavorText: 'Zoom crash, semua nganggur.' },
   { id: 'int_25', name: 'Drama Queen Burnout', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_300rb_plus_luck_10' }, frequency: 1, flavorText: 'Burnout, semua lelah.' },
   { id: 'int_26', name: 'Bocah TikTok Cancel', tier: 'sedang', category: 'interaksi', effect: { type: 'interaction', special: 'target_bayar_400rb_plus_luck_8' }, frequency: 1, flavorText: 'Cancel culture, semua kena.' },
@@ -153,7 +153,7 @@ export const SABOTASE_CARDS: Card[] = [
   { id: 'sab_01', name: 'Sweeping Buzzer', tier: 'ringan', category: 'interaksi', effect: { type: 'money', value: -50000, target: 'all' }, frequency: 2, flavorText: 'Buzzer-buzzer digital disweeping, semua kena dampaknya.' },
   { id: 'sab_02', name: 'Hoaks Viral', tier: 'ringan', category: 'event_normal', effect: { type: 'skip', value: 1, target: 'random' }, frequency: 2, flavorText: 'Hoaks viral, random 1 pemain panik dan skip giliran.' },
   { id: 'sab_03', name: 'Knalpot Racing', tier: 'ringan', category: 'event_normal', effect: { type: 'dice', special: 'ganda_x2_tapi_gagal_bayar_200rb' }, frequency: 1, flavorText: 'Knalpot racing! Dadu berikutnya x2, tapi kalau gagal bayar Rp 200.000.' },
-  { id: 'sab_04', name: 'Tempat Ibadah', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: 100000, target: 'all' }, frequency: 1, flavorText: 'Semua pemain dapat Rp 100.000 dari sumbangan tetangga.' },
+  { id: 'sab_04', name: 'Sedekah Wajib', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: -100000, target: 'all' }, frequency: 1, flavorText: 'Sedekah wajib, semua pemain harus bersedekah Rp 100.000.' },
   { id: 'sab_05', name: 'Nasi Bungkus', tier: 'ringan', category: 'event_normal', effect: { type: 'money', value: 50000 }, frequency: 2, flavorText: 'Dapat Rp 50.000 dari nasi bungkus yang kelebihan.' },
   { id: 'sab_06', name: 'Kutu Buku', tier: 'ringan', category: 'event_normal', effect: { type: 'special', special: 'negotiation_plus2_permanen' }, frequency: 1, flavorText: 'Negotiation naik +2 permanen. Baca buku ternyata berguna.' },
 
@@ -168,7 +168,7 @@ export const SABOTASE_CARDS: Card[] = [
 
   // BERAT (4 kartu)
   { id: 'sab_14', name: 'Operasi Senyap', tier: 'berat', category: 'interaksi', effect: { type: 'interaction', special: 'curi_20_persen_kas_dari_pemain_kaya' }, frequency: 1, flavorText: 'Operasi senyap! Curi 20% kas dari pemain kaya terpilih.' },
-  { id: 'sab_15', name: 'Investasi Bodong', tier: 'berat', category: 'event_normal', effect: { type: 'money', value: -2000000, special: 'dapat_1_properti_random' }, frequency: 1, flavorText: 'Investasi bodong! Kehilangan 40% kas, tapi dapat 1 properti random.' },
+  { id: 'sab_15', name: 'Investasi Bodong', tier: 'berat', category: 'event_normal', effect: { type: 'dice', special: 'genap_x2_ganjil_80persen' }, frequency: 1, flavorText: 'Investasi bodong? Dadu genap = uang x2, ganjil = hilang 80%.' },
   { id: 'sab_16', name: 'KPK Datang', tier: 'berat', category: 'audit', effect: { type: 'special', special: 'semua_dirty_money_disita_plus_denda_100rb' }, frequency: 1, flavorText: 'KPK datang! Semua uang kotor disita + denda Rp 100.000.' },
   { id: 'sab_17', name: 'Sertifikat Tanah Abal-abal', tier: 'berat', category: 'event_normal', effect: { type: 'property', special: '3_properti_nilai_0' }, frequency: 1, flavorText: 'Sertifikat palsu! Pilih 3 propertimu, nilainya jadi 0.' },
 

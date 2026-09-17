@@ -152,6 +152,19 @@ export async function POST(request: NextRequest) {
     const luckFluctuation = rollLuckFluctuation();
     const newLuck = updateLuck(player.luck, luckFluctuation);
 
+    // Check luck 0 achievement
+    if (newLuck === 0 && player.luck > 0) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: playerId,
+          user_id: dbPlayer.user_id || null,
+          achievement_id: 'unlucky_zero',
+          xp_granted: 25,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
+
     // Calculate money changes
     let moneyChange = 0;
     if (passedStart) {
