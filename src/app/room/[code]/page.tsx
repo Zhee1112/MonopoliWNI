@@ -1333,27 +1333,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               </div>
             )}
 
-            {/* Bot Controls (Host Only) */}
-            {isHost && (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAddBot}
-                  disabled={players.length >= 8}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#a855f7' }}
-                >
-                  + Tambah Bot
-                </button>
-                <button
-                  onClick={() => handleAddBots(3)}
-                  disabled={players.length >= 6}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#a855f7' }}
-                >
-                  + Tambah 3 Bot
-                </button>
-              </div>
-            )}
+
 
             {/* Error */}
             {error && (
