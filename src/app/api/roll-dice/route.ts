@@ -174,6 +174,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
     }
 
+    // Track babak: mark this player as having passed Start this babak
+    if (passedStart) {
+      const hasPassedEffect = statusEffects.some(e => e.type === 'passed_start_this_babak');
+      if (!hasPassedEffect) {
+        const effectsWithPassed = [...updatedEffects, { type: 'passed_start_this_babak', duration: 999, effect: 'passed_start' }];
+        await supabaseAdmin
+          .from('players')
+          .update({ status_effects: effectsWithPassed })
+          .eq('id', playerId);
+      }
+    }
+
     // Update room last_activity_at
     await supabaseAdmin
       .from('rooms')

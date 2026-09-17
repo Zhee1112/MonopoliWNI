@@ -311,6 +311,24 @@ async function checkGameOver(
     if (activePlayers && activePlayers.length === 0) {
       return { gameOver: true };
     }
+
+    // Bundir: if round limit reached and nobody bankrupt, richest wins
+    if (activePlayers && activePlayers.length > 1 && completedRound >= room.totalRounds) {
+      let richestPlayer = activePlayers[0];
+      let richestAssets = 0;
+      for (const p of activePlayers) {
+        const assets = await calculatePlayerAssets(supabaseAdmin, {
+          cleanMoney: p.clean_money,
+          dirtyMoney: p.dirty_money,
+          properties: p.properties || [],
+        });
+        if (assets > richestAssets) {
+          richestAssets = assets;
+          richestPlayer = p;
+        }
+      }
+      return { gameOver: true, winnerId: richestPlayer.id, winnerName: richestPlayer.name };
+    }
   }
 
   if (gameMode === 'sultan' || gameMode === 'kilat') {
@@ -410,14 +428,26 @@ export async function POST(request: NextRequest) {
       .eq('id', playerId);
 
     const nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
-    const isNewRound = nextTurn === 0;
     const currentRoundNumber = (dbRoom.round_number as number) || 1;
+
+    // Check babak: did all non-bankrupt players pass Start?
+    const { data: allPlayersForBabak } = await supabaseAdmin
+      .from('players')
+      .select('id, is_bankrupt, status_effects')
+      .eq('room_id', roomId);
+
+    const nonBankruptPlayers = (allPlayersForBabak || []).filter(p => !p.is_bankrupt);
+    const allPassedStart = nonBankruptPlayers.length > 0 && nonBankruptPlayers.every(p => {
+      const effects = (p.status_effects as Array<{ type: string }>) || [];
+      return effects.some(e => e.type === 'passed_start_this_babak');
+    });
+    const isNewBabak = allPassedStart;
 
     const roomUpdate: Record<string, unknown> = {
       current_turn: nextTurn,
       last_activity_at: new Date().toISOString(),
     };
-    if (isNewRound) {
+    if (isNewBabak) {
       roomUpdate.round_number = currentRoundNumber + 1;
     }
 
@@ -426,14 +456,24 @@ export async function POST(request: NextRequest) {
       .update(roomUpdate)
       .eq('id', roomId);
 
-    // Check if new round started (all players have had a turn)
+    // Check if new babak started (all players passed Start)
     let globalEventTriggered = false;
     let globalEventName = '';
     let globalEventEmoji = '';
     let globalEventDescription = '';
 
-    if (isNewRound) {
-      // New round! Check for global events
+    if (isNewBabak) {
+      // Clear passed_start_this_babak from all players
+      for (const p of allPlayersForBabak || []) {
+        const effects = ((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
+          .filter(e => e.type !== 'passed_start_this_babak');
+        await supabaseAdmin
+          .from('players')
+          .update({ status_effects: effects })
+          .eq('id', p.id);
+      }
+
+      // New babak! Check for global events
       const newRound = currentRoundNumber + 1;
       const { getGlobalEventsForRound } = await import('@/lib/game/global-events');
       const triggeredEvents = getGlobalEventsForRound(newRound);
@@ -612,7 +652,7 @@ export async function POST(request: NextRequest) {
     });
 
     const updatedRoom = { ...room, currentTurn: nextTurn };
-    const completedRound = isNewRound ? currentRoundNumber + 1 : currentRoundNumber;
+    const completedRound = isNewBabak ? currentRoundNumber + 1 : currentRoundNumber;
     const gameOverResult = await checkGameOver(supabaseAdmin, roomId, updatedRoom, completedRound);
 
     if (gameOverResult.gameOver) {
@@ -691,7 +731,7 @@ export async function POST(request: NextRequest) {
       newBalance: player.cleanMoney + income,
       gameOver: false,
       gameMode: room.gameMode,
-      currentRound: isNewRound ? currentRoundNumber + 1 : currentRoundNumber,
+      currentRound: isNewBabak ? currentRoundNumber + 1 : currentRoundNumber,
       totalRounds: room.totalRounds,
       globalEventTriggered,
       globalEventName,

@@ -37,6 +37,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
 
   // State
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [needsJoin, setNeedsJoin] = useState(false);
+  const [joinName, setJoinName] = useState('');
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinError, setJoinError] = useState('');
   const [showDiceModal, setShowDiceModal] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [selectedCell, setSelectedCell] = useState<BoardCell | null>(null);
@@ -147,11 +151,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             // User has a different active room, redirect there
             window.location.href = `/room/${data.activeRoom.code}`;
           } else {
-            // No active room, back to lobby
-            router.push('/');
+            // No active room — show join form
+            setNeedsJoin(true);
           }
         } catch {
-          router.push('/');
+          setNeedsJoin(true);
         }
       }
       relogFromDB();
@@ -303,6 +307,35 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     sendChatMessage(currentPlayer.name, chatInput.trim());
     setChatInput('');
   }, [chatInput, currentPlayer, sendChatMessage]);
+
+  // ---- JOIN FROM LINK HANDLER ----
+  const handleJoinFromLink = useCallback(async () => {
+    const name = joinName.trim() || user?.user_metadata?.full_name || 'Player';
+    if (!room) return;
+    setJoinLoading(true);
+    setJoinError('');
+    try {
+      const response = await fetch('/api/join-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomCode: roomCode.toUpperCase(),
+          playerName: name,
+          userId: user?.id || null,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Gagal join room');
+      sessionStorage.setItem('player', JSON.stringify(data.player));
+      sessionStorage.setItem('room', JSON.stringify(data.room));
+      setCurrentPlayer(data.player);
+      setNeedsJoin(false);
+    } catch (err) {
+      setJoinError(err instanceof Error ? err.message : 'Gagal join room');
+    } finally {
+      setJoinLoading(false);
+    }
+  }, [joinName, room, roomCode, user]);
 
   // ---- BOT HANDLERS ----
 
@@ -988,6 +1021,88 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#001809' }}>
         <div className="text-xl" style={{ color: '#cbead1' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  // ---- JOIN FROM LINK ----
+  if (needsJoin) {
+    return (
+      <div className="min-h-screen bg-[#001809] flex items-center justify-center px-4">
+        <div className="absolute top-20 left-1/4 w-80 h-80 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,213,109,0.05) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-20 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(78,222,163,0.05) 0%, transparent 70%)' }} />
+
+        <div className="max-w-md w-full relative z-10 space-y-4">
+          {/* Room Code Card */}
+          <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-[#d1c5af] mb-2">KODE ROOM</p>
+            <p className="text-3xl font-extrabold text-[#ffd56d] tracking-[0.3em] font-mono">{roomCode}</p>
+            <p className="text-[10px] text-[#9a907c] mt-1">Kamu diundang ke meja ini</p>
+          </div>
+
+          {/* Player Slots Preview */}
+          <div className="rounded-2xl p-4" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
+            <h3 className="text-sm font-bold text-[#cbead1] mb-3">Pemain ({players.length}/8)</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {players.map((player, idx) => (
+                <div key={player.id} className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ backgroundColor: '#092515', border: '1px solid rgba(32,58,41,0.5)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: TOKEN_COLORS[idx] || '#94a3b8' }}>
+                    {player.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#cbead1] truncate">{player.name}</p>
+                  </div>
+                </div>
+              ))}
+              {Array.from({ length: Math.max(0, 8 - players.length) }).map((_, i) => (
+                <div key={`empty-${i}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl opacity-50" style={{ backgroundColor: '#052011', border: '1px dashed rgba(32,58,41,0.3)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152f1f', color: '#9a907c' }}>+</div>
+                  <p className="text-[10px] text-[#9a907c]">Menunggu...</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Join Form */}
+          <div className="rounded-2xl p-5" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
+            <h3 className="text-sm font-bold text-[#cbead1] mb-3 text-center">Gabung ke Meja</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold tracking-widest uppercase text-[#d1c5af] mb-1.5">Nama Pemain</label>
+                <input
+                  type="text"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  placeholder={user?.user_metadata?.full_name || 'Masukkan nama'}
+                  className="w-full px-4 py-2.5 rounded-lg text-sm text-[#cbead1] outline-none transition-all"
+                  style={{ backgroundColor: '#092515', border: '1px solid #203a29' }}
+                  maxLength={20}
+                  onKeyDown={(e) => e.key === 'Enter' && handleJoinFromLink()}
+                  autoFocus
+                />
+                <p className="text-[10px] text-[#9a907c] mt-1">Kosongkan jika pakai nama: {user?.user_metadata?.full_name || 'Player'}</p>
+              </div>
+              {joinError && <p className="text-[#ff4757] text-xs text-center">{joinError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                  style={{ backgroundColor: '#092515', border: '1px solid #203a29', color: '#d1c5af' }}
+                >
+                  KEMBALI
+                </button>
+                <button
+                  disabled={joinLoading}
+                  onClick={handleJoinFromLink}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all active:scale-95 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(to right, #2d5a3d, #3a7a4f, #2d5a3d)', color: '#ffd56d', boxShadow: '0 4px 16px rgba(78,222,163,0.3)' }}
+                >
+                  {joinLoading ? 'MASUK...' : 'GABUNG'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
