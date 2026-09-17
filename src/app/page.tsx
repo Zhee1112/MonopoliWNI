@@ -17,12 +17,13 @@ export default function Home() {
 
   // Check for active room on load — redirect if found
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !user) {
+      setCheckingActive(false);
+      return;
+    }
     async function checkActiveRoom() {
       try {
-        // Auto-dissolve idle waiting rooms first
         await fetch('/api/auto-dissolve', { method: 'POST' });
-
         const res = await fetch(`/api/active-room?userId=${user.id}`);
         const data = await res.json();
         if (data.activeRoom) {
@@ -36,7 +37,7 @@ export default function Home() {
     checkActiveRoom();
   }, [user, authLoading, router]);
 
-  if (authLoading || !user || checkingActive) {
+  if (authLoading || checkingActive) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
