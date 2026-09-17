@@ -1186,7 +1186,18 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             <div className="rounded-2xl p-4" style={{ backgroundColor: '#052011', border: '1px solid #203a29' }}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-[#cbead1]">Pemain ({players.length}/8)</h3>
-                {isHost && <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.1)', color: '#ffd56d' }}>HOST</span>}
+                <div className="flex items-center gap-2">
+                  {isHost && players.length < 8 && (
+                    <button
+                      onClick={handleAddBot}
+                      className="text-[10px] px-2 py-1 rounded-full font-bold transition-all active:scale-95"
+                      style={{ backgroundColor: 'rgba(168,85,247,0.15)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.3)' }}
+                    >
+                      + Bot
+                    </button>
+                  )}
+                  {isHost && <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(255,213,109,0.1)', color: '#ffd56d' }}>HOST</span>}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {players.map((player, idx) => {
@@ -1220,20 +1231,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   );
                 })}
                 {Array.from({ length: 8 - players.length }).map((_, i) => (
-                  <div key={`empty-${i}`} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${isHost ? 'opacity-100' : 'opacity-50'}`} style={{ backgroundColor: '#052011', border: '1px dashed rgba(32,58,41,0.3)' }}>
-                    {isHost ? (
-                      <button
-                        onClick={handleAddBot}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
-                        style={{ backgroundColor: 'rgba(168,85,247,0.15)', color: '#a855f7', border: '1px dashed rgba(168,85,247,0.3)' }}
-                        title="Tambah Bot"
-                      >
-                        +
-                      </button>
-                    ) : (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152f1f', color: '#9a907c' }}>+</div>
-                    )}
-                    <p className="text-[10px] text-[#9a907c]">{isHost ? 'Tambah Bot' : 'Menunggu...'}</p>
+                  <div key={`empty-${i}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl opacity-40" style={{ backgroundColor: '#092515', border: '1px solid rgba(32,58,41,0.3)' }}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152f1f', color: '#9a907c' }}>+</div>
+                    <p className="text-[10px] text-[#9a907c]">Menunggu...</p>
                   </div>
                 ))}
               </div>
