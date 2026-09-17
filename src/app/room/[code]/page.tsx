@@ -28,12 +28,13 @@ import { SoundEffects } from '@/lib/game/sound-effects';
 import { BackgroundMusic } from '@/lib/game/background-music';
 import { processCardEffect, processKegiatanEffect, getCardType, CardEffectResult, KegiatanEffectResult } from '@/lib/game/game-logic';
 import { Player, Room, BoardCell, GameMode, GAME_MODES, Card, KegiatanCard } from '@/lib/types';
+import { BoardThemeId } from '@/lib/game/board-themes';
 
 const TOKEN_COLORS = ['#ef4444', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316', '#94a3b8'];
 
 export default function GameRoom({ params }: { params: Promise<{ code: string }> }) {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshProfile } = useAuth();
   const { code: roomCode } = use(params);
 
   // State
@@ -117,6 +118,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [musicOn, setMusicOn] = useState(false);
+  const [boardTheme, setBoardTheme] = useState<BoardThemeId>('default');
 
   // Refs for avoiding stale closures in animation callbacks
   const drawnCardIdsRef = useRef<string[]>([]);
@@ -212,12 +214,55 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setSurrendered(false);
       SoundEffects.gameOver();
       setGameOver(true);
+      refreshProfile();
       // Fetch final results
       fetch(`/api/active-room?userId=${user?.id || ''}`)
         .then(r => r.json())
         .catch(() => {});
     }
   }, [surrendered, room?.status]);
+
+  // Detect game end via realtime for ALL players (not just the one who triggered it)
+  useEffect(() => {
+    if (room?.status === 'finished' && !gameOver && currentPlayer) {
+      SoundEffects.gameOver();
+      setGameOver(true);
+      refreshProfile();
+      // Fetch rankings from API
+      fetch('/api/end-turn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, playerId: currentPlayer.id }),
+      }).then(() => {
+        // The end-turn will return rankings, but since game is already finished,
+        // we construct rankings from the current players state
+        const rankingsFromPlayers = players.map((p, i) => ({
+          playerId: p.id,
+          playerName: p.name,
+          placement: i + 1,
+          totalAssets: (p.cleanMoney || 0) + (p.dirtyMoney || 0),
+          cleanMoney: p.cleanMoney || 0,
+          properties: p.properties || [],
+          isBot: p.isBot,
+          isBankrupt: p.isBankrupt,
+        }));
+        setGameRankings(rankingsFromPlayers);
+      }).catch(() => {
+        // Fallback: construct from players
+        const rankingsFromPlayers = players.map((p, i) => ({
+          playerId: p.id,
+          playerName: p.name,
+          placement: i + 1,
+          totalAssets: (p.cleanMoney || 0) + (p.dirtyMoney || 0),
+          cleanMoney: p.cleanMoney || 0,
+          properties: p.properties || [],
+          isBot: p.isBot,
+          isBankrupt: p.isBankrupt,
+        }));
+        setGameRankings(rankingsFromPlayers);
+      });
+    }
+  }, [room?.status, gameOver, currentPlayer, players]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -727,6 +772,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                   if (!ok) throw new Error(rentData.error);
 
                   if (rentData.isBankrupt) {
+                    // Truly bankrupt — no properties left to sell
                     SoundEffects.gameOver();
                     setCurrentPlayer((prev) => prev ? {
                       ...prev, cleanMoney: 0, dirtyMoney: 0, properties: [], isBankrupt: true, statusEffects: [],
@@ -736,6 +782,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                       playerName: currentPlayerRef.current?.name || 'Pemain',
                       message: `BANKRUP! Tidak bisa bayar sewa ke ${rentData.ownerName}`,
                       detail: `Sewa Rp ${rentData.rent.toLocaleString('id-ID')}`,
+                    });
+                  } else if (rentData.needsSelling) {
+                    // Can't pay rent but has properties — show BankruptcyModal
+                    setCurrentPlayer((prev) => prev ? { ...prev, cleanMoney: rentData.newPayerBalance || 0 } : null);
+                    setShowBankruptcyModal(true);
+                    broadcastAnnouncement({
+                      type: 'rent',
+                      playerName: currentPlayerRef.current?.name || 'Pemain',
+                      message: `tidak sanggup bayar sewa Rp ${rentData.rent.toLocaleString('id-ID')} ke ${rentData.ownerName}`,
+                      detail: `Sisa utang: Rp ${(rentData.shortfall || 0).toLocaleString('id-ID')} — Jual properti atau ambil pinjaman`,
                     });
                   } else {
                     SoundEffects.payRent();
@@ -748,11 +804,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                     });
                   }
                   // If property is not landmark (level < 5), show takeover modal
-                  if (!dbProp.is_landmark && dbProp.house_level < 5) {
+                  if (!rentData.isBankrupt && !rentData.needsSelling && !dbProp.is_landmark && dbProp.house_level < 5) {
                     setUpgradeModalCell(property);
                     setUpgradeModalIsOwn(false);
                     setShowUpgradeModal(true);
-                  } else {
+                  } else if (!rentData.isBankrupt && !rentData.needsSelling) {
                     // Landmark — just show rent info
                     setGameEventCell(cell);
                     setGameEventDice({ dice1: 0, dice2: 0, total: 0 });
@@ -1675,6 +1731,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           potMoney={room.potMoney || 0}
           round={room.roundNumber || 1}
           totalRounds={room.totalRounds || 20}
+          boardTheme={boardTheme}
           propertyInfo={dbProperties.map((dp) => {
             const owner = players.find(p => p.id === dp.owner_id);
             return {
@@ -1756,29 +1813,39 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           </div>
 
           <div className="flex items-center gap-2">
-            {isMyTurn && !hasRolledThisTurn && (
-              <button
-                onClick={handleRollDice}
-                className="h-9 px-4 sm:px-5 rounded-lg bg-[#ffd56d] hover:bg-[#eec14a] text-[#3e2e00] font-bold text-xs sm:text-sm flex items-center gap-2 shadow-[2px_2px_0_0_#000] transition-all active:scale-95"
-              >
-                <span className="text-sm" style={{ animationDuration: '4s' }}>&#x1F3B2;</span>
-                <span className="tracking-wide">KOCOK DADU</span>
-              </button>
-            )}
-            {isMyTurn && hasRolledThisTurn && (
-              <span className="h-9 px-4 sm:px-5 rounded-lg bg-[#203a29] text-[#9a907c] font-bold text-xs sm:text-sm flex items-center gap-2 cursor-not-allowed border border-[#4e4635]">
-                <span className="text-sm">&#x1F3B2;</span>
-                <span className="tracking-wide">SUDAH ROLL</span>
-              </span>
-            )}
-            {isMyTurn && hasRolledThisTurn && (
-              <button
-                onClick={handleEndTurn}
-                className="h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold transition-colors"
-                style={{ backgroundColor: '#052011', border: '1px solid #203a29', color: '#d1c5af' }}
-              >
-                Selesai
-              </button>
+            {currentPlayer.isBankrupt ? (
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-2 rounded-lg text-xs font-bold bg-[#2a0f0f] text-[#f87171] border border-[#5c2020]">
+                  💀 BANKRUP — Hanya Menonton
+                </span>
+              </div>
+            ) : (
+              <>
+                {isMyTurn && !hasRolledThisTurn && (
+                  <button
+                    onClick={handleRollDice}
+                    className="h-9 px-4 sm:px-5 rounded-lg bg-[#ffd56d] hover:bg-[#eec14a] text-[#3e2e00] font-bold text-xs sm:text-sm flex items-center gap-2 shadow-[2px_2px_0_0_#000] transition-all active:scale-95"
+                  >
+                    <span className="text-sm" style={{ animationDuration: '4s' }}>&#x1F3B2;</span>
+                    <span className="tracking-wide">KOCOK DADU</span>
+                  </button>
+                )}
+                {isMyTurn && hasRolledThisTurn && (
+                  <span className="h-9 px-4 sm:px-5 rounded-lg bg-[#203a29] text-[#9a907c] font-bold text-xs sm:text-sm flex items-center gap-2 cursor-not-allowed border border-[#4e4635]">
+                    <span className="text-sm">&#x1F3B2;</span>
+                    <span className="tracking-wide">SUDAH ROLL</span>
+                  </span>
+                )}
+                {isMyTurn && hasRolledThisTurn && (
+                  <button
+                    onClick={handleEndTurn}
+                    className="h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold transition-colors"
+                    style={{ backgroundColor: '#052011', border: '1px solid #203a29', color: '#d1c5af' }}
+                  >
+                    Selesai
+                  </button>
+                )}
+              </>
             )}
             <button
               onClick={handleSurrender}
@@ -1834,6 +1901,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         round={room.roundNumber || 1}
         totalRounds={room.totalRounds || 20}
         potMoney={room.potMoney || 0}
+        boardTheme={boardTheme}
+        onThemeChange={setBoardTheme}
         onSendChat={(text) => {
           if (currentPlayer) {
             sendChatMessage(currentPlayer.name, text);
@@ -2378,6 +2447,20 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
               detail: '',
             });
             setShowBankruptcyModal(false);
+            // Notify server
+            fetch('/api/update-player', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                roomId: room?.id,
+                playerId: currentPlayer.id,
+                cleanMoneyDelta: -currentPlayer.cleanMoney,
+                dirtyMoneyDelta: -currentPlayer.dirtyMoney,
+                properties: [],
+                isBankrupt: true,
+                statusEffects: [],
+              }),
+            }).catch(() => {});
           }}
         />
       )}

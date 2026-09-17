@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ACHIEVEMENTS, TOTAL_ACHIEVEMENTS } from '@/lib/game/achievements'
 
 interface InfoModalProps {
   onClose: () => void
@@ -133,6 +134,7 @@ export default function InfoModal({ onClose }: InfoModalProps) {
     { id: 'role-stats', label: '8 Role & Stats' },
     { id: 'peraturan', label: 'Aturan & Mekanik' },
     { id: 'peta', label: 'Peta Jakarta' },
+    { id: 'pencapaian', label: 'Pencapaian' },
   ]
 
   return (
@@ -448,6 +450,56 @@ export default function InfoModal({ onClose }: InfoModalProps) {
                 </div>
               </div>
 
+              {/* Bankruptcy System */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">💸 Bangkrut & Penjualan Properti</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#f87171]">Bangkrut:</strong> CleanMoney ≤ 0 + DirtyMoney ≤ 0 = BANGKRUT.</p>
+                  <p><strong className="text-[#e4e4e7]">Opsi 1 — Jual ke Bank:</strong> Properti dijual ke bank seharga 50% harga dasar.</p>
+                  <p><strong className="text-[#e4e4e7]">Opsi 2 — Jual ke Pemain Lain:</strong> Jual properti ke pemain lain dengan harga bebas (nego langsung).</p>
+                  <p><strong className="text-[#e4e4e7]">Opsi 3 — Ambil Pinjaman:</strong> Pinjaman = 50% nilai total properti. Bunga berlaku sesuai tipe (Bank 10% / Pinjol 25%).</p>
+                  <p><strong className="text-[#f87171]">Masih Bangkrut?</strong> Setelah semua opsi habis dan masih bangkrut → <strong className="text-[#f87171]">GAME OVER</strong> untuk pemain itu. Hanya bisa menonton.</p>
+                </div>
+              </div>
+
+              {/* Monopoly Rent x2 */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🔄 Sewa Monopoli (x2)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#ffd56d]">Syarat:</strong> Satu pemain menguasai SEMUA properti dalam satu grup warna.</p>
+                  <p><strong className="text-[#4edea3]">Efek:</strong> Sewa untuk semua properti dalam grup tersebut dikalikan <strong className="text-[#4edea3]">2x</strong>.</p>
+                  <p><strong className="text-[#e4e4e7]">Contoh:</strong> Jika kamu punya semua petak warna biru, sewa biru jadi 2x lipat untuk semua pemain yang mendarat di sana.</p>
+                  <p><strong className="text-[#ffd56d]">Kombinasi:</strong> Monopoli x2 + Upgrade Level = sewa sangat besar! Waspadai pemain yang mulai menguasai satu warna.</p>
+                </div>
+              </div>
+
+              {/* Role Level-Up */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">⬆️ Level Up Role</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#ffd56d]">Trigger:</strong> Roll dadu kembar (double) saat giliranmu.</p>
+                  <p><strong className="text-[#e4e4e7]">Base Chance:</strong> 10% + 2% per level di bawah max level. Max level = 5.</p>
+                  <p><strong className="text-[#4edea3]">Bonus per Level:</strong> +Rp100.000 saat income (gaji lewat Start, dll).</p>
+                  <p><strong className="text-[#e4e4e7]">Progression Chain:</strong> Setiap role punya rantai level-up sendiri. Semakin tinggi level, semakin kecil chance naik.</p>
+                  <div className="mt-2 rounded-lg bg-[#0a1510] p-2">
+                    <p className="text-[#777]">Lv1: 10% chance → Lv2: 8% → Lv3: 6% → Lv4: 4% → Lv5: 2% (MAX)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Achievement System */}
+              <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
+                <h3 className="mb-3 font-bold text-[#e4e4e7]">🏆 Sistem Pencapaian (Achievement)</h3>
+                <div className="space-y-2 text-xs text-[#777]">
+                  <p><strong className="text-[#ffd56d]">Total:</strong> 25+ pencapaian di 5 kategori berbeda.</p>
+                  <p><strong className="text-[#e4e4e7]">Kategori:</strong> Placement (🏆), Uang (💰), Properti (🏠), Combat/Social (⚔️), Keberuntungan (🍀).</p>
+                  <p><strong className="text-[#4edea3]">Dapat saat bermain:</strong> Money threshold, property count, roll streak, dan lainnya.</p>
+                  <p><strong className="text-[#4edea3]">Dapat di akhir game:</strong> Placement (Juara, Top 2, Top 3, Partisipasi).</p>
+                  <p><strong className="text-[#ffd56d]">Reward:</strong> Setiap pencapaian memberikan XP yang terakumulasi.</p>
+                  <p><strong className="text-[#e4e4e7]">Lihat tab "Pencapaian"</strong> untuk daftar lengkap semua pencapaian.</p>
+                </div>
+              </div>
+
               {/* Game Modes */}
               <div className="rounded-xl border border-[#203a29] bg-[#0c1f14] p-4">
                 <h3 className="mb-3 font-bold text-[#e4e4e7]">🎮 3 Mode Permainan</h3>
@@ -552,6 +604,110 @@ export default function InfoModal({ onClose }: InfoModalProps) {
                     <h4 className="mb-1 font-bold text-[#f87171]">💰 PPN 12%</h4>
                     <p className="text-[#777]">12% total harta. DnD untuk lolos!</p>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'pencapaian' && (
+            <div className="space-y-6">
+              <div className="mb-4 rounded-xl border border-[#203a29] bg-[#0c1f14] p-4 text-center">
+                <h3 className="mb-1 font-bold text-[#e4e4e7]">Semua Pencapaian</h3>
+                <p className="text-xs text-[#777]">{TOTAL_ACHIEVEMENTS} pencapaian tersedia — kumpulkan semuanya!</p>
+              </div>
+
+              {/* Placement */}
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#e4e4e7]">
+                  <span>🏆</span> Placement
+                </h4>
+                <div className="space-y-2">
+                  {ACHIEVEMENTS.filter((a) => a.category === 'placement').map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 rounded-lg border border-[#203a29] bg-[#0a1510] p-3">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#4edea3]/20 text-xl">{a.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-sm font-bold text-[#e4e4e7]">{a.name}</h5>
+                        <p className="text-xs text-[#777] truncate">{a.description}</p>
+                      </div>
+                      <span className="flex-shrink-0 rounded bg-[#ffd56d]/20 px-2 py-1 text-xs font-bold text-[#ffd56d]">{a.xp} XP</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Money */}
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#e4e4e7]">
+                  <span>💰</span> Uang
+                </h4>
+                <div className="space-y-2">
+                  {ACHIEVEMENTS.filter((a) => a.category === 'money').map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 rounded-lg border border-[#203a29] bg-[#0a1510] p-3">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#4edea3]/20 text-xl">{a.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-sm font-bold text-[#e4e4e7]">{a.name}</h5>
+                        <p className="text-xs text-[#777] truncate">{a.description}</p>
+                      </div>
+                      <span className="flex-shrink-0 rounded bg-[#ffd56d]/20 px-2 py-1 text-xs font-bold text-[#ffd56d]">{a.xp} XP</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Property */}
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#e4e4e7]">
+                  <span>🏠</span> Properti
+                </h4>
+                <div className="space-y-2">
+                  {ACHIEVEMENTS.filter((a) => a.category === 'property').map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 rounded-lg border border-[#203a29] bg-[#0a1510] p-3">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#4edea3]/20 text-xl">{a.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-sm font-bold text-[#e4e4e7]">{a.name}</h5>
+                        <p className="text-xs text-[#777] truncate">{a.description}</p>
+                      </div>
+                      <span className="flex-shrink-0 rounded bg-[#ffd56d]/20 px-2 py-1 text-xs font-bold text-[#ffd56d]">{a.xp} XP</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Combat/Social */}
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#e4e4e7]">
+                  <span>⚔️</span> Combat / Social
+                </h4>
+                <div className="space-y-2">
+                  {ACHIEVEMENTS.filter((a) => a.category === 'combat').map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 rounded-lg border border-[#203a29] bg-[#0a1510] p-3">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#4edea3]/20 text-xl">{a.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-sm font-bold text-[#e4e4e7]">{a.name}</h5>
+                        <p className="text-xs text-[#777] truncate">{a.description}</p>
+                      </div>
+                      <span className="flex-shrink-0 rounded bg-[#ffd56d]/20 px-2 py-1 text-xs font-bold text-[#ffd56d]">{a.xp} XP</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Luck/Card */}
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#e4e4e7]">
+                  <span>🍀</span> Keberuntungan
+                </h4>
+                <div className="space-y-2">
+                  {ACHIEVEMENTS.filter((a) => a.category === 'luck').map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 rounded-lg border border-[#203a29] bg-[#0a1510] p-3">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#4edea3]/20 text-xl">{a.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-sm font-bold text-[#e4e4e7]">{a.name}</h5>
+                        <p className="text-xs text-[#777] truncate">{a.description}</p>
+                      </div>
+                      <span className="flex-shrink-0 rounded bg-[#ffd56d]/20 px-2 py-1 text-xs font-bold text-[#ffd56d]">{a.xp} XP</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

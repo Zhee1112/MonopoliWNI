@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Player } from '@/lib/types';
 import { NORMAL_ROLES } from '@/lib/game/role-data';
+import { BoardTheme, BoardThemeId, BOARD_THEMES } from '@/lib/game/board-themes';
 import { Announcement } from '@/hooks/useRealtime';
 
 // ============================================================
@@ -34,6 +35,8 @@ interface GameModalProps {
   round?: number;
   totalRounds?: number;
   potMoney?: number;
+  boardTheme?: BoardThemeId;
+  onThemeChange?: (theme: BoardThemeId) => void;
 }
 
 const TAB_CONFIG = [
@@ -63,6 +66,7 @@ export default function GameModal({
   isOpen, onClose, defaultTab = 'players', players, currentPlayer, roomCode,
   chatMessages = [], onSendChat, onLeaveRoom, musicOn = false, onToggleMusic,
   announcements = [], round = 1, totalRounds = 20, potMoney = 0,
+  boardTheme, onThemeChange,
 }: GameModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>(defaultTab);
   const [chatInput, setChatInput] = useState('');
@@ -446,6 +450,39 @@ export default function GameModal({
                       <span className="text-xs font-bold" style={{ color: '#4edea3' }}>{players.length}/8</span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Board Theme Selector */}
+              <div className="mt-3">
+                <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Tema Papan</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.values(BOARD_THEMES) as BoardTheme[]).map((t) => {
+                    const isActive = (boardTheme || 'default') === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => onThemeChange?.(t.id)}
+                        className="p-3 rounded-xl text-center transition-all cursor-pointer"
+                        style={{
+                          backgroundColor: isActive ? '#152f1f' : '#0d2e1a',
+                          border: `2px solid ${isActive ? '#ffd56d' : '#203a29'}`,
+                          boxShadow: isActive ? '0 0 12px rgba(255,213,109,0.15)' : 'none',
+                        }}
+                      >
+                        <span className="text-2xl block mb-1">{t.preview}</span>
+                        <span className="text-xs font-bold block" style={{ color: isActive ? '#ffd56d' : '#e0d8c8' }}>{t.name}</span>
+                        <span className="text-[9px] block mt-0.5" style={{ color: '#7a9a7a' }}>{t.description}</span>
+                        {/* Color preview dots */}
+                        <div className="flex items-center justify-center gap-1 mt-2">
+                          <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: t.boardBg }} />
+                          <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: t.cellBg }} />
+                          <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: t.priceText }} />
+                          <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: t.startBg }} />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { BOARD_CELLS } from '@/lib/game/board-data';
+import { BoardTheme, BoardThemeId, BOARD_THEMES } from '@/lib/game/board-themes';
 import { BoardCell, Player } from '@/lib/types';
 
 interface PropertyInfo {
@@ -27,6 +28,7 @@ interface BoardProps {
   totalRounds?: number;
   propertyInfo?: PropertyInfo[];
   onCellClick?: (cell: BoardCell) => void;
+  boardTheme?: BoardThemeId;
 }
 
 function getPlayersOnCell(cellIndex: number, players: BoardProps['players']) {
@@ -76,36 +78,54 @@ const GRID_POS: Record<number, string> = {
   39: 'col-start-11 row-start-10',
 };
 
+const PION_SHAPES = ['●', '▲', '■', '◆', '★', '⬟', '◈', '◉'];
+
 function CellTokenDots({ cellPlayers }: { cellPlayers: BoardProps['players'] }) {
   if (cellPlayers.length === 0) return null;
   return (
     <div className="absolute top-0.5 right-0.5 flex flex-col gap-0.5 z-30">
-      {cellPlayers.map((p) => (
-        <div key={p.id} className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-black" style={{ backgroundColor: p.tokenColor }} title={p.name} />
-      ))}
+      {cellPlayers.map((p, i) => {
+        const pionIdx = i % PION_SHAPES.length;
+        return (
+          <div
+            key={p.id}
+            className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm flex items-center justify-center text-[7px] sm:text-[8px] font-black leading-none border border-black/60 shadow-md"
+            style={{ backgroundColor: p.tokenColor, color: '#fff', textShadow: '0 0 2px rgba(0,0,0,0.8)' }}
+            title={p.name}
+          >
+            {PION_SHAPES[pionIdx]}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function CornerCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; onCellClick?: (cell: BoardCell) => void }) {
+function CornerCell({ cell, cellPlayers, onCellClick, theme }: { cell: BoardCell; cellPlayers: BoardProps['players']; onCellClick?: (cell: BoardCell) => void; theme: BoardTheme }) {
   const idx = cell.index;
   const isStart = idx === 0;
   const isParkir = idx === 20;
   const isRazia = idx === 30;
   const isRutan = idx === 10;
 
+  const cellStyle = isStart
+    ? { backgroundColor: theme.startBg, borderColor: theme.startBorder, borderWidth: '2px' }
+    : isRazia
+    ? { backgroundColor: theme.jailBg, borderColor: theme.jailBorder }
+    : { backgroundColor: theme.freeParkingBg, borderColor: theme.freeParkingBorder };
+
   return (
     <div
-      className={`${GRID_POS[idx]} relative flex flex-col justify-between items-center text-center rounded-lg p-1 sm:p-1.5 cursor-pointer hover:brightness-110 transition-all shadow-md overflow-hidden
-        ${isStart ? 'bg-[#152f1f] border-2 border-[#ffd56d]/60' : isRazia ? 'bg-[#2b1013] border border-[#ff6b6b]/50' : 'bg-[#152f1f] border border-[#203a29]'}`}
+      className={`${GRID_POS[idx]} relative flex flex-col justify-between items-center text-center rounded-lg p-1 sm:p-1.5 cursor-pointer hover:brightness-110 transition-all shadow-md overflow-hidden border`}
+      style={cellStyle}
       onClick={() => onCellClick?.(cell)}
     >
       <div className="flex items-center justify-center gap-1">
         <span className="text-base sm:text-xl">{cell.emoji}</span>
       </div>
       <div>
-        <span className="font-bold text-[10px] sm:text-xs leading-tight block" style={{ color: isRazia ? '#fca5a5' : isStart ? '#ffd56d' : '#cbead1' }}>{cell.name}</span>
-        <span className="text-[8px] sm:text-[9px] text-[#9a907c] leading-none hidden md:block">{cell.subtitle}</span>
+        <span className="font-bold text-[10px] sm:text-xs leading-tight block" style={{ color: isRazia ? '#fca5a5' : isStart ? theme.startText : theme.nameText }}>{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] leading-none hidden md:block" style={{ color: theme.subtitleText }}>{cell.subtitle}</span>
       </div>
       {isStart && <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#4edea3] bg-black py-0.5 px-1 rounded">+Rp 200k</span>}
       {isRazia && <span className="text-[8px] font-mono text-red-300 bg-black py-0.5 px-1 rounded">LANGSUNG BUI</span>}
@@ -121,28 +141,31 @@ function CornerCell({ cell, cellPlayers, onCellClick }: { cell: BoardCell; cellP
   );
 }
 
-function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
+function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void; theme: BoardTheme }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
 
   return (
     <div
-      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 text-center transition-colors cursor-pointer`}
+      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
       onClick={() => onCellClick?.(cell)}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
     >
-      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full" style={{ backgroundColor: cell.groupColor }} />}
+      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full" style={{ backgroundColor: theme.groupColors?.[cell.groupColor] || cell.groupColor }} />}
       {isTax && <span className="text-[8px] sm:text-[9px] font-bold text-[#fca5a5]">TILANG</span>}
       {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase">TAKDIR</span>}
 
       <div className="my-auto py-0.5">
-        {isDraw && <span className="text-sm sm:text-base font-black text-[#ffd56d] block">{cell.emoji}</span>}
-        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] block leading-tight truncate">{cell.name}</span>
-        <span className="text-[8px] sm:text-[9px] text-[#d1c5af] hidden sm:block">{cell.subtitle}</span>
+        {isDraw && <span className="text-sm sm:text-base font-black block" style={{ color: theme.priceText }}>{cell.emoji}</span>}
+        <span className="text-[10px] sm:text-[11px] font-semibold block leading-tight truncate" style={{ color: theme.nameText }}>{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] hidden sm:block" style={{ color: theme.subtitleText }}>{cell.subtitle}</span>
       </div>
 
       {cell.price ? (
-        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d]">Rp {(cell.price / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold" style={{ color: theme.priceText }}>Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
         <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5]">
           {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
@@ -157,18 +180,21 @@ function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: Bo
   );
 }
 
-function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
+function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void; theme: BoardTheme }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
 
   return (
     <div
-      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 text-center transition-colors cursor-pointer`}
+      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
       onClick={() => onCellClick?.(cell)}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
     >
       {cell.price ? (
-        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d]">Rp {(cell.price / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold" style={{ color: theme.priceText }}>Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
         <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5]">
           {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
@@ -178,12 +204,12 @@ function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell:
       ) : null}
 
       <div className="my-auto py-0.5">
-        {isDraw && <span className="text-sm sm:text-base font-black text-[#ffd56d] block">{cell.emoji}</span>}
-        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] block leading-tight truncate">{cell.name}</span>
-        <span className="text-[8px] sm:text-[9px] text-[#d1c5af] hidden sm:block">{cell.subtitle}</span>
+        {isDraw && <span className="text-sm sm:text-base font-black block" style={{ color: theme.priceText }}>{cell.emoji}</span>}
+        <span className="text-[10px] sm:text-[11px] font-semibold block leading-tight truncate" style={{ color: theme.nameText }}>{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] hidden sm:block" style={{ color: theme.subtitleText }}>{cell.subtitle}</span>
       </div>
 
-      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-b-sm w-full" style={{ backgroundColor: cell.groupColor }} />}
+      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-b-sm w-full" style={{ backgroundColor: theme.groupColors?.[cell.groupColor] || cell.groupColor }} />}
       {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase">TAKDIR</span>}
       {isTax && <span className="text-[8px] font-bold text-[#fca5a5]">RETRIBUSI</span>}
 
@@ -193,29 +219,32 @@ function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell:
   );
 }
 
-function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
+function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void; theme: BoardTheme }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
 
   return (
     <div
-      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 text-center transition-colors cursor-pointer`}
+      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
       onClick={() => onCellClick?.(cell)}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
     >
-      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full shrink-0" style={{ backgroundColor: cell.groupColor }} />}
+      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full shrink-0" style={{ backgroundColor: theme.groupColors?.[cell.groupColor] || cell.groupColor }} />}
       {isTax && <span className="text-[8px] sm:text-[9px] font-bold text-[#fca5a5] shrink-0">{cell.emoji}</span>}
       {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase shrink-0">TAKDIR</span>}
 
       <div className="my-auto py-0.5">
-        {isDraw && <span className="text-sm sm:text-base font-black text-[#ffd56d] block">{cell.emoji}</span>}
+        {isDraw && <span className="text-sm sm:text-base font-black block" style={{ color: theme.priceText }}>{cell.emoji}</span>}
         {isTax && <span className="text-sm sm:text-base block">{cell.emoji}</span>}
-        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] block leading-tight truncate">{cell.name}</span>
-        <span className="text-[8px] sm:text-[9px] text-[#d1c5af] hidden sm:block">{cell.subtitle}</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold block leading-tight truncate" style={{ color: theme.nameText }}>{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] hidden sm:block" style={{ color: theme.subtitleText }}>{cell.subtitle}</span>
       </div>
 
       {cell.price ? (
-        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d] shrink-0">Rp {(cell.price / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold shrink-0" style={{ color: theme.priceText }}>Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
         <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">
           {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
@@ -230,29 +259,32 @@ function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: B
   );
 }
 
-function RightColCell({ cell, cellPlayers, propertyInfo, onCellClick }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void }) {
+function RightColCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { cell: BoardCell; cellPlayers: BoardProps['players']; propertyInfo?: PropertyInfo[]; onCellClick?: (cell: BoardCell) => void; theme: BoardTheme }) {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
 
   return (
     <div
-      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden bg-[#052011] hover:bg-[#152f1f] border border-[#203a29] rounded-lg p-1 text-center transition-colors cursor-pointer`}
+      className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
       onClick={() => onCellClick?.(cell)}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
     >
-      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full shrink-0" style={{ backgroundColor: cell.groupColor }} />}
+      {isProperty && !isTax && <div className="h-2 sm:h-3 rounded-t-sm w-full shrink-0" style={{ backgroundColor: theme.groupColors?.[cell.groupColor] || cell.groupColor }} />}
       {isTax && <span className="text-[8px] sm:text-[9px] font-bold text-[#fca5a5] shrink-0">{cell.emoji}</span>}
       {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase shrink-0">TAKDIR</span>}
 
       <div className="my-auto py-0.5">
-        {isDraw && <span className="text-sm sm:text-base font-black text-[#ffd56d] block">{cell.emoji}</span>}
+        {isDraw && <span className="text-sm sm:text-base font-black block" style={{ color: theme.priceText }}>{cell.emoji}</span>}
         {isTax && <span className="text-sm sm:text-base block">{cell.emoji}</span>}
-        <span className="text-[10px] sm:text-[11px] font-semibold text-[#cbead1] block leading-tight truncate">{cell.name}</span>
-        <span className="text-[8px] sm:text-[9px] text-[#d1c5af] hidden sm:block">{cell.subtitle}</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold block leading-tight truncate" style={{ color: theme.nameText }}>{cell.name}</span>
+        <span className="text-[8px] sm:text-[9px] hidden sm:block" style={{ color: theme.subtitleText }}>{cell.subtitle}</span>
       </div>
 
       {cell.price ? (
-        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#ffd56d] shrink-0">Rp {(cell.price / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold shrink-0" style={{ color: theme.priceText }}>Rp {(cell.price / 1000).toFixed(0)}k</span>
       ) : isTax ? (
         <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#fca5a5] shrink-0">
           {cell.taxAmount ? `-Rp ${(cell.taxAmount / 1000).toFixed(0)}k` : 'PPN 12%'}
@@ -282,21 +314,24 @@ function PropertyBadge({ cellIndex, propertyInfo }: { cellIndex: number; propert
 
   return (
     <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center z-20 pointer-events-none">
-      {/* Owner marker */}
+      {/* Owner marker with glow */}
       <div
-        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-bold text-white border border-black/50 shadow-sm"
-        style={{ backgroundColor: prop.ownerColor || '#666' }}
+        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-black text-white border-2 border-white/30 shadow-lg"
+        style={{
+          backgroundColor: prop.ownerColor || '#666',
+          boxShadow: `0 0 6px ${prop.ownerColor || '#666'}80, 0 0 12px ${prop.ownerColor || '#666'}40`,
+        }}
         title={`Owner: ${prop.ownerName}`}
       >
         {prop.ownerName ? prop.ownerName.charAt(0).toUpperCase() : '?'}
       </div>
       {/* Upgrade level bars */}
       {prop.houseLevel > 0 && (
-        <div className="flex gap-0.5 mt-0.5">
+        <div className="flex gap-0.5 mt-0.5 bg-black/40 rounded-sm px-0.5">
           {Array.from({ length: Math.min(prop.houseLevel, 5) }).map((_, i) => (
             <div
               key={i}
-              className={`w-1.5 h-1 sm:w-2 sm:h-1 rounded-full ${prop.isLandmark ? 'bg-[#ffd56d]' : 'bg-[#4edea3]'}`}
+              className={`w-1.5 h-1 sm:w-2 sm:h-1 rounded-full ${prop.isLandmark ? 'bg-[#ffd56d] shadow-[0_0_3px_#ffd56d]' : 'bg-[#4edea3] shadow-[0_0_3px_#4edea3]'}`}
             />
           ))}
         </div>
@@ -309,9 +344,11 @@ function PropertyBadge({ cellIndex, propertyInfo }: { cellIndex: number; propert
   );
 }
 
-export default function Board({ players, currentPlayer, activePlayerName, activePlayerTokenColor, potMoney = 0, round = 1, totalRounds = 4, propertyInfo = [], onCellClick }: BoardProps) {
+export default function Board({ players, currentPlayer, activePlayerName, activePlayerTokenColor, potMoney = 0, round = 1, totalRounds = 4, propertyInfo = [], onCellClick, boardTheme }: BoardProps) {
+  const theme = BOARD_THEMES[boardTheme || 'default'];
+
   return (
-    <div className="w-full max-w-[1400px] min-h-[600px] p-2 sm:p-3 rounded-2xl bg-[#001206] border-2 border-[#203a29] shadow-[0_24px_64px_rgba(0,0,0,0.85)] relative overflow-hidden">
+    <div className="w-full max-w-[1400px] min-h-[600px] p-2 sm:p-3 rounded-2xl border-2 shadow-[0_24px_64px_rgba(0,0,0,0.85)] relative overflow-hidden" style={{ backgroundColor: theme.boardBg, borderColor: theme.boardBorder }}>
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(21,47,31,0.3) 0%, transparent 60%, rgba(0,0,0,0.6) 100%)' }} />
 
       <div className="relative z-10 w-full h-full grid grid-cols-11 gap-0.5 sm:gap-1" style={{ gridTemplateRows: '2fr repeat(9, 2fr) 2fr' }}>
@@ -320,90 +357,90 @@ export default function Board({ players, currentPlayer, activePlayerName, active
           const cellPlayers = getPlayersOnCell(cell.index, players);
           switch (posType) {
             case 'corner':
-              return <CornerCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} />;
+              return <CornerCell key={cell.index} cell={cell} cellPlayers={cellPlayers} onCellClick={onCellClick} theme={theme} />;
             case 'top':
-              return <TopRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
+              return <TopRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} theme={theme} />;
             case 'bottom':
-              return <BottomRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
+              return <BottomRowCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} theme={theme} />;
             case 'left':
-              return <LeftColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
+              return <LeftColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} theme={theme} />;
             case 'right':
-              return <RightColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} />;
+              return <RightColCell key={cell.index} cell={cell} cellPlayers={cellPlayers} propertyInfo={propertyInfo} onCellClick={onCellClick} theme={theme} />;
             default:
               return null;
           }
         })}
 
-        <div className="col-start-2 col-end-11 row-start-2 row-end-11 bg-[#092515]/90 border border-[#203a29]/60 rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col justify-between items-center text-center shadow-inner relative overflow-hidden backdrop-blur-sm">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#ffd56d]/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-96 h-48 bg-[#4edea3]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="col-start-2 col-end-11 row-start-2 row-end-11 rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col justify-between items-center text-center shadow-inner relative overflow-hidden backdrop-blur-sm border" style={{ backgroundColor: theme.centerBg + 'e6', borderColor: theme.centerBorder }}>
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: theme.priceText + '0d' }} />
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-96 h-48 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: '#4edea30d' }} />
 
-          <div className="w-full flex items-center justify-between text-xs border-b border-[#203a29] pb-3">
+          <div className="w-full flex items-center justify-between text-xs pb-3" style={{ borderBottom: `1px solid ${theme.cellBorder}` }}>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-md bg-[#152f1f] text-[#ffd56d] text-[11px] font-semibold flex items-center gap-1.5" style={{ fontFamily: "'Syne', sans-serif" }}>
+              <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5" style={{ backgroundColor: theme.startBg, color: theme.priceText, fontFamily: "'Syne', sans-serif" }}>
                 <span className="w-2 h-2 rounded-full bg-[#4edea3] animate-pulse" />
                 BABAK {round} / {totalRounds}
               </span>
             </div>
-            <div className="flex items-center gap-2 bg-[#152f1f] px-3 py-1 rounded-lg border border-[#ffd56d]/30 shadow-sm">
-              <span className="text-[#ffd56d] text-base">&#x1F4B0;</span>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg shadow-sm" style={{ backgroundColor: theme.startBg, border: `1px solid ${theme.priceText}4d` }}>
+              <span style={{ color: theme.priceText }} className="text-base">&#x1F4B0;</span>
               <div className="text-right">
-                <span className="text-[9px] text-[#d1c5af] uppercase block font-semibold leading-none">KAS JACKPOT PARKIR</span>
-                <span className="text-xs sm:text-sm font-mono font-bold text-[#ffd56d]">Rp {potMoney.toLocaleString('id-ID')}</span>
+                <span className="text-[9px] uppercase block font-semibold leading-none" style={{ color: theme.subtitleText }}>KAS JACKPOT PARKIR</span>
+                <span className="text-xs sm:text-sm font-mono font-bold" style={{ color: theme.priceText }}>Rp {potMoney.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
 
           <div className="my-auto flex flex-col items-center justify-center max-w-xl px-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#152f1f] border border-[#ffd56d]/30 text-[#ffd56d] mb-2 shadow-sm">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-2 shadow-sm" style={{ backgroundColor: theme.startBg, border: `1px solid ${theme.priceText}4d`, color: theme.priceText }}>
               <span className="text-[10px] font-bold tracking-widest uppercase">&bull; EDISI RESMI &bull; WARGA +62 &bull;</span>
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter leading-none text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center" style={{ fontFamily: "'Syne', sans-serif" }}>
               <span>MONOPOLI</span>
               <span className="bg-gradient-to-r from-[#ffd56d] via-[#ffdf97] to-[#e5b842] bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(255,213,109,0.4)]">WNI</span>
             </h1>
-            <p className="text-xs sm:text-sm text-[#ffd56d] font-semibold mt-2 tracking-wide">Versi Indonesia yang kekinian &amp; penuh intrik</p>
-            <p className="text-[11px] sm:text-xs text-[#d1c5af] max-w-md mt-1 leading-relaxed">Kocok dadu, kuasai kavling ibukota, hindari razia pajak Satpol PP</p>
+            <p className="text-xs sm:text-sm font-semibold mt-2 tracking-wide" style={{ color: theme.priceText }}>Versi Indonesia yang kekinian &amp; penuh intrik</p>
+            <p className="text-[11px] sm:text-xs max-w-md mt-1 leading-relaxed" style={{ color: theme.subtitleText }}>Kocok dadu, kuasai kavling ibukota, hindari razia pajak Satpol PP</p>
 
             <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-md">
-              <div className="bg-[#152f1f] hover:bg-[#203a29] border border-[#ff6b6b]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer">
+              <div className="hover:brightness-110 border border-[#ff6b6b]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer" style={{ backgroundColor: theme.startBg }}>
                 <div className="w-full h-1 bg-[#ff6b6b] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#fca5a5] mb-0.5">
                   <span className="text-lg">&#x1F0CF;</span>
                   <span className="font-bold text-xs">TAKDIR WNI</span>
                 </div>
-                <span className="text-[10px] text-[#d1c5af] block">102 Kartu</span>
+                <span className="text-[10px] block" style={{ color: theme.subtitleText }}>102 Kartu</span>
               </div>
-              <div className="bg-[#152f1f] hover:bg-[#203a29] border border-[#4edea3]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer">
+              <div className="hover:brightness-110 border border-[#4edea3]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer" style={{ backgroundColor: theme.startBg }}>
                 <div className="w-full h-1 bg-[#4edea3] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#4edea3] mb-0.5">
                   <span className="text-lg">&#x1F4E6;</span>
                   <span className="font-bold text-xs">KEGIATAN WNI</span>
                 </div>
-                <span className="text-[10px] text-[#d1c5af] block">100 Kartu</span>
+                <span className="text-[10px] block" style={{ color: theme.subtitleText }}>100 Kartu</span>
               </div>
             </div>
           </div>
 
-          <div className="w-full flex items-center justify-between bg-black/80 border border-[#203a29] rounded-xl p-2.5 sm:p-3 text-xs">
+          <div className="w-full flex items-center justify-between rounded-xl p-2.5 sm:p-3 text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.8)', borderColor: theme.cellBorder, borderWidth: '1px' }}>
             <div className="flex items-center gap-2.5">
               <div className="relative">
-                <div className="w-8 h-8 rounded-full text-white font-bold text-xs flex items-center justify-center shadow" style={{ backgroundColor: activePlayerTokenColor || '#3b82f6' }}>
+                <div className="w-9 h-9 rounded-lg text-white font-black text-sm flex items-center justify-center shadow-lg border-2 border-white/20" style={{ backgroundColor: activePlayerTokenColor || '#3b82f6', boxShadow: `0 0 12px ${activePlayerTokenColor || '#3b82f6'}60` }}>
                   {activePlayerName ? activePlayerName.charAt(0).toUpperCase() : '?'}
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#4edea3] ring-2 ring-black" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#4edea3] ring-2 ring-black animate-pulse" />
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-[#cbead1] text-xs">{activePlayerName || 'Menunggu...'}</span>
+                  <span className="font-bold text-xs" style={{ color: theme.nameText }}>{activePlayerName || 'Menunggu...'}</span>
                 </div>
                 <span className="text-[10px] text-[#4edea3]">Sedang memegang giliran dadu</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <span className="text-[9px] text-[#9a907c] block uppercase font-semibold">Kas Dompet</span>
-                <span className="font-mono font-bold text-[#ffd56d] text-xs sm:text-sm">Rp {(currentPlayer?.cleanMoney || 0).toLocaleString('id-ID')}</span>
+                <span className="text-[9px] block uppercase font-semibold" style={{ color: theme.subtitleText }}>Kas Dompet</span>
+                <span className="font-mono font-bold text-xs sm:text-sm" style={{ color: theme.priceText }}>Rp {(currentPlayer?.cleanMoney || 0).toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>

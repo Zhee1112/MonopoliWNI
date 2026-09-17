@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
+import { ACHIEVEMENTS, getAchievement } from '@/lib/game/achievements';
 
 
 const RANKS: Record<number, { name: string; emoji: string; color: string; dotColor: string; ability: string; subtitle: string }> = {
@@ -41,6 +42,9 @@ export default function ProfilePage() {
     game_room_id: string; placement: number; final_total_assets: number;
     xp_earned: number; is_winner: boolean; game_mode: string; created_at: string;
   }>>([]);
+  const [achievements, setAchievements] = useState<Array<{
+    achievement_id: string; xp_granted: number; game_room_id: string;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -63,6 +67,12 @@ export default function ProfilePage() {
         .order('created_at', { ascending: false })
         .limit(20);
       if (histData) setGameHistory(histData);
+
+      const { data: achData } = await supabase
+        .from('player_achievements')
+        .select('achievement_id, xp_granted, game_room_id')
+        .eq('user_id', user.id);
+      if (achData) setAchievements(achData);
     }
     fetchUserData();
   }, [user]);
@@ -477,6 +487,36 @@ export default function ProfilePage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Achievements Section */}
+            <div className="rounded-2xl bg-[#0d281a] border border-[#1d4b30] p-5 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#ffd56d] text-lg">&#x1F3C6;</span>
+                  <h3 className="font-bold text-base text-[#d1fae5]">Pencapaian</h3>
+                </div>
+                <span className="text-[11px] text-[#588568] uppercase font-medium">{achievements.length} / {ACHIEVEMENTS.length} Terbuka</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {ACHIEVEMENTS.map((ach) => {
+                  const unlocked = achievements.some(a => a.achievement_id === ach.id);
+                  return (
+                    <div
+                      key={ach.id}
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        unlocked
+                          ? 'border-[#4edea3]/40 bg-[#4edea3]/10 shadow-[0_0_12px_rgba(78,222,163,0.15)]'
+                          : 'border-[#143722] bg-[#082013] opacity-50'
+                      }`}
+                    >
+                      <div className={`text-xl mb-1 ${unlocked ? '' : 'grayscale'}`}>{ach.emoji}</div>
+                      <div className={`text-[10px] font-bold leading-tight ${unlocked ? 'text-[#4edea3]' : 'text-[#588568]'}`}>{ach.name}</div>
+                      <div className="text-[9px] text-[#588568] mt-0.5">{ach.xp} XP</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

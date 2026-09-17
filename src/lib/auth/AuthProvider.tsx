@@ -27,6 +27,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -36,6 +37,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function useAuth() {
@@ -216,6 +218,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }
 
+  async function refreshProfile() {
+    const currentUser = supabase.auth.getUser();
+    const { data: { user: userData } } = await currentUser;
+    if (!userData) return;
+
+    const { data: existing } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userData.id)
+      .single();
+
+    if (existing) {
+      const { level, rank } = calculateLevel(existing.xp || 0);
+      setProfile({
+        id: existing.id,
+        userId: existing.user_id,
+        displayName: existing.display_name || userData.user_metadata?.full_name || 'Player',
+        avatarUrl: existing.avatar_url || userData.user_metadata?.avatar_url || null,
+        xp: existing.xp || 0,
+        level,
+        rank,
+        totalGames: existing.total_games || 0,
+        totalWins: existing.total_wins || 0,
+        cleanMoney: existing.clean_money || 0,
+        highestCash: existing.highest_cash || 2500000,
+        propertiesOwned: existing.properties_owned || 0,
+        createdAt: existing.created_at,
+      });
+    }
+  }
+
   async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -234,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, signInWithGoogle, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -239,16 +239,16 @@ export async function PUT(request: NextRequest) {
 
     const canPayRent = payer.cleanMoney >= rent;
     const actualPayment = Math.min(payer.cleanMoney, rent);
-    const remainingRent = rent - actualPayment;
 
     // Transfer money: payer pays what they can
     const potAmount = Math.floor(actualPayment * 0.10);
     const ownerShare = actualPayment - potAmount;
     const newPayerBalance = payer.cleanMoney - actualPayment;
-    const isPayerBankrupt = !canPayRent;
+    const shortfall = rent - actualPayment;
+    const canSellProperties = !canPayRent && (payer.properties || []).length > 0;
 
-    if (isPayerBankrupt) {
-      // Player goes bankrupt — seize all assets
+    if (!canPayRent && !canSellProperties) {
+      // Truly bankrupt — no money and no properties to sell
       await supabaseAdmin.from('players').update({
         clean_money: 0,
         dirty_money: 0,
@@ -257,27 +257,33 @@ export async function PUT(request: NextRequest) {
         status_effects: [],
       }).eq('id', payerId);
     } else {
-      await supabaseAdmin.from('players').update({ clean_money: newPayerBalance }).eq('id', payerId);
+      // Deduct what they can pay
+      await supabaseAdmin.from('players').update({ clean_money: 0 }).eq('id', payerId);
     }
 
-    await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + ownerShare }).eq('id', owner.id);
+    if (actualPayment > 0) {
+      await supabaseAdmin.from('players').update({ clean_money: owner.cleanMoney + ownerShare }).eq('id', owner.id);
+    }
 
     // Free Parking Pot: 10% of rent goes to pot
     if (potAmount > 0) {
-      const { data: room } = await supabaseAdmin
+      const { data: roomPot } = await supabaseAdmin
         .from('rooms')
         .select('pot_money')
         .eq('id', roomId)
         .maybeSingle();
-      if (room) {
+      if (roomPot) {
         await supabaseAdmin
           .from('rooms')
-          .update({ pot_money: (room.pot_money || 0) + potAmount })
+          .update({ pot_money: (roomPot.pot_money || 0) + potAmount })
           .eq('id', roomId);
       }
     }
 
-    // If payer goes bankrupt, award bankrupt_maker to owner
+    const isPayerBankrupt = !canPayRent && !canSellProperties;
+    const needsSelling = !canPayRent && canSellProperties;
+
+    // If payer goes bankrupt (truly), award bankrupt_maker to owner
     if (isPayerBankrupt) {
       await supabaseAdmin
         .from('player_achievements')
@@ -295,7 +301,7 @@ export async function PUT(request: NextRequest) {
       room_id: roomId,
       player_id: payerId,
       action: 'rent',
-      detail: { propertyId, propertyName: cell.name, rent, ownerId: owner.id, ownerName: owner.name, payerBankrupt: isPayerBankrupt },
+      detail: { propertyId, propertyName: cell.name, rent, ownerId: owner.id, ownerName: owner.name, payerBankrupt: isPayerBankrupt, needsSelling },
     });
 
     return NextResponse.json({
@@ -303,9 +309,11 @@ export async function PUT(request: NextRequest) {
       rent,
       ownerName: owner.name,
       ownerShare,
-      newPayerBalance: isPayerBankrupt ? 0 : newPayerBalance,
+      newPayerBalance: 0,
       newOwnerBalance: owner.cleanMoney + ownerShare,
       isBankrupt: isPayerBankrupt,
+      needsSelling,
+      shortfall,
     });
   } catch (error) {
     console.error('Pay rent error:', error);
