@@ -181,6 +181,10 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         setCurrentPlayer(updated);
         currentPlayerRef.current = updated;
         sessionStorage.setItem('player', JSON.stringify(updated));
+      } else {
+        // Player no longer in room (kicked/removed) — clear state
+        setCurrentPlayer(null);
+        sessionStorage.removeItem('player');
       }
     }
   }, [players, currentPlayer]);

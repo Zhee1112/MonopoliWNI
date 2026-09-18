@@ -166,22 +166,6 @@ function getLuckRange(luck: number): string {
   return 'high';
 }
 
-// --- RENT CALCULATION ---
-export function calculateRent(
-  baseRent: number,
-  houseLevel: number,
-  groupOwned: boolean
-): number {
-  let rent = baseRent;
-  if (houseLevel > 0) {
-    rent = baseRent * (1 + houseLevel * 0.5);
-  }
-  if (groupOwned) {
-    rent *= 2;
-  }
-  return Math.floor(rent);
-}
-
 // --- STATS CALCULATION ---
 export function calculateStatModifier(
   baseStat: number,
