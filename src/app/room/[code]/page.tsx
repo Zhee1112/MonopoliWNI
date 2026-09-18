@@ -269,6 +269,18 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  // Show global event modal for ALL players when broadcast is received
+  useEffect(() => {
+    if (!announcements || announcements.length === 0) return;
+    const latest = announcements[announcements.length - 1];
+    if (latest?.globalEventData && latest.playerName === 'SYSTEM') {
+      setGlobalEventName(latest.globalEventData.name);
+      setGlobalEventEmoji(latest.globalEventData.emoji);
+      setGlobalEventDescription(latest.globalEventData.description);
+      setShowGlobalEventModal(true);
+    }
+  }, [announcements]);
+
   // Check if it's current player's turn
   const isMyTurn = room && currentPlayer && room.turnOrder[room.currentTurn] === currentPlayer.id;
   const isHost = room && currentPlayer && room.hostId === currentPlayer.id;
@@ -972,6 +984,11 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           playerName: 'SYSTEM',
           message: `${data.globalEventEmoji} Event Global: ${data.globalEventName}`,
           detail: data.globalEventDescription,
+          globalEventData: {
+            name: data.globalEventName,
+            emoji: data.globalEventEmoji,
+            description: data.globalEventDescription,
+          },
         });
       }
     } catch (err) { console.error('End turn error:', err); }

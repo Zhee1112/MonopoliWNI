@@ -360,6 +360,11 @@ export interface Announcement {
   message: string;
   detail?: string;
   time: string;
+  globalEventData?: {
+    name: string;
+    emoji: string;
+    description: string;
+  };
 }
 
 export function useRealtimeAnnouncement(roomCode: string) {

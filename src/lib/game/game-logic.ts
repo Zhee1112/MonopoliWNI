@@ -846,6 +846,60 @@ function processSpecialEffect(
       result.statusMessages.push(`${target.name} masuk Black Hole! Bankrupt!`);
       result.shouldCheckBankruptcy = true;
     }
+  } else if (special === 'cuci_uang') {
+    const amount = card.effect.value || 0;
+    if (amount > 0 && p.dirtyMoney >= amount) {
+      const evidenceBonus = Array.isArray(p.evidence)
+        ? p.evidence.reduce((sum: number, ev: { bonusModifier?: number }) => sum + (ev.bonusModifier || 0), 0)
+        : 0;
+      const washResult = processLaundering(amount, p.stats, evidenceBonus);
+      p.dirtyMoney = Math.max(0, p.dirtyMoney - amount);
+      if (washResult.success) {
+        p.cleanMoney += washResult.cleanAmount;
+        result.moneyChanges.push({ playerId: p.id, amount: washResult.cleanAmount, label: 'Cuci Uang' });
+        result.statusMessages.push(`Cuci uang berhasil! +Rp ${washResult.cleanAmount.toLocaleString('id-ID')} bersih (fee Rp ${washResult.fee.toLocaleString('id-ID')})`);
+      } else {
+        result.statusMessages.push(`Cuci uang gagal! Rp ${amount.toLocaleString('id-ID')} hilang!`);
+        result.shouldCheckBankruptcy = true;
+      }
+      p.statusEffects = [...p.statusEffects, {
+        type: 'laundering_cooldown',
+        duration: 3,
+        effect: 'Cooldown pencucian uang',
+      }];
+    } else if (amount > 0) {
+      result.statusMessages.push(`Uang kotor tidak cukup untuk cuci uang!`);
+    }
+  } else if (special === 'report_dirty_money') {
+    const targets = allPlayers.filter(o => o.id !== p.id && o.dirtyMoney > 0);
+    if (targets.length > 0) {
+      const target = targets[Math.floor(Math.random() * targets.length)];
+      const reportRoll = performAction(p.stats.investigation, 0, 12, 20);
+      if (reportRoll.success) {
+        const seized = Math.floor(target.dirtyMoney * 0.3);
+        target.dirtyMoney = Math.max(0, target.dirtyMoney - seized);
+        const reward = Math.floor(seized * 0.1);
+        p.cleanMoney += reward;
+        result.moneyChanges.push({ playerId: target.id, amount: -seized, label: 'Laporan Masyarakat' });
+        result.moneyChanges.push({ playerId: p.id, amount: reward, label: 'Reward Laporan' });
+        result.statusMessages.push(`Laporan berhasil! ${target.name} kehilangan 30% uang kotor (Rp ${seized.toLocaleString('id-ID')}). Kamu dapat reward Rp ${reward.toLocaleString('id-ID')}`);
+      } else {
+        result.statusMessages.push(`Laporan gagal! ${target.name} lolos dari pemeriksaan.`);
+      }
+    } else {
+      result.statusMessages.push(`Tidak ada pemain dengan uang kotor untuk dilaporkan.`);
+    }
+  } else if (special === 'seize_dirty_random_30') {
+    const targets = allPlayers.filter(o => o.dirtyMoney > 0);
+    if (targets.length > 0) {
+      const target = targets[Math.floor(Math.random() * targets.length)];
+      const seized = Math.floor(target.dirtyMoney * 0.3);
+      target.dirtyMoney = Math.max(0, target.dirtyMoney - seized);
+      result.moneyChanges.push({ playerId: target.id, amount: -seized, label: 'Inspeksi Mendadak' });
+      result.statusMessages.push(`Inspeksi Mendadak! ${target.name} disita 30% uang kotor (Rp ${seized.toLocaleString('id-ID')})`);
+    } else {
+      result.statusMessages.push(`Tidak ada pemain dengan uang kotor untuk disita.`);
+    }
   } else if (special === 'kas_x3_tapi_dicurigai_kpk_3_babak') {
     // Uang Gaib: money x3 but flagged by KPK for 3 rounds
     p.cleanMoney += card.effect.value || 0;

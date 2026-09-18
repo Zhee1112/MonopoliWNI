@@ -84,20 +84,39 @@ function speakNumber(num: number) {
 
 export const SoundEffects = {
   diceRoll() {
-    // Shaky rattle sound
-    for (let i = 0; i < 8; i++) {
-      setTimeout(() => playNoise(0.05, 0.15), i * 50);
+    // Dice shaking in cup — multiple rapid rattles
+    const ctx = getAudioContext();
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => {
+        // Varied frequency rattle
+        const freq = 800 + Math.random() * 1200;
+        playTone(freq, 0.03, 'square', 0.08);
+        playNoise(0.04, 0.12);
+      }, i * 35);
     }
-    // Final thud
-    setTimeout(() => playTone(120, 0.15, 'sine', 0.25), 400);
+    // Cup shake accent
+    setTimeout(() => playTone(200, 0.1, 'sine', 0.15), 200);
+    setTimeout(() => playTone(180, 0.12, 'sine', 0.12), 300);
+    // Final release thud
+    setTimeout(() => {
+      playTone(100, 0.2, 'sine', 0.3);
+      playNoise(0.08, 0.2);
+    }, 420);
   },
 
   diceResult(total: number) {
-    // Play thud + voice the number
-    playTone(200, 0.08, 'square', 0.15);
-    setTimeout(() => playTone(150, 0.1, 'sine', 0.2), 30);
-    // Speak the number after a short delay
-    setTimeout(() => speakNumber(total), 200);
+    // Dice hitting table — sharp impact + bounce
+    playTone(300, 0.05, 'square', 0.2);
+    playNoise(0.06, 0.25);
+    setTimeout(() => {
+      playTone(250, 0.04, 'sine', 0.15);
+      playNoise(0.03, 0.15);
+    }, 50);
+    setTimeout(() => {
+      playTone(200, 0.03, 'sine', 0.1);
+    }, 100);
+    // Voice the number after bounce settles
+    setTimeout(() => speakNumber(total), 250);
   },
 
   cardDraw() {

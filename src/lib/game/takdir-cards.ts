@@ -152,6 +152,7 @@ export const KORUPTOR_CARDS: Card[] = [
   { id: 'kor_06', name: 'Zakatnya Ketuker Sama Amal', tier: 'berat', category: 'koruptor', effect: { type: 'money', value: 10000000, special: 'luck_40_semua_plus1jt_bisa_dilapor' }, frequency: 1, flavorText: 'Niatnya zakat, ujung-ujungnya jadi amal jariyah ke rekening sendiri.' },
   { id: 'kor_07', name: 'Token PLN Gratis Seumur Hidup', tier: 'berat', category: 'koruptor', effect: { type: 'money', value: 2000000, special: 'luck_15_bayar_500rb_3_pemain_random' }, frequency: 1, flavorText: 'Listrik gratis? Cuma ada di mimpi dan di korupsi.' },
   { id: 'kor_08', name: 'Bantuan Hilang di Jalan', tier: 'berat', category: 'koruptor', effect: { type: 'money', value: 7000000, special: 'luck_35_1_properti_disita_semua_plus400rb' }, frequency: 1, flavorText: 'Bantuan hilang di jalan, ketemu di dompet sendiri. Alhamdulillah.' },
+  { id: 'kor_09', name: 'Cuci Uang', tier: 'sedang', category: 'koruptor', effect: { type: 'special', special: 'cuci_uang', value: 2000000 }, frequency: 1, flavorText: 'Cuci uang kotor jadi bersih. Fee 40%, tapi setidaknya aman dari KPK.' },
 ];
 
 // ============================================================
@@ -164,6 +165,8 @@ export const AUDIT_CARDS: Card[] = [
   { id: 'audit_03', name: 'KPK Datang', tier: 'berat', category: 'audit', effect: { type: 'special', special: 'pemain_duit_kotor_terbanyak_sita_semua' }, frequency: 1, flavorText: 'KPK datang, semua panik.' },
   { id: 'audit_04', name: 'Sidak BPK', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'random_2_pemain_sita_75_duit_kotor' }, evidenceGrant: 'dokumen_resmi', evidenceBonus: 4, frequency: 1, flavorText: 'Sidak BPK, semua diawasi.' },
   { id: 'audit_05', name: 'Inspeksi Dadakan', tier: 'ringan', category: 'audit', effect: { type: 'special', special: 'random_1_pemain_bayar_20_duit_kotor' }, frequency: 1, flavorText: 'Inspeksi dadakan, semua harus siap.' },
+  { id: 'audit_06', name: 'Laporan Masyarakat', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'report_dirty_money', target: 'random' }, frequency: 1, flavorText: 'Laporan masyarakat! Laporkan pemain lain, bisa dapat reward.' },
+  { id: 'audit_07', name: 'Inspeksi Mendadak', tier: 'sedang', category: 'audit', effect: { type: 'special', special: 'seize_dirty_random_30', target: 'random' }, frequency: 1, flavorText: 'Inspeksi mendadak! Situ 30% uang kotor dari pemain random.' },
 ];
 
 // ============================================================

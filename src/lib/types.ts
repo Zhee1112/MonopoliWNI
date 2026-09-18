@@ -278,7 +278,7 @@ export function mapRoomFromDB(dbRoom: Record<string, unknown>): Room {
 }
 
 // --- Game Log Types ---
-export type GameAction = 'roll' | 'move' | 'buy' | 'sell' | 'rent' | 'event' | 'kegiatan' | 'interaction' | 'koruptor' | 'audit' | 'defense' | 'bankrupt';
+export type GameAction = 'roll' | 'move' | 'buy' | 'sell' | 'rent' | 'event' | 'kegiatan' | 'interaction' | 'koruptor' | 'audit' | 'defense' | 'bankrupt' | 'launder';
 
 export interface GameLog {
   id: string;

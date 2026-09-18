@@ -145,11 +145,13 @@ function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { c
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
+  const propInfo = propertyInfo?.find(p => p.boardIndex === cell.index);
+  const ownerColor = propInfo?.ownerId ? (propInfo.ownerColor || '#666') : null;
 
   return (
     <div
       className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
-      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder, ...(ownerColor ? { borderTop: `3px solid ${ownerColor}` } : {}) }}
       onClick={() => onCellClick?.(cell)}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
@@ -184,11 +186,13 @@ function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: 
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
+  const propInfo = propertyInfo?.find(p => p.boardIndex === cell.index);
+  const ownerColor = propInfo?.ownerId ? (propInfo.ownerColor || '#666') : null;
 
   return (
     <div
       className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
-      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder, ...(ownerColor ? { borderBottom: `3px solid ${ownerColor}` } : {}) }}
       onClick={() => onCellClick?.(cell)}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
@@ -223,11 +227,13 @@ function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { 
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
+  const propInfo = propertyInfo?.find(p => p.boardIndex === cell.index);
+  const ownerColor = propInfo?.ownerId ? (propInfo.ownerColor || '#666') : null;
 
   return (
     <div
       className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
-      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder, ...(ownerColor ? { borderLeft: `3px solid ${ownerColor}` } : {}) }}
       onClick={() => onCellClick?.(cell)}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
@@ -263,11 +269,13 @@ function RightColCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: {
   const isProperty = cell.type === 'property';
   const isTax = cell.type === 'tax';
   const isDraw = cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan';
+  const propInfo = propertyInfo?.find(p => p.boardIndex === cell.index);
+  const ownerColor = propInfo?.ownerId ? (propInfo.ownerColor || '#666') : null;
 
   return (
     <div
       className={`${GRID_POS[cell.index]} relative flex flex-col justify-between overflow-hidden rounded-lg p-1 text-center transition-colors cursor-pointer border`}
-      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder }}
+      style={{ backgroundColor: theme.cellBg, borderColor: theme.cellBorder, ...(ownerColor ? { borderRight: `3px solid ${ownerColor}` } : {}) }}
       onClick={() => onCellClick?.(cell)}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.cellHoverBg)}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.cellBg)}
@@ -312,26 +320,29 @@ function PropertyBadge({ cellIndex, propertyInfo }: { cellIndex: number; propert
   const prop = propertyInfo?.find(p => p.boardIndex === cellIndex);
   if (!prop || !prop.ownerId) return null;
 
+  const initials = prop.ownerName ? prop.ownerName.substring(0, 2).toUpperCase() : '??';
+
   return (
     <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center z-20 pointer-events-none">
-      {/* Owner marker with glow */}
+      {/* Owner marker with colored border ring and glow */}
       <div
-        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-black text-white border-2 border-white/30 shadow-lg"
+        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-black text-white shadow-lg"
         style={{
           backgroundColor: prop.ownerColor || '#666',
-          boxShadow: `0 0 6px ${prop.ownerColor || '#666'}80, 0 0 12px ${prop.ownerColor || '#666'}40`,
+          border: `3px solid ${prop.ownerColor || '#666'}88`,
+          boxShadow: `0 0 0 2px white, 0 0 8px ${prop.ownerColor || '#666'}99, 0 0 16px ${prop.ownerColor || '#666'}55`,
         }}
         title={`Owner: ${prop.ownerName}`}
       >
-        {prop.ownerName ? prop.ownerName.charAt(0).toUpperCase() : '?'}
+        {initials}
       </div>
       {/* Upgrade level bars */}
       {prop.houseLevel > 0 && (
-        <div className="flex gap-0.5 mt-0.5 bg-black/40 rounded-sm px-0.5">
+        <div className="flex gap-1 mt-1 bg-black/50 rounded-sm px-1 py-0.5">
           {Array.from({ length: Math.min(prop.houseLevel, 5) }).map((_, i) => (
             <div
               key={i}
-              className={`w-1.5 h-1 sm:w-2 sm:h-1 rounded-full ${prop.isLandmark ? 'bg-[#ffd56d] shadow-[0_0_3px_#ffd56d]' : 'bg-[#4edea3] shadow-[0_0_3px_#4edea3]'}`}
+              className={`w-2.5 h-1.5 sm:w-3 sm:h-2 rounded-sm ${prop.isLandmark ? 'bg-[#ffd56d] shadow-[0_0_4px_#ffd56d]' : 'bg-[#4edea3] shadow-[0_0_4px_#4edea3]'}`}
             />
           ))}
         </div>
