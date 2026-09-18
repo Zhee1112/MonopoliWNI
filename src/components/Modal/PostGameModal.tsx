@@ -50,8 +50,10 @@ export default function PostGameModal({
   isOpen, onClose, rankings, achievements, currentPlayerId,
   gameMode, winnerId, winnerName, onPlayAgain, onBackToLobby,
 }: PostGameModalProps) {
-  const [activeTab, setActiveTab] = useState<'skor' | 'xp' | 'achievement'>('skor');
+  const [activeTab, setActiveTab] = useState<'skor' | 'xp' | 'achievement' | 'rate'>('skor');
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   if (!isOpen) return null;
 
@@ -112,7 +114,7 @@ export default function PostGameModal({
 
         {/* Tabs */}
         <div className="flex border-b border-[#1c452e]">
-          {(['skor', 'xp', 'achievement'] as const).map(tab => (
+          {(['skor', 'xp', 'achievement', 'rate'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -122,7 +124,7 @@ export default function PostGameModal({
                   : 'text-emerald-400/50 hover:text-emerald-400/70'
               }`}
             >
-              {tab === 'skor' ? '🏆 Skor' : tab === 'xp' ? '⭐ XP' : '🏅 Pencapaian'}
+              {tab === 'skor' ? '🏆 Skor' : tab === 'xp' ? '⭐ XP' : tab === 'achievement' ? '🏅 Pencapaian' : '⭐ Nilai'}
             </button>
           ))}
         </div>
@@ -257,6 +259,67 @@ export default function PostGameModal({
                     </div>
                   );
                 })
+              )}
+            </div>
+          )}
+
+          {activeTab === 'rate' && (
+            <div className="space-y-3">
+              {ratingSubmitted ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-3">🙏</div>
+                  <div className="text-white font-semibold mb-1">Terima kasih sudah menilai!</div>
+                  <div className="text-sm text-emerald-400/50">Penilaianmu membantu komunitas Monopoli WNI</div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-4">
+                    <div className="text-sm text-emerald-400/70">Beri penilaian untuk pemain lain</div>
+                  </div>
+                  {rankings.filter(p => p.playerId !== currentPlayerId && !p.isBot).map(p => (
+                    <div
+                      key={p.playerId}
+                      className="p-3 rounded-xl border bg-[#0a2617]/80 border-[#1c452e]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-[#1c452e] flex items-center justify-center text-sm font-bold text-white">
+                            {p.playerName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="text-white font-semibold text-sm">{p.playerName}</span>
+                            <span className="text-xs text-emerald-400/50 block">#{p.placement}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <button
+                              key={star}
+                              onClick={() => setRatings(prev => ({ ...prev, [p.playerId]: star }))}
+                              className="text-xl transition-transform hover:scale-125"
+                            >
+                              {star <= (ratings[p.playerId] || 0) ? '⭐' : '☆'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {rankings.filter(p => p.playerId !== currentPlayerId && !p.isBot).length === 0 && (
+                    <div className="text-center py-8 text-emerald-400/30">
+                      <div className="text-4xl mb-2">🤖</div>
+                      <div className="text-sm">Hanya bot yang lawan — tidak ada yang bisa dinilai</div>
+                    </div>
+                  )}
+                  {Object.keys(ratings).length > 0 && (
+                    <button
+                      onClick={() => setRatingSubmitted(true)}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ffd56d] to-[#e5b842] text-[#3e2e00] font-bold text-sm hover:opacity-90 transition-opacity"
+                    >
+                      ⭐ Kirim Penilaian ({Object.keys(ratings).length} pemain)
+                    </button>
+                  )}
+                </>
               )}
             </div>
           )}
