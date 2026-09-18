@@ -509,6 +509,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             luckDetail = ` | Hoki ${sign}${data.luckFluctuation} → ${data.newLuck}`;
           }
 
+          // Dice modifier announcement
+          let diceDetail = '';
+          if (data.diceModified) {
+            diceDetail = ` (dimodifikasi → ${data.finalTotal})`;
+          }
+
           // Level-up announcement
           if (data.levelUpMessage) {
             broadcastAnnouncement({
@@ -522,14 +528,15 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           broadcastAnnouncement({
             type: 'roll',
             playerName: freshName,
-            message: `melempar dadu ${result.dice1} + ${result.dice2} = ${result.dice1 + result.dice2}`,
+            message: `melempar dadu ${result.dice1} + ${result.dice2} = ${result.dice1 + result.dice2}${diceDetail}`,
             detail: `mendarat di ${cell.name} ${cell.emoji || ''}${luckDetail}`,
           });
           
           // Trigger GachaRollModal for special petaks (tax, takdir, kegiatan)
           if (cell.type === 'tax' || cell.type === 'draw_takdir' || cell.type === 'draw_kegiatan') {
             setGameEventCell(cell);
-            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: result.dice1 + result.dice2 });
+            const effectiveTotal = data.diceModified ? data.finalTotal : result.dice1 + result.dice2;
+            setGameEventDice({ dice1: result.dice1, dice2: result.dice2, total: effectiveTotal });
 
             // Set event card for draw types (drawn but not yet shown)
             let drawnTakdir = drawnTakdirCard;
@@ -606,7 +613,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
           } else if (cell.type === 'event') {
             // Event cells — DnD system: gacha roll = DnD roll, pass/fail determines outcome
             setGameEventCell(cell);
-            setGameEventDice({ dice1: rolledDice.dice1, dice2: rolledDice.dice2, total: rolledDice.dice1 + rolledDice.dice2 });
+            const effectiveTotal = data.diceModified ? data.finalTotal : rolledDice.dice1 + rolledDice.dice2;
+            setGameEventDice({ dice1: rolledDice.dice1, dice2: rolledDice.dice2, total: effectiveTotal });
 
             const newPos = newPosition;
 
@@ -1084,79 +1092,43 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     const runBotTurn = async () => {
       botPlayLock.current = true;
 
-      // Step 1: Roll dice (with delay for visual)
+      // Step 1: Bot plays full turn via server API (roll + cards + tax + end turn)
       await new Promise((r) => setTimeout(r, 1200));
-      let rollSuccess = false;
       try {
-        const rollRes = await fetch('/api/roll-dice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, dice1: Math.ceil(Math.random() * 6), dice2: Math.ceil(Math.random() * 6) }),
-        });
-        const rollData = await rollRes.json();
-        if (!rollRes.ok) {
-          console.error('Bot roll failed:', rollData.error);
-        } else {
-          rollSuccess = true;
-          // Step 2: Handle property cells
-          const cell = getCellByIndex(rollData.newPosition);
-          if (cell.type === 'property') {
-            const property = getPropertyCells().find((p) => p.index === rollData.newPosition);
-            const botMoney = (activePlayer.cleanMoney || 0) + (rollData.moneyChange || 0);
-
-            // First try to pay rent (property owned by another player)
-            try {
-              const dbProp = dbProperties.find((p) => p.board_index === rollData.newPosition);
-              if (dbProp && dbProp.owner_id && dbProp.owner_id !== activePlayerId) {
-                const rentRes = await fetch('/api/buy-property', {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ roomId: room.id, payerId: activePlayerId, propertyId: dbProp.id }),
-                });
-                if (rentRes.ok) {
-                  // Rent paid successfully
-                } else if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
-                  // Unowned — try to buy
-                  await fetch('/api/buy-property', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
-                  });
-                }
-              } else if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
-                // Unowned — try to buy
-                await fetch('/api/buy-property', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
-                });
-              }
-            } catch {
-              // Rent failed — try to buy if affordable
-              if (property && property.price && botMoney >= property.price && property.price < botMoney * 0.4) {
-                await fetch('/api/buy-property', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ roomId: room.id, playerId: activePlayerId, boardIndex: property.index }),
-                });
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Bot roll/buy error:', e);
-      }
-
-      // Step 3: Always try to end turn (even if roll failed, to unblock the game)
-      try {
-        await new Promise((r) => setTimeout(r, 1000));
-        await fetch('/api/end-turn', {
+        const botRes = await fetch('/api/bot-play', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId: room.id, playerId: activePlayerId }),
         });
+        const botData = await botRes.json();
+
+        if (botRes.ok && botData.success) {
+          // Announce bot actions
+          const botName = activePlayer.name;
+          const cellEmoji = botData.cellType === 'corner' ? '' : (botData.cellEmoji || '');
+          broadcastAnnouncement({
+            type: 'roll',
+            playerName: botName,
+            message: `melempar dadu ${botData.dice1} + ${botData.dice2} = ${botData.total}`,
+            detail: `mendarat di ${botData.cellName} ${cellEmoji}`,
+          });
+
+          // Announce specific actions
+          if (botData.actions && botData.actions.length > 0) {
+            for (const action of botData.actions) {
+              broadcastAnnouncement({
+                type: 'event',
+                playerName: botName,
+                message: action,
+                detail: '',
+              });
+            }
+          }
+        } else {
+          console.error('Bot play failed:', botData.error);
+        }
       } catch (e) {
-        console.error('Bot end-turn error:', e);
+        console.error('Bot play error:', e);
       }
 
       botPlayLock.current = false;
@@ -1775,42 +1747,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         <div className="h-14 max-w-[1400px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('players'); }}
-              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#ffd56d' }}
-              title="Daftar Pemain"
-            >
-              <span className="text-lg">&#x1F465;</span>
-              <span className="hidden md:inline text-xs font-bold">Pemain</span>
-            </button>
-            <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('status'); }}
-              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#4edea3' }}
-              title="Status & Kavling"
-            >
-              <span className="text-lg">&#x1F4CA;</span>
-              <span className="hidden md:inline text-xs font-bold">Status</span>
-            </button>
-            <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('log'); }}
-              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all relative"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#d1c5af' }}
-              title="Log Permainan"
-            >
-              <span className="text-lg">&#x1F4CB;</span>
-              <span className="hidden md:inline text-xs font-bold">Log</span>
-            </button>
-            <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('chat'); }}
-              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all relative"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#38bdf8' }}
-              title="Obrolan Meja"
-            >
-              <span className="text-lg">&#x1F4AC;</span>
-              <span className="hidden md:inline text-xs font-bold">Chat</span>
-            </button>
-            <button
               onClick={() => setShowLoanModal(true)}
               className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
               style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#ffd56d' }}
@@ -1818,15 +1754,6 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             >
               <span className="text-lg">&#x1F3E6;</span>
               <span className="hidden md:inline text-xs font-bold">Pinjam</span>
-            </button>
-            <button
-              onClick={() => { setGameModalOpen(true); setGameModalTab('settings'); }}
-              className="h-9 px-2.5 sm:px-3 rounded-lg flex items-center gap-1.5 transition-all"
-              style={{ backgroundColor: '#152f1f', border: '1px solid #203a29', color: '#a78bfa' }}
-              title="Pengaturan"
-            >
-              <span className="text-lg">&#x2699;&#xFE0F;</span>
-              <span className="hidden md:inline text-xs font-bold">Setelan</span>
             </button>
           </div>
 

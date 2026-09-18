@@ -638,8 +638,13 @@ function processDiceEffect(
     result.moneyChanges.push({ playerId: p.id, amount: bonus, label: 'Viral Challenge' });
     result.statusMessages.push(`Viral challenge berhasil! +Rp ${bonus.toLocaleString('id-ID')}`);
   } else if (special === 'ganda_x2_tapi_gagal_bayar_200rb') {
-    // Knalpot racing: dice x2, but fail = pay 200k
+    // Knalpot racing: dice x2 next roll, but fail = pay 200k
     if (gachaRoll >= 4) {
+      p.statusEffects = [...p.statusEffects, {
+        type: 'double_dice',
+        duration: 1,
+        effect: 'Knalpot Racing: Dadu berikutnya x2',
+      }];
       result.statusMessages.push(`Knalpot racing berhasil! Dadu berikutnya x2`);
     } else {
       p.cleanMoney = Math.max(0, p.cleanMoney - 200000);
@@ -648,8 +653,19 @@ function processDiceEffect(
       result.shouldCheckBankruptcy = true;
     }
   } else if (special === 'batalkan_dadu_pemain_lain') {
-    // MK card: cancel another player's dice (mark for reroll)
-    result.statusMessages.push(`Dadu pemain lain dibatalkan! Harus roll ulang.`);
+    // MK card: cancel a random non-bankrupt opponent's next dice
+    const opponents = allPlayers.filter(op => op.id !== p.id && !op.isBankrupt);
+    if (opponents.length > 0) {
+      const target = opponents[Math.floor(Math.random() * opponents.length)];
+      target.statusEffects = [...target.statusEffects, {
+        type: 'skip_turn',
+        duration: 1,
+        effect: 'Gugat MK: Dadu dibatalkan, harus roll ulang',
+      }];
+      result.statusMessages.push(`MK card! Dadu ${target.name} dibatalkan! Harus roll ulang.`);
+    } else {
+      result.statusMessages.push(`MK card! Tidak ada target, kartu sia-sia.`);
+    }
   } else if (special === '3x_dadu_permanen') {
     // Infinity Stone: triple dice permanently
     p.statusEffects = [...p.statusEffects, {

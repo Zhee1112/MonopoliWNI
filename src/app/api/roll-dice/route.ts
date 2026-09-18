@@ -169,6 +169,33 @@ export async function POST(request: NextRequest) {
     const newPosition = (player.position + total) % 40;
     const passedStart = player.position + total >= 40;
 
+    // Apply double_dice modifier (Knalpot Racing): total x2, consume effect
+    let diceModified = false;
+    let modifiedTotal = total;
+    const doubleDiceEffect = statusEffects.find(e => e.type === 'double_dice');
+    if (doubleDiceEffect) {
+      modifiedTotal = total * 2;
+      diceModified = true;
+    }
+
+    // Apply triple_dice modifier (Infinity Stone): total x3 permanently
+    const tripleDiceEffect = statusEffects.find(e => e.type === 'triple_dice');
+    if (tripleDiceEffect) {
+      modifiedTotal = (diceModified ? modifiedTotal : total) * (diceModified ? 1 : 3);
+      diceModified = true;
+    }
+
+    // Recalculate position with modified total
+    const finalTotal = diceModified ? modifiedTotal : total;
+    const finalPosition = (player.position + finalTotal) % 40;
+    const finalPassedStart = player.position + finalTotal >= 40;
+
+    // Remove consumed double_dice effect (duration 1)
+    let cleanedEffects = statusEffects;
+    if (doubleDiceEffect) {
+      cleanedEffects = cleanedEffects.filter(e => e.type !== 'double_dice');
+    }
+
     // Update luck
     const luckFluctuation = rollLuckFluctuation();
     const newLuck = updateLuck(player.luck, luckFluctuation);
@@ -188,7 +215,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate money changes
     let moneyChange = 0;
-    if (passedStart) {
+    if (finalPassedStart) {
       moneyChange += 200000;
     }
 
@@ -209,11 +236,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Update player + set has_rolled flag
-    const updatedEffects = [...statusEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }];
+    const updatedEffects = [...cleanedEffects, { type: 'has_rolled', duration: 999, effect: 'already_rolled' }];
     const { error: updateError } = await supabaseAdmin
       .from('players')
       .update({
-        position: newPosition,
+        position: finalPosition,
         luck: newLuck,
         clean_money: player.cleanMoney + moneyChange,
         status_effects: updatedEffects,
@@ -226,7 +253,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Track babak: mark this player as having passed Start this babak
-    if (passedStart) {
+    if (finalPassedStart) {
       const hasPassedEffect = statusEffects.some(e => e.type === 'passed_start_this_babak');
       if (!hasPassedEffect) {
         const effectsWithPassed = [...updatedEffects, { type: 'passed_start_this_babak', duration: 999, effect: 'passed_start' }];
@@ -248,7 +275,7 @@ export async function POST(request: NextRequest) {
       room_id: roomId,
       player_id: playerId,
       action: 'roll',
-      detail: { dice1, dice2, total, newPosition, passedStart, luckFluctuation, moneyChange },
+      detail: { dice1, dice2, total, finalTotal, newPosition: finalPosition, passedStart: finalPassedStart, luckFluctuation, moneyChange, diceModified },
     });
 
     return NextResponse.json({
@@ -256,8 +283,10 @@ export async function POST(request: NextRequest) {
       dice1,
       dice2,
       total,
-      newPosition,
-      passedStart,
+      finalTotal,
+      newPosition: finalPosition,
+      passedStart: finalPassedStart,
+      diceModified,
       luckFluctuation,
       newLuck,
       moneyChange,
