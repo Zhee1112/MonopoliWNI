@@ -125,7 +125,7 @@ export default function GameModal({
         </div>
 
         {/* Tab Buttons */}
-        <div className="px-3 py-2 flex items-center gap-1.5 overflow-x-auto" style={{ backgroundColor: '#0d2e1a', borderBottom: '1px solid #203a29' }}>
+        <div className="px-3 py-2 flex items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none" style={{ backgroundColor: '#0d2e1a', borderBottom: '1px solid #203a29' }}>
           {TAB_CONFIG.map((tab) => (
             <button
               key={tab.key}
