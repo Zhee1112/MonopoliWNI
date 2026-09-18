@@ -59,7 +59,7 @@ export default function PostGameModal({
   const isWinner = currentPlayerResult?.placement === 1;
   const winnerRank = rankings.find(p => p.placement === 1);
   const myAchievements = achievements.filter(a => a.playerId === currentPlayerId);
-  const totalXp = myAchievements.reduce((sum, a) => sum + a.xp, 0) + (currentPlayerResult?.placement === 1 ? 150 : currentPlayerResult?.placement === 2 ? 100 : currentPlayerResult?.placement === 3 ? 75 : 30);
+  const totalXp = myAchievements.reduce((sum, a) => sum + a.xp, 0);
 
   const handleShare = async () => {
     const text = `Monopoli WNI — ${gameMode.toUpperCase()}\n🏆 Juara: ${winnerName}\nSaya peringkat #${currentPlayerResult?.placement} dengan aset Rp ${(currentPlayerResult?.totalAssets || 0).toLocaleString('id-ID')}\n\nMain di: monopoliwni.vercel.app`;
@@ -174,36 +174,51 @@ export default function PostGameModal({
 
           {activeTab === 'xp' && (
             <div className="space-y-4">
-              {/* Placement XP */}
-              <div className="p-4 rounded-xl bg-[#0a2617]/80 border border-[#1c452e]">
-                <div className="text-xs text-emerald-400/50 uppercase tracking-wider mb-2">Placement Bonus</div>
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-semibold">
-                    {RANK_EMOJIS[currentPlayerResult?.placement || 4]} Peringkat #{currentPlayerResult?.placement || '?'}
-                  </span>
-                  <span className="text-[#ffd56d] font-bold">
-                    +{currentPlayerResult?.placement === 1 ? 150 : currentPlayerResult?.placement === 2 ? 100 : currentPlayerResult?.placement === 3 ? 75 : 30} XP
-                  </span>
-                </div>
-              </div>
+              {/* Placement XP — from achievements table */}
+              {(() => {
+                const placementAch = myAchievements.find(a =>
+                  a.achievementId === 'winner' || a.achievementId === 'runner_up' || a.achievementId === 'third_place' || a.achievementId === 'participation'
+                );
+                if (placementAch) {
+                  const def = getAchievement(placementAch.achievementId);
+                  return (
+                    <div className="p-4 rounded-xl bg-[#0a2617]/80 border border-[#1c452e]">
+                      <div className="text-xs text-emerald-400/50 uppercase tracking-wider mb-2">Placement Bonus</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-semibold">
+                          {def?.emoji || RANK_EMOJIS[currentPlayerResult?.placement || 4]} {def?.name || `Peringkat #${currentPlayerResult?.placement || '?'}`}
+                        </span>
+                        <span className="text-[#ffd56d] font-bold">+{placementAch.xp} XP</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Achievement XP */}
-              {myAchievements.length > 0 && (
-                <div className="p-4 rounded-xl bg-[#0a2617]/80 border border-[#1c452e]">
-                  <div className="text-xs text-emerald-400/50 uppercase tracking-wider mb-2">Achievement XP</div>
-                  <div className="space-y-2">
-                    {myAchievements.map(a => {
-                      const def = getAchievement(a.achievementId);
-                      return def ? (
-                        <div key={a.achievementId} className="flex items-center justify-between">
-                          <span className="text-white text-sm">{def.emoji} {def.name}</span>
-                          <span className="text-[#4edea3] font-bold text-sm">+{a.xp} XP</span>
-                        </div>
-                      ) : null;
-                    })}
+              {(() => {
+                const otherAchievements = myAchievements.filter(a =>
+                  a.achievementId !== 'winner' && a.achievementId !== 'runner_up' && a.achievementId !== 'third_place' && a.achievementId !== 'participation'
+                );
+                if (otherAchievements.length === 0) return null;
+                return (
+                  <div className="p-4 rounded-xl bg-[#0a2617]/80 border border-[#1c452e]">
+                    <div className="text-xs text-emerald-400/50 uppercase tracking-wider mb-2">Achievement XP</div>
+                    <div className="space-y-2">
+                      {otherAchievements.map(a => {
+                        const def = getAchievement(a.achievementId);
+                        return def ? (
+                          <div key={a.achievementId} className="flex items-center justify-between">
+                            <span className="text-white text-sm">{def.emoji} {def.name}</span>
+                            <span className="text-[#4edea3] font-bold text-sm">+{a.xp} XP</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Total XP */}
               <div className="p-4 rounded-xl bg-gradient-to-r from-[#ffd56d]/10 to-[#4edea3]/10 border border-[#ffd56d]/30">

@@ -9,11 +9,35 @@ import { getPlacementXp, getAchievement, ACHIEVEMENTS } from '@/lib/game/achieve
 // END TURN API - With Game Mode Win Conditions + Achievements
 // ============================================================
 
-async function calculatePlayerAssets(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, player: { cleanMoney: number; dirtyMoney: number; properties: string[] }): Promise<number> {
+async function calculatePlayerAssets(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, roomId: string, player: { cleanMoney: number; dirtyMoney: number; properties: string[] }): Promise<number> {
   let totalAssets = player.cleanMoney + player.dirtyMoney;
-  for (const propName of player.properties) {
-    const cell = getPropertyCells().find((c) => c.name === propName);
-    if (cell?.price) totalAssets += cell.price;
+  if (player.properties.length > 0) {
+    const { data: dbProperties } = await supabaseAdmin
+      .from('properties')
+      .select('board_index, house_level, is_landmark')
+      .eq('room_id', roomId)
+      .in('board_index', player.properties.map(p => {
+        const cell = getPropertyCells().find((c) => c.name === p);
+        return cell?.index ?? -1;
+      }).filter(i => i >= 0));
+
+    for (const propName of player.properties) {
+      const cell = getPropertyCells().find((c) => c.name === propName);
+      if (cell?.price) {
+        let value = cell.price;
+        const dbProp = dbProperties?.find(dp => dp.board_index === cell.index);
+        if (dbProp) {
+          const level = dbProp.house_level || 0;
+          // Add upgrade investment: each level costs 50% of base price * (level + 1)
+          const upgradeCost = Math.round(cell.price * 0.5);
+          for (let i = 1; i <= level; i++) {
+            value += upgradeCost * (i + 1);
+          }
+          if (dbProp.is_landmark) value += upgradeCost * 10;
+        }
+        totalAssets += value;
+      }
+    }
   }
   return totalAssets;
 }
@@ -28,7 +52,7 @@ async function calculateRankings(supabaseAdmin: ReturnType<typeof getSupabaseAdm
 
   const ranked = [];
   for (const p of allPlayers) {
-    const assets = await calculatePlayerAssets(supabaseAdmin, {
+    const assets = await calculatePlayerAssets(supabaseAdmin, roomId, {
       cleanMoney: p.clean_money,
       dirtyMoney: p.dirty_money,
       properties: p.properties || [],
@@ -127,8 +151,8 @@ async function awardPlacementAchievements(
       }
     }
 
-    // Participation (all players who didn't go bankrupt)
-    if (!p.is_bankrupt) {
+    // Participation (non-bankrupt players who didn't place 1st/2nd/3rd)
+    if (!p.is_bankrupt && placement > 3) {
       const result = getPlacementXp(placement, realCount);
       if (result) {
         const { error } = await supabaseAdmin
@@ -230,6 +254,57 @@ async function awardPlacementAchievements(
           xp_granted: 45,
         }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
     }
+
+    // Broke to Rich: from near-broke to 2M+
+    if (p.clean_money >= 2000000) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: p.id,
+          user_id: p.user_id,
+          achievement_id: 'broke_to_rich',
+          xp_granted: 50,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
+
+    // Card Collector: 5+ cards drawn (check game_log)
+    const { count: cardCount } = await supabaseAdmin
+      .from('game_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', roomId)
+      .eq('player_id', p.id)
+      .eq('action', 'card');
+    if (cardCount && cardCount >= 5) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: p.id,
+          user_id: p.user_id,
+          achievement_id: 'card_collector',
+          xp_granted: 35,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
+
+    // Workaholic: 5+ DnD checks passed (check game_log for dnd_success)
+    const { count: dndSuccessCount } = await supabaseAdmin
+      .from('game_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', roomId)
+      .eq('player_id', p.id)
+      .eq('action', 'dnd_success');
+    if (dndSuccessCount && dndSuccessCount >= 5) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: p.id,
+          user_id: p.user_id,
+          achievement_id: 'workaholic',
+          xp_granted: 25,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+    }
   }
 
   return awardedAchievements;
@@ -271,8 +346,6 @@ async function syncUserProfiles(
       .eq('player_id', p.id);
 
     const gameXp = achievements?.reduce((sum, a) => sum + (a.xp_granted || 0), 0) || 0;
-    // Placement XP
-    const placementXp = isWinner ? 150 : p.placement === 2 ? 100 : p.placement === 3 ? 75 : 30;
 
     // Upsert profile
     await supabaseAdmin
@@ -284,7 +357,7 @@ async function syncUserProfiles(
         properties_owned: newPropertiesOwned,
         total_games: currentGamesPlayed + 1,
         total_wins: newWins,
-        xp: currentTotalXp + gameXp + placementXp,
+        xp: currentTotalXp + gameXp,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
   }
@@ -317,7 +390,7 @@ async function checkGameOver(
       let richestPlayer = activePlayers[0];
       let richestAssets = 0;
       for (const p of activePlayers) {
-        const assets = await calculatePlayerAssets(supabaseAdmin, {
+        const assets = await calculatePlayerAssets(supabaseAdmin, roomId, {
           cleanMoney: p.clean_money,
           dirtyMoney: p.dirty_money,
           properties: p.properties || [],
@@ -343,7 +416,7 @@ async function checkGameOver(
         let richestAssets = 0;
 
         for (const p of allPlayers) {
-          const assets = await calculatePlayerAssets(supabaseAdmin, {
+          const assets = await calculatePlayerAssets(supabaseAdmin, roomId, {
             cleanMoney: p.clean_money,
             dirtyMoney: p.dirty_money,
             properties: p.properties || [],
@@ -737,7 +810,7 @@ export async function POST(request: NextRequest) {
 
       // Save game results
       for (const p of ranked) {
-        await supabaseAdmin.from('game_results').insert({
+        await supabaseAdmin.from('game_results').upsert({
           game_room_id: roomId,
           player_id: p.id,
           user_id: p.user_id,
@@ -748,11 +821,11 @@ export async function POST(request: NextRequest) {
           final_total_assets: p.totalAssets,
           xp_earned: awardedAchievements
             .filter(a => a.playerId === p.id)
-            .reduce((sum, a) => sum + a.xp, 0) + (p.placement === 1 ? 150 : p.placement === 2 ? 100 : p.placement === 3 ? 75 : 30),
+            .reduce((sum, a) => sum + a.xp, 0),
           is_winner: p.id === gameOverResult.winnerId,
           game_mode: room.gameMode as GameMode,
           total_rounds: room.totalRounds,
-        });
+        }, { onConflict: 'game_room_id,player_id' });
       }
 
       return NextResponse.json({

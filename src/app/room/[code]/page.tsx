@@ -220,8 +220,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       setGameOver(true);
       refreshProfile();
       // Fetch final results
-      fetch(`/api/active-room?userId=${user?.id || ''}`)
+      fetch(`/api/game-results?roomId=${room.id}`)
         .then(r => r.json())
+        .then(data => {
+          if (data.rankings) setGameRankings(data.rankings);
+          if (data.achievements) setGameAchievements(data.achievements);
+        })
         .catch(() => {});
     }
   }, [surrendered, room?.status]);
@@ -232,41 +236,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       SoundEffects.gameOver();
       setGameOver(true);
       refreshProfile();
-      // Fetch rankings from API
-      fetch('/api/end-turn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId: room.id, playerId: currentPlayer.id }),
-      }).then(() => {
-        // The end-turn will return rankings, but since game is already finished,
-        // we construct rankings from the current players state
-        const rankingsFromPlayers = players.map((p, i) => ({
-          playerId: p.id,
-          playerName: p.name,
-          placement: i + 1,
-          totalAssets: (p.cleanMoney || 0) + (p.dirtyMoney || 0),
-          cleanMoney: p.cleanMoney || 0,
-          properties: p.properties || [],
-          isBot: p.isBot,
-          isBankrupt: p.isBankrupt,
-        }));
-        setGameRankings(rankingsFromPlayers);
-      }).catch(() => {
-        // Fallback: construct from players
-        const rankingsFromPlayers = players.map((p, i) => ({
-          playerId: p.id,
-          playerName: p.name,
-          placement: i + 1,
-          totalAssets: (p.cleanMoney || 0) + (p.dirtyMoney || 0),
-          cleanMoney: p.cleanMoney || 0,
-          properties: p.properties || [],
-          isBot: p.isBot,
-          isBankrupt: p.isBankrupt,
-        }));
-        setGameRankings(rankingsFromPlayers);
-      });
+      // Fetch rankings from game_results table
+      fetch(`/api/game-results?roomId=${room.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.rankings) setGameRankings(data.rankings);
+          if (data.achievements) setGameAchievements(data.achievements);
+        })
+        .catch(() => {});
     }
-  }, [room?.status, gameOver, currentPlayer, players]);
+  }, [room?.status, gameOver, currentPlayer]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -873,6 +852,19 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         message: `membeli ${selectedCell.name}`,
         detail: `-Rp ${(data.price || 0).toLocaleString('id-ID')}`,
       });
+      // Broadcast any new achievements from this purchase
+      if (data.newAchievements && data.newAchievements.length > 0) {
+        for (const ach of data.newAchievements) {
+          const achDef = (await import('@/lib/game/achievements')).getAchievement(ach.achievementId);
+          broadcastAnnouncement({
+            type: 'achievement',
+            playerName: currentPlayer.name,
+            message: `${achDef?.emoji || '🏅'} ${achDef?.name || ach.achievementId}`,
+            detail: `+${ach.xp} XP`,
+          });
+        }
+        setTimeout(() => SoundEffects.achievementUnlock(), 300);
+      }
       setShowBuyModal(false);
       setSelectedCell(null);
     } catch (err) { console.error('Buy property error:', err); }
@@ -972,6 +964,16 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
         if (data.rankings) setGameRankings(data.rankings);
         if (data.achievements) {
           setGameAchievements(data.achievements);
+          // Broadcast each achievement to all players
+          for (const ach of data.achievements) {
+            const achDef = (await import('@/lib/game/achievements')).getAchievement(ach.achievementId);
+            broadcastAnnouncement({
+              type: 'achievement',
+              playerName: currentPlayer?.name || '',
+              message: `${achDef?.emoji || '🏅'} ${achDef?.name || ach.achievementId}`,
+              detail: `+${ach.xp} XP`,
+            });
+          }
           if (data.achievements.length > 0) {
             setTimeout(() => SoundEffects.achievementUnlock(), 500);
           }

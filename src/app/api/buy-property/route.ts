@@ -102,6 +102,21 @@ export async function POST(request: NextRequest) {
 
     // Check achievement triggers after buy
     const newPropCount = (player.properties || []).length + 1;
+    const newAchievements: Array<{ achievementId: string; xp: number }> = [];
+
+    // First Buyer: first property ever
+    if (newPropCount === 1) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: playerId,
+          user_id: dbPlayer.user_id || null,
+          achievement_id: 'first_buyer',
+          xp_granted: 15,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+      newAchievements.push({ achievementId: 'first_buyer', xp: 15 });
+    }
 
     // Treasure Hunter: 5+ properties
     if (newPropCount >= 5) {
@@ -114,6 +129,7 @@ export async function POST(request: NextRequest) {
           achievement_id: 'treasure_hunter',
           xp_granted: 40,
         }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+      newAchievements.push({ achievementId: 'treasure_hunter', xp: 40 });
     }
 
     // Property Mogul: 8+ properties
@@ -127,6 +143,51 @@ export async function POST(request: NextRequest) {
           achievement_id: 'property_mogul',
           xp_granted: 45,
         }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+      newAchievements.push({ achievementId: 'property_mogul', xp: 45 });
+    }
+
+    // Monopoly King: own all properties in a color group
+    if (cell.group) {
+      const { data: groupProps } = await supabaseAdmin
+        .from('properties')
+        .select('owner_id')
+        .eq('room_id', roomId)
+        .eq('group', cell.group);
+
+      const allOwnedByPlayer = groupProps && groupProps.length > 0 &&
+        groupProps.every(p => p.owner_id === playerId);
+      if (allOwnedByPlayer) {
+        await supabaseAdmin
+          .from('player_achievements')
+          .upsert({
+            game_room_id: roomId,
+            player_id: playerId,
+            user_id: dbPlayer.user_id || null,
+            achievement_id: 'monopoly_king',
+            xp_granted: 60,
+          }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+        newAchievements.push({ achievementId: 'monopoly_king', xp: 60 });
+      }
+    }
+
+    // Land Grab: 3+ properties bought total in game
+    const { count: buyCount } = await supabaseAdmin
+      .from('game_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', roomId)
+      .eq('player_id', playerId)
+      .eq('action', 'buy');
+    if (buyCount && buyCount >= 3) {
+      await supabaseAdmin
+        .from('player_achievements')
+        .upsert({
+          game_room_id: roomId,
+          player_id: playerId,
+          user_id: dbPlayer.user_id || null,
+          achievement_id: 'land_grab',
+          xp_granted: 35,
+        }, { onConflict: 'game_room_id,player_id,achievement_id', ignoreDuplicates: true });
+      newAchievements.push({ achievementId: 'land_grab', xp: 35 });
     }
 
     // Log the action
@@ -143,6 +204,7 @@ export async function POST(request: NextRequest) {
       price,
       rollResult,
       newBalance: player.cleanMoney - price,
+      newAchievements,
     });
   } catch (error) {
     console.error('Buy property error:', error);
