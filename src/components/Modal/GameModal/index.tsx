@@ -210,21 +210,108 @@ export default function GameModal({
                 </div>
               </div>
 
+              {/* Role & Level */}
+              {(() => {
+                const roleDef = NORMAL_ROLES.find(r => r.id === currentPlayer.role);
+                const level = currentPlayer.roleLevel || 1;
+                const nextRole = roleDef?.progressionChain?.[level - 1] || null;
+                return roleDef ? (
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: '#7a9a7a' }}>Role & Level</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: '#ffd56d15', color: '#ffd56d', border: '1px solid #ffd56d30' }}>
+                        Lv.{level}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-lg">🎭</span>
+                      <span className="text-sm font-bold text-white">{roleDef.name}</span>
+                    </div>
+                    <p className="text-[10px] mb-2" style={{ color: '#9a907c' }}>{roleDef.flavorText}</p>
+                    <div className="text-[10px]" style={{ color: '#7a9a7a' }}>
+                      <span>Gaji: <strong style={{ color: '#4edea3' }}>Rp {roleDef.baseIncome.toLocaleString('id-ID')}</strong> {roleDef.incomeType === 'per_turn' ? '/giliran' : `/langkah`}</span>
+                    </div>
+                    {nextRole && (
+                      <div className="mt-2 flex items-center gap-1.5 text-[10px]" style={{ color: '#ffd56d80' }}>
+                        <span>⬆</span>
+                        <span>Next: {nextRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Player Stats — RPG Style */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <span className="text-[10px] uppercase tracking-wider block mb-2.5 font-semibold" style={{ color: '#7a9a7a' }}>Statistik Diri</span>
+                {(() => {
+                  const roleDef = NORMAL_ROLES.find(r => r.id === currentPlayer.role);
+                  const baseStats = roleDef?.stats || currentPlayer.stats || { negotiation: 3, investigation: 3, persuasion: 3, streetSmart: 3, charm: 3 };
+                  const evidenceBonus = (currentPlayer.evidence || []).reduce((acc, ev) => {
+                    acc.negotiation += ev.bonusModifier || 0;
+                    return acc;
+                  }, { negotiation: 0, investigation: 0, persuasion: 0, streetSmart: 0, charm: 0 });
+                  const statDefs = [
+                    { key: 'negotiation', label: 'Negosiasi', icon: '🤝', color: '#4edea3' },
+                    { key: 'investigation', label: 'Investigasi', icon: '🔍', color: '#38bdf8' },
+                    { key: 'persuasion', label: 'Persuasi', icon: '🗣️', color: '#f472b6' },
+                    { key: 'streetSmart', label: 'Street Smart', icon: '🧠', color: '#a78bfa' },
+                    { key: 'charm', label: 'Charm', icon: '✨', color: '#fbbf24' },
+                  ];
+                  return (
+                    <div className="space-y-2">
+                      {statDefs.map(s => {
+                        const base = (baseStats as unknown as Record<string, number>)[s.key] || 3;
+                        const bonus = (evidenceBonus as unknown as Record<string, number>)[s.key] || 0;
+                        const total = base + bonus;
+                        const pct = Math.min((total / 10) * 100, 100);
+                        return (
+                          <div key={s.key}>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs">{s.icon}</span>
+                                <span className="text-[11px] font-semibold text-white">{s.label}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[11px] font-bold" style={{ color: s.color }}>{base}</span>
+                                {bonus > 0 && (
+                                  <span className="text-[10px] font-bold" style={{ color: '#4edea3' }}>+{bonus}</span>
+                                )}
+                                <span className="text-[10px] font-bold text-white/50">= {total}</span>
+                              </div>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#152f1f' }}>
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}60` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+
               {/* Ringkasan Pemain */}
               <div>
                 <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Ringkasan Pemain</span>
                 <div className="space-y-1.5">
                   {players.map((p) => {
                     const isActive = p.id === currentPlayer.id;
+                    const pRole = NORMAL_ROLES.find(r => r.id === p.role);
                     return (
                       <div key={p.id} className="p-2.5 rounded-lg flex items-center justify-between" style={{ backgroundColor: isActive ? '#152f1f' : '#0d2e1a', border: `1px solid ${isActive ? '#ffd56d30' : '#203a29'}` }}>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.tokenColor || '#3b82f6' }} />
-                          <span className="text-xs font-bold" style={{ color: isActive ? '#ffd56d' : '#e0d8c8' }}>
-                            {p.name} {isActive && <span className="text-[9px]" style={{ color: '#7a9a7a' }}>(kamu)</span>}
-                          </span>
-                          {p.isBot && <span className="text-[9px] px-1 rounded" style={{ backgroundColor: '#a78bfa20', color: '#a78bfa' }}>BOT</span>}
-                          {p.isBankrupt && <span className="text-[9px] px-1 rounded" style={{ backgroundColor: '#f8717120', color: '#f87171' }}>BANGKRUT</span>}
+                          <div>
+                            <span className="text-xs font-bold" style={{ color: isActive ? '#ffd56d' : '#e0d8c8' }}>
+                              {p.name} {isActive && <span className="text-[9px]" style={{ color: '#7a9a7a' }}>(kamu)</span>}
+                            </span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {p.isBot && <span className="text-[9px] px-1 rounded" style={{ backgroundColor: '#a78bfa20', color: '#a78bfa' }}>BOT</span>}
+                              {p.isBankrupt && <span className="text-[9px] px-1 rounded" style={{ backgroundColor: '#f8717120', color: '#f87171' }}>BANGKRUT</span>}
+                              {pRole && <span className="text-[9px]" style={{ color: '#9a907c' }}>🎭 {pRole.name} Lv.{p.roleLevel || 1}</span>}
+                            </div>
+                          </div>
                         </div>
                         <div className="text-right">
                           <span className="font-mono text-[11px] font-bold block" style={{ color: '#ffd56d' }}>Rp {(p.cleanMoney || 0).toLocaleString('id-ID')}</span>
@@ -236,15 +323,51 @@ export default function GameModal({
                 </div>
               </div>
 
-              {/* Status Effects */}
+              {/* Status Effects — with friendly labels */}
               {currentPlayer.statusEffects && currentPlayer.statusEffects.length > 0 && (
                 <div>
                   <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Status Aktif</span>
                   <div className="space-y-1">
-                    {currentPlayer.statusEffects.map((eff, i) => (
-                      <div key={i} className="p-2 rounded-lg text-[11px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', color: '#f87171' }}>
-                        ⏳ {eff.effect || eff.type} {eff.duration > 0 && <span style={{ color: '#7a9a7a' }}>({eff.duration} giliran)</span>}
-                      </div>
+                    {currentPlayer.statusEffects.map((eff, i) => {
+                      const statusConfig: Record<string, { icon: string; label: string; color: string; bgColor: string }> = {
+                        has_rolled: { icon: '🎲', label: 'Sudah Roll', color: '#9a907c', bgColor: '#0d2e1a' },
+                        skip_turn: { icon: '⏭️', label: 'Skip Giliran', color: '#f87171', bgColor: '#2a0f0f' },
+                        dice_modifier: { icon: '🎲', label: 'Modifikasi Dadu', color: '#a78bfa', bgColor: '#1a0f2a' },
+                        double_dice: { icon: '⚡', label: 'Dadu x2', color: '#fbbf24', bgColor: '#2a2000' },
+                        triple_dice: { icon: '💎', label: 'Dadu x3', color: '#c084fc', bgColor: '#20002a' },
+                        kpk_suspicion: { icon: '🚨', label: 'Dicurigai KPK', color: '#f87171', bgColor: '#2a0f0f' },
+                        laundering_cooldown: { icon: '🧼', label: 'Cooldown Cuci Uang', color: '#fb923c', bgColor: '#2a1a00' },
+                        discount: { icon: '🏷️', label: 'Diskon Belanja', color: '#4edea3', bgColor: '#0a2617' },
+                        evidence: { icon: '📄', label: 'Bukti', color: '#38bdf8', bgColor: '#0a1a2a' },
+                        passed_start_this_babak: { icon: '🏁', label: 'Lewat Start', color: '#4edea3', bgColor: '#0a2617' },
+                      };
+                      const cfg = statusConfig[eff.type] || { icon: '⏳', label: eff.effect || eff.type, color: '#f87171', bgColor: '#2a0f0f' };
+                      return (
+                        <div key={i} className="flex items-center gap-2 p-2 rounded-lg text-[11px]" style={{ backgroundColor: cfg.bgColor, border: `1px solid ${cfg.color}25` }}>
+                          <span>{cfg.icon}</span>
+                          <span className="font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
+                          {eff.duration > 0 && eff.duration < 999 && (
+                            <span className="text-[10px] ml-auto" style={{ color: '#7a9a7a' }}>{eff.duration} giliran</span>
+                          )}
+                          {eff.duration >= 999 && (
+                            <span className="text-[10px] ml-auto" style={{ color: '#7a9a7a' }}>permanen</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Properties Owned */}
+              {currentPlayer.properties && currentPlayer.properties.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Properti ({currentPlayer.properties.length})</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {currentPlayer.properties.map((propName, i) => (
+                      <span key={i} className="px-2 py-1 rounded text-[10px] font-bold" style={{ backgroundColor: '#ffd56d10', color: '#ffd56d', border: '1px solid #ffd56d25' }}>
+                        🏠 {propName}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -381,80 +504,52 @@ export default function GameModal({
 
           {/* PANEL: PENGATURAN */}
           {activeTab === 'settings' && (
-            <div className="p-3 max-h-[450px] overflow-y-auto">
-              <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollSnapType: 'x mandatory' }}>
-                {/* Round Info */}
-                <div className="p-3 rounded-xl shrink-0 min-w-[180px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', scrollSnapAlign: 'start' }}>
-                  <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Babak</span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl">📅</span>
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-sm" style={{ color: '#ffd56d' }}>{round}/{totalRounds}</span>
-                      <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>{roomCode}</span>
+            <div className="p-3 max-h-[450px] overflow-y-auto space-y-3">
+              {/* Music Toggle */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">{musicOn ? '🎵' : '🔇'}</span>
+                    <div>
+                      <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>Musik Latar</span>
+                      <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>{musicOn ? 'Aktif' : 'Nonaktif'}</span>
                     </div>
                   </div>
-                </div>
-                {/* Music Toggle */}
-                <div className="p-3 rounded-xl shrink-0 min-w-[180px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', scrollSnapAlign: 'start' }}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{musicOn ? '🎵' : '🔇'}</span>
-                      <div>
-                        <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>Musik Latar</span>
-                        <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>{musicOn ? 'On' : 'Off'}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => onToggleMusic?.()}
-                      className="w-12 h-6 rounded-full relative transition-all"
+                  <button
+                    onClick={() => onToggleMusic?.()}
+                    className="w-11 h-6 rounded-full relative transition-all"
+                    style={{
+                      backgroundColor: musicOn ? '#4edea3' : '#152f1f',
+                      border: `1px solid ${musicOn ? '#4edea3' : '#203a29'}`,
+                    }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full absolute top-0.5 transition-all"
                       style={{
-                        backgroundColor: musicOn ? '#4edea3' : '#152f1f',
-                        border: `1px solid ${musicOn ? '#4edea3' : '#203a29'}`,
+                        backgroundColor: musicOn ? '#fff' : '#7a9a7a',
+                        left: musicOn ? '24px' : '2px',
                       }}
-                    >
-                      <div
-                        className="w-4 h-4 rounded-full absolute top-0.5 transition-all"
-                        style={{
-                          backgroundColor: musicOn ? '#fff' : '#7a9a7a',
-                          left: musicOn ? '26px' : '2px',
-                        }}
-                      />
-                    </button>
-                  </div>
+                    />
+                  </button>
                 </div>
+              </div>
 
-                {/* Sound Effects */}
-                <div className="p-3 rounded-xl shrink-0 min-w-[180px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', scrollSnapAlign: 'start' }}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🔊</span>
-                      <div>
-                        <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>Efek Suara</span>
-                        <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Dadu, kartu, beli</span>
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: '#4edea320', color: '#4edea3' }}>AKTIF</span>
-                  </div>
-                </div>
-
-                {/* Room Info */}
-                <div className="p-3 rounded-xl shrink-0 min-w-[180px]" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29', scrollSnapAlign: 'start' }}>
-                  <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Info Kamar</span>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px]" style={{ color: '#93c5a7' }}>Kode</span>
-                      <span className="font-mono text-xs font-bold" style={{ color: '#ffd56d' }}>#{roomCode}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px]" style={{ color: '#93c5a7' }}>Pemain</span>
-                      <span className="text-xs font-bold" style={{ color: '#4edea3' }}>{players.length}/8</span>
+              {/* Sound Effects */}
+              <div className="p-3 rounded-xl" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🔊</span>
+                    <div>
+                      <span className="text-xs font-bold block" style={{ color: '#e0d8c8' }}>Efek Suara</span>
+                      <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Dadu, kartu, beli</span>
                     </div>
                   </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: '#4edea320', color: '#4edea3' }}>AKTIF</span>
                 </div>
               </div>
 
               {/* Board Theme Selector */}
-              <div className="mt-3">
+              <div>
                 <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Tema Papan</span>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.values(BOARD_THEMES) as BoardTheme[]).map((t) => {
@@ -473,7 +568,6 @@ export default function GameModal({
                         <span className="text-2xl block mb-1">{t.preview}</span>
                         <span className="text-xs font-bold block" style={{ color: isActive ? '#ffd56d' : '#e0d8c8' }}>{t.name}</span>
                         <span className="text-[9px] block mt-0.5" style={{ color: '#7a9a7a' }}>{t.description}</span>
-                        {/* Color preview dots */}
                         <div className="flex items-center justify-center gap-1 mt-2">
                           <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: t.boardBg }} />
                           <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: t.cellBg }} />
@@ -483,39 +577,6 @@ export default function GameModal({
                       </button>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Card Catalog */}
-              <div className="mt-3">
-                <span className="text-[10px] uppercase tracking-wider block mb-2 font-semibold" style={{ color: '#7a9a7a' }}>Katalog Kartu</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
-                    <span className="text-lg block mb-1">🃏</span>
-                    <span className="text-xs font-bold block" style={{ color: '#ffd56d' }}>140 Kartu</span>
-                    <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Kartu Takdir</span>
-                    <div className="mt-1.5 space-y-0.5">
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🎲 Normal (35)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🃏 Meme (30)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🤝 Interaksi (32)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>💣 Sabotase (20)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>💰 Koruptor (8)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🔍 Audit (5)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>👑 Legendaris (10)</span>
-                    </div>
-                  </div>
-                  <div className="p-2.5 rounded-lg" style={{ backgroundColor: '#0d2e1a', border: '1px solid #203a29' }}>
-                    <span className="text-lg block mb-1">📦</span>
-                    <span className="text-xs font-bold block" style={{ color: '#4edea3' }}>100 Kartu</span>
-                    <span className="text-[10px] block" style={{ color: '#7a9a7a' }}>Kartu Kegiatan</span>
-                    <div className="mt-1.5 space-y-0.5">
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🏪 Usaha (20)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>💼 Kerja (20)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>📈 Investasi (20)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🤝 Sosial (20)</span>
-                      <span className="text-[9px] block" style={{ color: '#93c5a7' }}>🎯 Tantangan (20)</span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

@@ -130,13 +130,21 @@ export async function POST(request: NextRequest) {
       const result = processCardEffect(card, freshPlayer, dice1 + dice2, allPlayers);
 
       // Apply money changes
-      if (result.updatedPlayer.cleanMoney !== freshPlayer.cleanMoney) {
+      const moneyDiff = result.updatedPlayer.cleanMoney - freshPlayer.cleanMoney;
+      if (moneyDiff !== 0) {
         await supabaseAdmin.from('players').update({
           clean_money: Math.max(0, result.updatedPlayer.cleanMoney),
           dirty_money: result.updatedPlayer.dirtyMoney || freshPlayer.dirtyMoney,
-          status_effects: result.updatedPlayer.statusEffects || freshPlayer.statusEffects,
         }).eq('id', playerId);
       }
+
+      // Apply status effects — preserve has_rolled from roll-dice
+      const cardEffects = result.updatedPlayer.statusEffects || [];
+      const freshEffects = (freshPlayer.statusEffects as Array<{ type: string; duration: number; effect: string }>) || [];
+      const hasRolled = freshEffects.find(e => e.type === 'has_rolled');
+      const mergedEffects = [...cardEffects.filter(e => e.type !== 'has_rolled')];
+      if (hasRolled) mergedEffects.push(hasRolled);
+      await supabaseAdmin.from('players').update({ status_effects: mergedEffects }).eq('id', playerId);
 
       // Apply property changes
       if (result.updatedPlayer.properties?.length !== freshPlayer.properties?.length) {
@@ -152,13 +160,22 @@ export async function POST(request: NextRequest) {
       const freshPlayer = mapPlayerFromDB(freshPlayerRes.data as Record<string, unknown>);
       const result = processCardEffect(card as any, freshPlayer, dice1 + dice2, allPlayers);
 
-      if (result.updatedPlayer.cleanMoney !== freshPlayer.cleanMoney) {
+      // Apply money
+      const kegMoneyDiff = result.updatedPlayer.cleanMoney - freshPlayer.cleanMoney;
+      if (kegMoneyDiff !== 0) {
         await supabaseAdmin.from('players').update({
           clean_money: Math.max(0, result.updatedPlayer.cleanMoney),
           dirty_money: result.updatedPlayer.dirtyMoney || freshPlayer.dirtyMoney,
-          status_effects: result.updatedPlayer.statusEffects || freshPlayer.statusEffects,
         }).eq('id', playerId);
       }
+
+      // Apply status effects — preserve has_rolled
+      const kegCardEffects = result.updatedPlayer.statusEffects || [];
+      const kegFreshEffects = (freshPlayer.statusEffects as Array<{ type: string; duration: number; effect: string }>) || [];
+      const kegHasRolled = kegFreshEffects.find(e => e.type === 'has_rolled');
+      const kegMerged = [...kegCardEffects.filter(e => e.type !== 'has_rolled')];
+      if (kegHasRolled) kegMerged.push(kegHasRolled);
+      await supabaseAdmin.from('players').update({ status_effects: kegMerged }).eq('id', playerId);
 
       actions.push(`Kartu Kegiatan: ${card.name} — ${result.statusMessages.join(', ')}`);
     } else if (cell.type === 'tax') {

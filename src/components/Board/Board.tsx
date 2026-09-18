@@ -320,36 +320,32 @@ function PropertyBadge({ cellIndex, propertyInfo }: { cellIndex: number; propert
   const prop = propertyInfo?.find(p => p.boardIndex === cellIndex);
   if (!prop || !prop.ownerId) return null;
 
-  const initials = prop.ownerName ? prop.ownerName.substring(0, 2).toUpperCase() : '??';
+  const initials = prop.ownerName ? prop.ownerName.substring(0, 1).toUpperCase() : '?';
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center z-20 pointer-events-none">
-      {/* Owner marker with colored border ring and glow */}
+    <div className="absolute top-0.5 right-0.5 z-20 pointer-events-none">
+      {/* Small owner dot — top-right corner, never covers content */}
       <div
-        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-black text-white shadow-lg"
+        className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[7px] sm:text-[8px] font-black text-white shadow-md"
         style={{
           backgroundColor: prop.ownerColor || '#666',
-          border: `3px solid ${prop.ownerColor || '#666'}88`,
-          boxShadow: `0 0 0 2px white, 0 0 8px ${prop.ownerColor || '#666'}99, 0 0 16px ${prop.ownerColor || '#666'}55`,
+          border: `2px solid white`,
+          boxShadow: `0 0 4px ${prop.ownerColor || '#666'}88`,
         }}
-        title={`Owner: ${prop.ownerName}`}
+        title={`${prop.ownerName}${prop.houseLevel > 0 ? ` Lv.${prop.houseLevel}` : ''}${prop.isLandmark ? ' ★' : ''}`}
       >
         {initials}
       </div>
-      {/* Upgrade level bars */}
+      {/* Upgrade level bars — inline next to dot */}
       {prop.houseLevel > 0 && (
-        <div className="flex gap-1 mt-1 bg-black/50 rounded-sm px-1 py-0.5">
+        <div className="flex gap-px mt-px justify-end pr-0.5">
           {Array.from({ length: Math.min(prop.houseLevel, 5) }).map((_, i) => (
             <div
               key={i}
-              className={`w-2.5 h-1.5 sm:w-3 sm:h-2 rounded-sm ${prop.isLandmark ? 'bg-[#ffd56d] shadow-[0_0_4px_#ffd56d]' : 'bg-[#4edea3] shadow-[0_0_4px_#4edea3]'}`}
+              className={`w-1.5 h-1 sm:w-2 sm:h-1 rounded-sm ${prop.isLandmark ? 'bg-[#ffd56d]' : 'bg-[#4edea3]'}`}
             />
           ))}
         </div>
-      )}
-      {/* Landmark crown */}
-      {prop.isLandmark && (
-        <span className="text-[8px] sm:text-[10px] leading-none -mt-0.5">&#x2B50;</span>
       )}
     </div>
   );

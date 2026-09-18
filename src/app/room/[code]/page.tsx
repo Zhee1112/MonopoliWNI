@@ -199,11 +199,17 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       const hasRolled = (currentPlayer.statusEffects || []).some(
         (e: { type: string; duration: number }) => e.type === 'has_rolled'
       );
-      setHasRolledThisTurn(hasRolled);
+      // If it's now my turn, ensure has_rolled is cleared even if realtime hasn't caught up
+      const isMyTurnNow = room && room.turnOrder[room.currentTurn] === currentPlayer.id;
+      if (isMyTurnNow) {
+        setHasRolledThisTurn(false);
+      } else {
+        setHasRolledThisTurn(hasRolled);
+      }
     } else {
       setHasRolledThisTurn(false);
     }
-  }, [room?.currentTurn, currentPlayer?.statusEffects]);
+  }, [room?.currentTurn, currentPlayer?.statusEffects, currentPlayer?.id]);
 
   // Play sound when it's my turn
   useEffect(() => {
