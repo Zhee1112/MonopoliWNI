@@ -34,10 +34,6 @@ export async function POST(request: NextRequest) {
 
     const player = mapPlayerFromDB(dbPlayer as Record<string, unknown>);
 
-    if (player.isBankrupt) {
-      return NextResponse.json({ error: 'Player is bankrupt' }, { status: 400 });
-    }
-
     // Get room
     const { data: dbRoom, error: roomError } = await supabaseAdmin
       .from('rooms')
@@ -50,6 +46,30 @@ export async function POST(request: NextRequest) {
     }
 
     const room = mapRoomFromDB(dbRoom as Record<string, unknown>);
+
+    if (player.isBankrupt) {
+      // Auto-skip bankrupt player: advance turn to next non-bankrupt player
+      let nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
+      let safety = 0;
+      while (safety < room.turnOrder.length) {
+        const nextPid = room.turnOrder[nextTurn];
+        const { data: nextData } = await supabaseAdmin
+          .from('players')
+          .select('is_bankrupt')
+          .eq('id', nextPid)
+          .maybeSingle();
+        if (!nextData?.is_bankrupt) break;
+        nextTurn = (nextTurn + 1) % room.turnOrder.length;
+        safety++;
+      }
+      await supabaseAdmin.from('rooms').update({ current_turn: nextTurn }).eq('id', roomId);
+      return NextResponse.json({
+        success: true,
+        skippedBankrupt: true,
+        nextPlayerId: room.turnOrder[nextTurn],
+        nextTurn,
+      });
+    }
 
     if (room.turnOrder[room.currentTurn] !== playerId) {
       return NextResponse.json({ error: 'Not your turn' }, { status: 400 });

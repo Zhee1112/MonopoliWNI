@@ -403,6 +403,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not your turn' }, { status: 400 });
     }
 
+    // Bankrupt players cannot end turn — they are skipped
+    if (player.isBankrupt) {
+      // Auto-skip to next non-bankrupt player
+      let nextTurn = (room.currentTurn + 1) % room.turnOrder.length;
+      let safety = 0;
+      while (safety < room.turnOrder.length) {
+        const nextPlayerId = room.turnOrder[nextTurn];
+        const { data: nextPlayerData } = await supabaseAdmin
+          .from('players')
+          .select('is_bankrupt')
+          .eq('id', nextPlayerId)
+          .maybeSingle();
+        if (!nextPlayerData?.is_bankrupt) break;
+        nextTurn = (nextTurn + 1) % room.turnOrder.length;
+        safety++;
+      }
+      await supabaseAdmin.from('rooms').update({ current_turn: nextTurn }).eq('id', roomId);
+      return NextResponse.json({
+        success: true,
+        income: 0,
+        nextPlayerId: room.turnOrder[nextTurn],
+        nextTurn,
+        newBalance: player.cleanMoney,
+        gameOver: false,
+        skippedBankrupt: true,
+      });
+    }
+
     const statusEffects = (player.statusEffects as Array<{ type: string; duration: number; effect: string }>) || [];
 
     const role = getNormalRoleById(player.role);
@@ -456,15 +484,43 @@ export async function POST(request: NextRequest) {
       // Clear passed_start_this_babak from all players
       const { data: allPlayersForCleanup } = await supabaseAdmin
         .from('players')
-        .select('id, status_effects')
+        .select('id, status_effects, dirty_money')
         .eq('room_id', roomId);
 
       for (const p of allPlayersForCleanup || []) {
-        const effects = ((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || [])
-          .filter(e => e.type !== 'passed_start_this_babak');
+        const effects = ((p.status_effects as Array<{ type: string; duration: number; effect: string }>) || []);
+
+        // Process kpk_suspicion: 30% of dirty money seized each round
+        const kpkEffect = effects.find(e => e.type === 'kpk_suspicion');
+        if (kpkEffect && (p.dirty_money || 0) > 0) {
+          const seizedAmount = Math.floor((p.dirty_money || 0) * 0.30);
+          if (seizedAmount > 0) {
+            await supabaseAdmin
+              .from('players')
+              .update({ dirty_money: Math.max(0, (p.dirty_money || 0) - seizedAmount) })
+              .eq('id', p.id);
+            // Add seized amount to pot
+            const { data: potRoom } = await supabaseAdmin
+              .from('rooms')
+              .select('pot_money')
+              .eq('id', roomId)
+              .maybeSingle();
+            if (potRoom) {
+              await supabaseAdmin
+                .from('rooms')
+                .update({ pot_money: (potRoom.pot_money || 0) + seizedAmount })
+                .eq('id', roomId);
+            }
+          }
+        }
+
+        const cleanedEffects = effects
+          .filter(e => e.type !== 'passed_start_this_babak')
+          .map(e => e.type === 'kpk_suspicion' ? { ...e, duration: e.duration - 1 } : e)
+          .filter(e => e.duration > 0);
         await supabaseAdmin
           .from('players')
-          .update({ status_effects: effects })
+          .update({ status_effects: cleanedEffects })
           .eq('id', p.id);
       }
 

@@ -258,7 +258,7 @@ export async function PUT(request: NextRequest) {
       }).eq('id', payerId);
     } else {
       // Deduct what they can pay
-      await supabaseAdmin.from('players').update({ clean_money: 0 }).eq('id', payerId);
+      await supabaseAdmin.from('players').update({ clean_money: Math.max(0, newPayerBalance) }).eq('id', payerId);
     }
 
     if (actualPayment > 0) {
@@ -309,7 +309,7 @@ export async function PUT(request: NextRequest) {
       rent,
       ownerName: owner.name,
       ownerShare,
-      newPayerBalance: 0,
+      newPayerBalance: Math.max(0, newPayerBalance),
       newOwnerBalance: owner.cleanMoney + ownerShare,
       isBankrupt: isPayerBankrupt,
       needsSelling,

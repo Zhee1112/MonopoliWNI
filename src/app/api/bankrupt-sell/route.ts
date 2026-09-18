@@ -29,6 +29,30 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (sellerError || !dbSeller) {
+      return NextResponse.json(
+        { error: 'Seller not found' },
+        { status: 404 }
+      );
+    }
+
+    // Only bankrupt players can use this route
+    if (!dbSeller.is_bankrupt) {
+      return NextResponse.json(
+        { error: 'Hanya pemain bangkrut yang bisa menjual properti' },
+        { status: 403 }
+      );
+    }
+
+    // Check seller owns the property
+    const sellerProps = (dbSeller.properties as string[]) || [];
+    if (!sellerProps.includes(propertyName)) {
+      return NextResponse.json(
+        { error: 'Properti tidak dimiliki seller' },
+        { status: 400 }
+      );
+    }
+
+    if (sellerError || !dbSeller) {
       return NextResponse.json({ error: 'Seller not found' }, { status: 404 });
     }
 

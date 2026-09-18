@@ -21,7 +21,7 @@ const RANKS: Record<number, { name: string; emoji: string; color: string; dotCol
 };
 
 function getRankInfo(level: number) {
-  const idx = Math.min(Math.ceil(level / 2), 10);
+  const idx = Math.min(Math.floor(level / 2) + 1, 10);
   return RANKS[idx] || RANKS[1];
 }
 
@@ -31,7 +31,7 @@ function getXpForNextLevel(level: number): number {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { user, profile, loading: authLoading, signOut, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -112,6 +112,7 @@ export default function ProfilePage() {
     await supabase.from('user_profiles').update({ avatar_url: newUrl }).eq('user_id', user.id);
     setUploading(false);
     setSuccess('Foto profil berhasil diupdate!');
+    refreshProfile?.();
     setTimeout(() => setSuccess(''), 3000);
   }
 
@@ -121,6 +122,7 @@ export default function ProfilePage() {
     await supabase.from('user_profiles').update({ display_name: displayName.trim() }).eq('user_id', user.id);
     setSaving(false);
     setSuccess('Nama berhasil diupdate!');
+    refreshProfile?.();
     setTimeout(() => setSuccess(''), 3000);
   }
 
