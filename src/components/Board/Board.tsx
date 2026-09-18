@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { BOARD_CELLS } from '@/lib/game/board-data';
 import { BoardTheme, BoardThemeId, BOARD_THEMES } from '@/lib/game/board-themes';
 import { BoardCell, Player } from '@/lib/types';
+import CardListModal from '@/components/Modal/CardListModal';
 
 interface PropertyInfo {
   boardIndex: number;
@@ -80,23 +82,38 @@ const GRID_POS: Record<number, string> = {
 
 const PION_SHAPES = ['●', '▲', '■', '◆', '★', '⬟', '◈', '◉'];
 
-function CellTokenDots({ cellPlayers }: { cellPlayers: BoardProps['players'] }) {
+function CellTokenDots({ cellPlayers, cellIndex }: { cellPlayers: BoardProps['players']; cellIndex?: number }) {
   if (cellPlayers.length === 0) return null;
+
+  const getGridStyle = (count: number) => {
+    if (count <= 2) return 'grid-cols-2';
+    if (count <= 4) return 'grid-cols-2';
+    return 'grid-cols-4';
+  };
+
   return (
-    <div className="absolute top-0.5 right-0.5 flex flex-col gap-0.5 z-30">
-      {cellPlayers.map((p, i) => {
-        const pionIdx = i % PION_SHAPES.length;
-        return (
-          <div
-            key={p.id}
-            className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm flex items-center justify-center text-[7px] sm:text-[8px] font-black leading-none border border-black/60 shadow-md"
-            style={{ backgroundColor: p.tokenColor, color: '#fff', textShadow: '0 0 2px rgba(0,0,0,0.8)' }}
-            title={p.name}
-          >
-            {PION_SHAPES[pionIdx]}
-          </div>
-        );
-      })}
+    <div className="absolute bottom-0 left-0 right-0 z-30 px-0.5 pb-0.5 pointer-events-none">
+      <div className={`grid ${getGridStyle(cellPlayers.length)} gap-px`}>
+        {cellPlayers.map((p, i) => {
+          const pionIdx = i % PION_SHAPES.length;
+          return (
+            <div
+              key={p.id}
+              className="aspect-square rounded-sm flex items-center justify-center text-[6px] sm:text-[7px] font-black leading-none shadow-md"
+              style={{
+                backgroundColor: p.tokenColor,
+                color: '#fff',
+                textShadow: '0 0 2px rgba(0,0,0,0.8)',
+                border: '1px solid rgba(0,0,0,0.4)',
+                minWidth: 0,
+              }}
+              title={p.name}
+            >
+              {PION_SHAPES[pionIdx]}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -136,7 +153,7 @@ function CornerCell({ cell, cellPlayers, onCellClick, theme }: { cell: BoardCell
         </div>
       )}
       {isParkir && <span className="text-[8px] font-mono text-[#4edea3] bg-black py-0.5 px-1 rounded">GRATIS</span>}
-      <CellTokenDots cellPlayers={cellPlayers} />
+      <CellTokenDots cellPlayers={cellPlayers} cellIndex={cell.index} />
     </div>
   );
 }
@@ -176,7 +193,7 @@ function TopRowCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { c
         <span className="text-[8px] text-[#9a907c]">ACAK</span>
       ) : null}
 
-      <CellTokenDots cellPlayers={cellPlayers} />
+      <CellTokenDots cellPlayers={cellPlayers} cellIndex={cell.index} />
       <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
@@ -217,7 +234,7 @@ function BottomRowCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: 
       {isDraw && <span className="text-[8px] sm:text-[9px] font-bold text-[#ffcec9] uppercase">TAKDIR</span>}
       {isTax && <span className="text-[8px] font-bold text-[#fca5a5]">RETRIBUSI</span>}
 
-      <CellTokenDots cellPlayers={cellPlayers} />
+      <CellTokenDots cellPlayers={cellPlayers} cellIndex={cell.index} />
       <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
@@ -259,7 +276,7 @@ function LeftColCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: { 
         <span className="text-[8px] text-[#9a907c] shrink-0">Ambil Kartu</span>
       ) : null}
 
-      <CellTokenDots cellPlayers={cellPlayers} />
+      <CellTokenDots cellPlayers={cellPlayers} cellIndex={cell.index} />
       <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
@@ -301,7 +318,7 @@ function RightColCell({ cell, cellPlayers, propertyInfo, onCellClick, theme }: {
         <span className="text-[8px] text-[#9a907c] shrink-0">Ambil Kartu</span>
       ) : null}
 
-      <CellTokenDots cellPlayers={cellPlayers} />
+      <CellTokenDots cellPlayers={cellPlayers} cellIndex={cell.index} />
       <PropertyBadge cellIndex={cell.index} propertyInfo={propertyInfo} />
     </div>
   );
@@ -353,6 +370,7 @@ function PropertyBadge({ cellIndex, propertyInfo }: { cellIndex: number; propert
 
 export default function Board({ players, currentPlayer, activePlayerName, activePlayerTokenColor, potMoney = 0, round = 1, totalRounds = 4, propertyInfo = [], onCellClick, boardTheme }: BoardProps) {
   const theme = BOARD_THEMES[boardTheme || 'default'];
+  const [cardListType, setCardListType] = useState<'takdir' | 'kegiatan' | null>(null);
 
   return (
     <div className="w-full max-w-[1400px] min-h-[600px] p-2 sm:p-3 rounded-2xl border-2 shadow-[0_24px_64px_rgba(0,0,0,0.85)] relative overflow-hidden" style={{ backgroundColor: theme.boardBg, borderColor: theme.boardBorder }}>
@@ -410,7 +428,7 @@ export default function Board({ players, currentPlayer, activePlayerName, active
             <p className="text-[11px] sm:text-xs max-w-md mt-1 leading-relaxed" style={{ color: theme.subtitleText }}>Kocok dadu, kuasai kavling ibukota, hindari razia pajak Satpol PP</p>
 
             <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-md">
-              <div className="hover:brightness-110 border border-[#ff6b6b]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer" style={{ backgroundColor: theme.startBg }}>
+              <div onClick={() => setCardListType('takdir')} className="hover:brightness-110 border border-[#ff6b6b]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer" style={{ backgroundColor: theme.startBg }}>
                 <div className="w-full h-1 bg-[#ff6b6b] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#fca5a5] mb-0.5">
                   <span className="text-lg">&#x1F0CF;</span>
@@ -418,7 +436,7 @@ export default function Board({ players, currentPlayer, activePlayerName, active
                 </div>
                 <span className="text-[10px] block" style={{ color: theme.subtitleText }}>102 Kartu</span>
               </div>
-              <div className="hover:brightness-110 border border-[#4edea3]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer" style={{ backgroundColor: theme.startBg }}>
+              <div onClick={() => setCardListType('kegiatan')} className="hover:brightness-110 border border-[#4edea3]/40 rounded-xl p-3 text-center shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer" style={{ backgroundColor: theme.startBg }}>
                 <div className="w-full h-1 bg-[#4edea3] rounded-full mb-2" />
                 <div className="flex items-center justify-center gap-1 text-[#4edea3] mb-0.5">
                   <span className="text-lg">&#x1F4E6;</span>
@@ -453,6 +471,9 @@ export default function Board({ players, currentPlayer, activePlayerName, active
           </div>
         </div>
       </div>
+
+      <CardListModal isOpen={cardListType === 'takdir'} onClose={() => setCardListType(null)} type="takdir" />
+      <CardListModal isOpen={cardListType === 'kegiatan'} onClose={() => setCardListType(null)} type="kegiatan" />
     </div>
   );
 }
